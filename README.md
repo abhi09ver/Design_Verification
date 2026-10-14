@@ -15,6 +15,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 06 | [The Verification Plan](06-verification-plan.md) | Feature → test point → method → checker → coverage, risk matrix, sim vs. formal vs. emulation, sign-off criteria, executable vplan, spec changes |
 | 07 | [UVM Pillars: Phasing, Factory, config_db](07-uvm-pillars-phasing-factory-config-db.md) | 9 common + 12 run-time phases, objections & drain time, clocking blocks for races, factory overrides & pitfalls, config_db precedence & performance |
 | 08 | [SystemVerilog Assertions (SVA)](08-sva-assertions.md) | Immediate vs. concurrent, sampling, implication operators, vacuity, goto `[->n]`, local variables, stalls, liveness, assume/cover in formal, debugging a failing property |
+| 09 | [Coverage Plateau at 85%](09-coverage-plateau-closure.md) | Six causes of coverage holes, sampling bugs, targeted sequences, config sweeps, formal unreachability & witness traces, exclusions, worked arbiter example |
 
 ## How each file is structured
 
