@@ -402,3 +402,21 @@ The monitor must observe the **pins** independently, so it also works in passive
 - [ ] Can I explain why the reference model must be independent?
 - [ ] Can I prove a scoreboard works?
 - [ ] Can I explain package vs. module placement of TB pieces?
+
+---
+
+## 11. Addendum: A Second "TB From Scratch" Post
+
+Several of its structural claims would produce a broken testbench. Compare each with the skeleton in Section 5.
+
+| Claim | Reality |
+|---|---|
+| `tb_top` "instantiates the DUT, **the UVM environment**, and two clocks (**clk and rst_n**)" | `tb_top` instantiates the **DUT, interface(s), clock and reset**, sets the virtual interface in `config_db`, and calls `run_test()`. The **env is created by the test**, not by `tb_top`. And `rst_n` is a **reset**, not a clock (Section 5.1) |
+| The env "builds **three agents (drv, mon, sb)**" | Driver, monitor and scoreboard aren't agents. An **agent** contains driver + sequencer + monitor; the **env** contains agents + scoreboard + coverage (Section 5.5, 5.7) |
+| In the **agent's** `connect_phase`, connect "the monitor's **analysis_export** to the scoreboard" | The monitor has an analysis **port**, and the scoreboard lives in the **env**, so that connection is made in the **env's** `connect_phase` (Section 5.7). The agent only connects driver ↔ sequencer |
+| The scoreboard is "**a plain SystemVerilog class**" | It's a `uvm_scoreboard` (a `uvm_component`) with analysis imps or FIFOs, so it gets phases, reporting and factory support (Section 5.6) |
+| 10,000 random packets give "**statistical confidence**" | Confidence comes from **checkers that can fail** plus **coverage** of the planned scenarios, not packet count (Section 3, step 5) |
+| "Clone the **uvm-starter-kit** repo"; view coverage "in **Cadence Incisive**" | Not a known reference repo; Incisive is now Xcelium. Section 5 has a complete skeleton to start from |
+| "UVM's phases: build, connect, run, and **extract**" do the heavy lifting | Also `check` and `report` (end-of-test checks live there) (Challenge 07) |
+
+The exercise in the post (4-bit bus, cover all 16 values) is fine as a first step: the coverpoint is `coverpoint bus_val;` with automatic bins for all 16 values.
