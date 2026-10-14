@@ -250,3 +250,11 @@ project_cfg.yaml  ──► gen_cfg.py ──►  generated/
 - **Generated** SV, never hand-edited, kept in sync by the build.
 - The same source can feed the **register generator** (Challenge 15) and **emulation build scripts**.
 - Selecting between implementations (e.g., a fast behavioural memory vs. a vendor memory model) uses **factory overrides** driven by the generated config (Challenge 07).
+
+### 11.1 A third VIP-reuse post (truncated)
+
+| Claim | Reality |
+|---|---|
+| "Map **every DUT feature** to a reusable verification component (UVC)" | UVCs/agents map to **interfaces and protocols** (one agent per AXI port, per UART…). **Features** map to **test points, sequences, checks and coverage** in the vplan (Challenge 06), which use those agents |
+| Capture parameters in a **JSON schema** the build validates | Good practice, same idea as the YAML flow above: a reviewed, validated source that **generates** SV config. A schema adds automatic checking of the config file itself |
+| "At Cadence … 8 weeks → 2 weeks (75%)" | Unverifiable first-person numbers |
