@@ -11,6 +11,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 02 | [Constrained-Random Verification Storytelling](02-constrained-random-verification-storytelling.md) | Constraint layering, `dist`/`soft`/`solve-before`, seeds vs. constraints, regression budgeting, coverage ranking, STAR bug story |
 | 03 | [Verification IP Reuse](03-verification-ip-reuse.md) | Vertical vs. horizontal reuse, active/passive agents, block→SoC migration, RAL submaps, parameterized interfaces, VIP versioning & CI |
 | 04 | [Systolic Array Underutilization](04-systolic-array-underutilization.md) | Systolic dataflow, tiling, edge tiles, fill/drain math, bandwidth vs. compute, stall counters, psum/padding/quantization bugs, golden model |
+| 05 | [Virtual Sequences and Virtual Sequencers](05-virtual-sequences.md) | Virtual sequencer as handle container, `p_sequencer` vs. `m_sequencer`, passive agents, factory overrides, fork/disable fork, lock/grab, layering vs. virtual |
 
 ## How each file is structured
 
