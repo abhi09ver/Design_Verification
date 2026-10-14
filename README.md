@@ -23,6 +23,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 14 | [Formal Verification](14-formal-verification.md) | FPV vs. equivalence checking, proven/CEX/bounded, assumptions & over-constraint, convergence techniques, symbolic FIFO data integrity, formal coverage & sign-off |
 | 15 | [UVM Register Model (RAL)](15-uvm-register-model-ral.md) | Block/map/reg/field, register generation, adapter, explicit vs. implicit prediction, desired/mirrored, front- vs. back-door, volatile fields, built-in sequences, SoC submaps |
 | 16 | [UVM TLM: Ports, Exports, FIFOs](16-uvm-tlm-ports-exports-fifos.md) | Port/export/imp & connection rules, analysis broadcast, pass-by-handle bug, multi-stream scoreboards, `uvm_tlm_fifo` vs. analysis FIFO, driver–sequencer pull |
+| 17 | [Bus Protocols: AXI, AHB-Lite, PCIe](17-bus-protocols-axi-ahb-pcie.md) | AXI per-ID ordering & interleaving, per-ID scoreboard, AHB-Lite pipelining & two-cycle error, HMASTLOCK, PCIe credit types, infinite credits, credit deadlock |
 
 ## How each file is structured
 
