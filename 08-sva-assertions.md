@@ -445,6 +445,6 @@ The post suggests "an `uvm_analysis_imp` that fires an `assert` every time a tra
 | Sees | Signals, **every clock**, sampled values | **Completed transactions** only |
 | Good for | Cycle-level rules: handshakes, stability, latency, X | Transaction-level rules: legal field combinations, response vs. request, ordering |
 | Reuse | `bind` into RTL; also usable in **formal** | Testbench only (simulation) |
-| Example | `valid && !ready \|=> $stable(data)` | `assert (t.resp != EXOKAY) else `uvm_error(...)` |
+| Example | `valid && !ready \|=> $stable(data)` | `` assert (t.resp != EXOKAY) else `uvm_error(...) `` |
 
 Use both: they catch different classes of bugs. Other points in the post are covered above: **four** directives including `restrict` (Section 2), `##1` vs. `##[1:3]` (Section 14), and assertion options differ by simulator, so check your tool's documentation rather than a remembered flag name.
