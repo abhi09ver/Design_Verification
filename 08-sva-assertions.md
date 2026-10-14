@@ -1,0 +1,286 @@
+# Challenge 08: SystemVerilog Assertions (SVA) — Writing, Reading, and Debugging a Failing Property
+
+> **Level:** Fresher → Senior DV interview
+> **Topics:** immediate vs. deferred vs. concurrent assertions, sampling, implication, sequence operators, system functions, `disable iff`, vacuity, local variables, stalls, liveness, assume/cover in formal, `bind`, debugging a failure
+
+---
+
+## 1. The Post (summary)
+
+A LinkedIn post says "if you can't explain why a single SVA property fails, you'll never survive an interview at Google or NVIDIA", and recommends:
+
+1. Master `assert`, `assume`, `cover` and "the two clocking styles, `@posedge clk` and **`@(*)`**".
+2. For a 2-cycle request→ack handshake, "the correct SVA is **`req # ack`**"; also use `disable iff (reset)` or **`iff (!busy)`** for gating.
+3. Use **`let` to factor out common sub-sequences**; use `assume` to shrink state space "for formal tools like **Synopsys VCS**"; handle arbitrary pipeline stalls by combining **`##[0:$]` with `disable iff (stall)`**.
+
+The core message (you must be able to explain why a property fails) is exactly right. **But the post's code and tool claims are wrong in five places.**
+
+---
+
+## 2. What's Wrong With the Post
+
+| Claim | Reality |
+|---|---|
+| Clocking styles `@posedge clk` and `@(*)` | `@(*)` is the combinational sensitivity list for `always` blocks. **Concurrent assertions need a clock event**: explicit `@(posedge clk)`, a `default clocking` block, or one inferred from the enclosing `always_ff`. Syntax is `@(posedge clk)` with parentheses |
+| `req # ack` is the handshake | **Not valid SVA.** Delays use `##`. Correct form depends on the spec, e.g. `req \|-> ##2 ack` (exactly 2 cycles) or `req \|-> ##[1:2] ack` (within 1–2) |
+| `iff (!busy)` for gating a property | `iff` is valid in a **clocking event** (`@(posedge clk iff !busy)`, which only samples when not busy) and in coverpoints, not as a general property operator. Gating a property normally uses implication or `disable iff` |
+| `let` factors sub-sequences | `let` factors **expressions**. For temporal sub-patterns, use a named **`sequence`** |
+| Synopsys **VCS** is a formal tool | VCS is a **simulator**. Formal tools are e.g. Synopsys **VC Formal**, Cadence **Jasper**, Siemens **Questa Formal** |
+| Handle stalls with `##[0:$]` + `disable iff (stall)` | **Wrong and dangerous.** `disable iff` **cancels** the check whenever `stall` is high, so any bug that happens during a stall passes silently. Stalls are modeled with **goto repetition `[->n]`**, `throughout`, or a counter (Section 7) |
+| "Rewrite a race condition as a concurrent property" | Races are scheduling problems, usually in the testbench. Concurrent assertions sample in the **Preponed** region, so they themselves don't race with RTL updates; that's a point to explain, not a "rewrite" |
+
+Also: there are **four** verification directives, not three: `assert`, `assume`, `cover`, and `restrict` (formal only).
+
+---
+
+## 3. Background a Fresher Must Know
+
+### 3.1 Three kinds of assertions
+
+| Kind | Example | When evaluated | Use |
+|---|---|---|---|
+| **Immediate** | `assert (a == b) else $error(...);` | When the statement executes (procedural) | Checks inside procedural code, e.g. after `randomize()` |
+| **Deferred immediate** | `assert #0 (a == b);` / `assert final (...)` | At the end of the time step | Combinational checks without glitch false-fails |
+| **Concurrent** | `assert property (@(posedge clk) a \|-> b);` | On every clock, **sampled values** | Temporal rules across cycles |
+
+### 3.2 Sampling: the key to reading any waveform
+Concurrent assertions use values **sampled just before the clock edge** (Preponed region), the same values flops see. On the waveform, **look at the value immediately before the edge**, not after. Most "the assertion is wrong" confusion comes from reading values after the edge.
+
+### 3.3 The building blocks
+
+```
+sequence  →  temporal pattern          (a ##1 b ##[1:3] c)
+property  →  rule built from sequences (antecedent |-> consequent)
+directive →  assert / assume / cover / restrict
+```
+
+### 3.4 Implication
+| Operator | Meaning |
+|---|---|
+| `a \|-> b` | If `a` this cycle, then `b` **same** cycle (overlapping) |
+| `a \|=> b` | If `a` this cycle, then `b` **next** cycle. Same as `a \|-> ##1 b` |
+
+**Vacuous pass:** if the antecedent never matches, the property "passes" without checking anything. A property that only ever passes vacuously is **useless**; that's why every assertion needs a matching `cover`.
+
+### 3.5 Sequence operators
+
+| Operator | Meaning | Example |
+|---|---|---|
+| `##n` | n cycles later | `a ##2 b` |
+| `##[m:n]` | between m and n cycles later | `a ##[1:4] b` |
+| `##[1:$]` | eventually (unbounded) | `req ##[1:$] ack` |
+| `[*n]` | consecutive repetition | `busy[*3]` = 3 cycles in a row |
+| `[*m:n]` | consecutive, m to n times | |
+| `[->n]` | **goto**: n-th occurrence (not necessarily consecutive), **ends on it** | `ack[->1]` = wait until next `ack` |
+| `[=n]` | non-consecutive, may continue after last occurrence | |
+| `throughout` | condition holds during a whole sequence | `en throughout (a ##[1:5] b)` |
+| `within`, `intersect`, `and`, `or` | combine sequences | |
+
+### 3.6 Useful system functions
+`$rose(x)`, `$fell(x)`, `$stable(x)`, `$past(x, n)`, `$changed(x)`, `$isunknown(x)`, `$onehot(x)`, `$onehot0(x)`, `$countones(x)`.
+
+---
+
+## 4. Handshake Properties (correct versions)
+
+Spec: *"After `req` rises, `ack` must come within 1 to 4 cycles. `req` stays high until `ack`. Data is stable while waiting."*
+
+```systemverilog
+module hs_checker (input logic clk, rst_n, req, ack, input logic [31:0] data);
+
+  default clocking cb @(posedge clk); endclocking
+  default disable iff (!rst_n);
+
+  // 1. ack within 1..4 cycles of req rising
+  a_ack_latency: assert property ($rose(req) |-> ##[1:4] ack)
+    else $error("ack not received within 4 cycles of req");
+
+  // 2. req held until ack
+  a_req_hold:    assert property (req && !ack |=> req);
+
+  // 3. data stable while waiting
+  a_data_stable: assert property (req && !ack |=> $stable(data));
+
+  // 4. no X on control after reset
+  a_no_x:        assert property (!$isunknown({req, ack}));
+
+  // Covers: prove the interesting cases actually happened
+  c_fast_ack:    cover property ($rose(req) ##1 ack);
+  c_slow_ack:    cover property ($rose(req) ##4 ack);
+  c_b2b:         cover property (ack ##1 $rose(req));
+endmodule
+
+bind my_dut hs_checker u_hs_chk (.*);   // attach without editing RTL
+```
+
+Why `disable iff (!rst_n)` is right here: during reset, the protocol doesn't apply, so cancelling is correct. **Use `disable iff` only for reset (or similar "rules don't apply" conditions), never for normal operating conditions like stalls.**
+
+---
+
+## 5. Parameterized AXI-Lite Example (what the post asked for, done properly)
+
+```systemverilog
+module axil_rd_chk #(parameter int ADDR_W = 32, DATA_W = 32, MAX_LAT = 16)
+  (input logic clk, rst_n,
+   input logic arvalid, arready, input logic [ADDR_W-1:0] araddr,
+   input logic rvalid,  rready,  input logic [DATA_W-1:0] rdata,
+   input logic [1:0] rresp);
+
+  default clocking @(posedge clk); endclocking
+  default disable iff (!rst_n);
+
+  // VALID must stay high, and payload stable, until READY (AXI rule)
+  a_ar_hold:  assert property (arvalid && !arready |=> arvalid && $stable(araddr));
+  a_r_hold:   assert property (rvalid  && !rready  |=> rvalid  && $stable({rdata, rresp}));
+
+  // Every accepted read address gets a read response within MAX_LAT cycles
+  // (assumes one outstanding read, as in many simple AXI-lite slaves)
+  a_rd_resp:  assert property (arvalid && arready |-> ##[1:MAX_LAT] (rvalid && rready));
+
+  c_rd_stall: cover property (arvalid && !arready ##1 arvalid && !arready ##1 arready);
+endmodule
+```
+
+Note what the parameters do: widths scale the ports; `MAX_LAT` makes the latency bound configurable per instance.
+
+---
+
+## 6. Debugging "Why Did This Property Fail?" (the real interview skill)
+
+1. **Read the message**: simulators report the **start time** of the failing attempt and the **fail time**. Two different times.
+2. **Go to the start time**: which cycle matched the antecedent? Look at **sampled** values (just before the edge).
+3. **Walk forward cycle by cycle** through the consequent until the cycle where it couldn't match.
+4. **Multiple attempts overlap**: a new attempt starts every cycle the antecedent matches. The failing one may not be the one you think. Check `$rose` vs. level-sensitive antecedents (level → many attempts).
+5. **Decide: RTL bug, assertion bug, or spec ambiguity?**
+   - Off-by-one: `|->` vs. `|=>`, `##1` vs. `##0`.
+   - Level vs. edge in antecedent.
+   - Wrong reset polarity in `disable iff`.
+   - X values (use `$isunknown` checks).
+   - Clock: is it the right clock / edge for that signal's domain?
+6. **Use tool support**: assertion debug views in Verdi / SimVision / Visualizer show each attempt's threads.
+7. **Confirm the fix with the `cover`**: the scenario actually happens and the assertion passes **non-vacuously**.
+
+### Worked example
+```systemverilog
+a_bad: assert property (req |-> ##2 ack);
+```
+Waveform: `req` high for 3 cycles (t1–t3), `ack` at t3.
+- Attempt at t1: needs ack at t3 → ✅
+- Attempt at t2: needs ack at t4 → ❌ **fails at t4**
+- Attempt at t3: needs ack at t5 → ❌
+
+The RTL may be fine: the assertion is **level-sensitive** and starts a new check every cycle `req` is high. Fix: `$rose(req) |-> ##2 ack`, or encode "req held until ack" separately (Section 4).
+
+---
+
+## 7. Stalls and Pipelines (correct approach)
+
+Spec: *"Each accepted input appears at the output, in order, after 3 non-stalled cycles."* `stall` can last any number of cycles.
+
+**Wrong (from the post):** `disable iff (stall)` → any check overlapping a stall is thrown away.
+
+**Right options:**
+
+**a) Count non-stalled cycles with goto repetition**
+```systemverilog
+property p_pipe;
+  logic [31:0] v;                                   // local variable
+  (in_valid && !stall, v = in_data)                 // capture data on accept
+  |-> ##1 (!stall)[->3] ##0 (out_valid && out_data == v);
+endproperty
+a_pipe: assert property (p_pipe);
+```
+`(!stall)[->3]` means "wait until the 3rd non-stalled cycle", however many stalled cycles are in between. The local variable `v` checks **data integrity**, not just timing. (Model as given: fixed-latency, in-order; adjust the count to your pipeline.)
+
+**b) Keep outputs quiet during stalls**
+```systemverilog
+a_no_out_on_stall: assert property (stall |-> !out_valid);   // if that's the spec
+```
+
+**c) For deep or variable-latency, out-of-order designs**: a **scoreboard** is usually clearer than one huge property. Say this in interviews; it shows judgment.
+
+### Liveness: `##[1:$]`
+- `req |-> ##[1:$] ack` is **weak** by default in simulation: if the sim ends before `ack`, it does **not** fail.
+- `req |-> s_eventually ack` or `strong(##[1:$] ack)` fails at end of simulation if `ack` never came.
+- In formal, unbounded liveness proves "never deadlocks"; in simulation, prefer a **bounded** window (`##[1:MAX]`) so failures are real and debuggable.
+
+---
+
+## 8. Assert, Assume, Cover in Formal vs. Simulation
+
+| Directive | Simulation | Formal |
+|---|---|---|
+| `assert` | Checked; fails report errors | Tool tries to **prove** it for all legal inputs, or gives a counterexample |
+| `assume` | Checked like an assert (useful to catch illegal stimulus) | **Constrains inputs**: the tool only explores behaviours that satisfy it |
+| `cover` | Counts hits | Tool finds a trace that reaches it (proves reachability) |
+| `restrict` | Ignored | Constrains like `assume` but isn't checked |
+
+**Same file, both worlds:** a property on DUT **inputs** is an `assume` for block-level formal and an `assert` when that block is integrated (its driver is now real RTL). Typically controlled with a macro or parameter.
+
+**Over-constraining danger:** too strong an `assume` makes formal prove properties over an unrealistically small space, or makes the design look correct because the failing inputs are excluded. Every assumption must come from the spec and be reviewed; covers catch over-constraint (unreachable cover = suspicious).
+
+---
+
+## 9. Likely Follow-ups (with model answers)
+
+**Q. `|->` vs. `|=>`?**
+Overlapping (same cycle) vs. non-overlapping (next cycle). `a |=> b` ≡ `a |-> ##1 b`.
+
+**Q. What is a vacuous pass and why care?**
+The antecedent never matched, so nothing was checked. Pair each assertion with a cover of its antecedent/scenario.
+
+**Q. `[->1]` vs. `[=1]`?**
+Goto `[->1]` ends exactly on the occurrence; non-consecutive `[=1]` allows extra cycles after it before the next sequence element.
+
+**Q. Why does an assertion fail one cycle later than you expect?**
+Reading post-edge instead of sampled values; `|=>` vs `|->`; level-sensitive antecedent starting extra attempts.
+
+**Q. How do you attach assertions without touching RTL?**
+`bind` a checker module to the RTL module or instance.
+
+**Q. When would you not use SVA?**
+Complex out-of-order, high-latency data checking → scoreboard/reference model. SVA shines for local protocol and control rules.
+
+**Q. How do you check across clock domains?**
+Each property uses one clock. Check each side in its own domain; CDC correctness itself is for CDC tools and formal, plus specific properties on synchronizer handshakes.
+
+---
+
+## 10. Common Fresher Mistakes
+- Level-sensitive antecedent where an edge (`$rose`) was intended.
+- Using `disable iff` for anything other than reset-like conditions.
+- No covers → vacuous passes go unnoticed.
+- Reading values after the clock edge.
+- Unbounded `##[1:$]` in simulation and assuming it would have caught a hang.
+- Writing one giant property instead of several small, debuggable ones.
+- Over-constraining formal with unreviewed `assume`s.
+
+---
+
+## 11. 60-Second Interview Pitch
+
+> "I use immediate assertions for procedural checks and concurrent assertions for temporal rules. Concurrent properties sample values just before the clock edge, so I always read the waveform there.
+>
+> I write small properties: for a handshake, `$rose(req) |-> ##[1:4] ack`, plus 'req held until ack' and 'data stable while waiting', each with a cover so I know none pass vacuously. I use `disable iff` only for reset. Stalls are modeled with goto repetition, like `(!stall)[->3]`, plus a local variable to check data integrity.
+>
+> When a property fails, I go to the attempt's start time, check the antecedent with sampled values, and walk forward to the failing cycle. The usual suspects are level versus edge antecedents, `|->` versus `|=>`, reset polarity and X's.
+>
+> In formal, input properties become assumes, and I review them carefully because over-constraining hides bugs. Covers that turn out unreachable are my warning sign."
+
+---
+
+## 12. Hands-on Exercise (corrected version of the post's "do this next")
+1. Write the handshake checker from Section 4 and `bind` it to a simple DUT.
+2. Inject a bug (ack at cycle 5) and practice reading the failure: start time, fail time, sampled values.
+3. Change `$rose(req)` to `req` and observe the extra failing attempts.
+4. Write the stall pipeline property (Section 7) and test with random stalls.
+5. If you have access to a formal tool, run the same checker with input rules as `assume`; compare with simulation.
+
+---
+
+## 13. Self-Check
+- [ ] Can I explain immediate vs. deferred vs. concurrent?
+- [ ] Can I explain sampling and read a failure on a waveform?
+- [ ] Can I write the 3 handshake properties + covers from memory?
+- [ ] Can I explain why `disable iff (stall)` is wrong, and write the goto version?
+- [ ] Can I explain assert/assume/cover in sim vs. formal, and over-constraining?
