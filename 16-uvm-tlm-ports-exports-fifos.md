@@ -280,3 +280,16 @@ A follow-up post repeats the same pattern with new invented numbers. Quick corre
 | "**Power estimation**" as a TLM analysis pass | Power is estimated by power tools from switching activity (often captured on emulators), not by a TLM subscriber (Challenge 12) |
 
 **Takeaway:** if a TLM claim mentions **cycles, bandwidth, or hardware platforms**, it's wrong. TLM is untimed, in-simulator communication between testbench components.
+
+### 14.1 A third TLM post
+
+| Claim | Reality |
+|---|---|
+| Every subscriber receives the payload "**in the same delta cycle**" | `write()` calls each subscriber's `write()` **one after another, as function calls**, in the same time step. No delta cycles are involved, and the subscribers **share the same object** (don't modify it, Section 4.1) |
+| One analysis port "fans out to **4 monitor agents**" | Backwards: **monitors produce**, **subscribers consume** (scoreboard, coverage, predictor). Agents aren't subscribers |
+| "Wire a **monitor's export** to a scoreboard's analysis_imp" | The monitor has a **port**. An export is used when a component passes a connection **through** its boundary (e.g., an env exposing its scoreboard's imp) |
+| A driver pulls from a `uvm_tlm_fifo` "while the **sequencer** continues to push" | Drivers pull from the **sequencer** through `seq_item_port` (Section 7). A `uvm_tlm_fifo` is for other producer/consumer pairs |
+| A FIFO depth of 8 "translates to **~80 ns of buffering**" for a 10 Gbps DUT; "size the FIFO to the DUT's burst depth" | Mixes **testbench** objects with **DUT** hardware. A `uvm_tlm_fifo` is untimed and has nothing to do with the DUT's real buffers or nanoseconds |
+| A100 "**30%** faster", EPYC "**45% less inter-process traffic**" | Invented. A simulation is not a set of communicating processes over a network; TLM calls are in-process function calls |
+
+Same rule as Section 14: **cycles, nanoseconds, bandwidth or hardware platforms in a TLM claim → it's wrong.**
