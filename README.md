@@ -26,6 +26,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 17 | [Bus Protocols: AXI, AHB-Lite, PCIe](17-bus-protocols-axi-ahb-pcie.md) | AXI per-ID ordering & interleaving, per-ID scoreboard, AHB-Lite pipelining & two-cycle error, HMASTLOCK, PCIe credit types, infinite credits, credit deadlock |
 | 18 | [Coverage Architecture](18-coverage-architecture.md) | Cycle / transaction / scenario coverage levels, covergroup placement, controlling cross explosion, merging & ranking, static vs. dynamic closure, AXI-Lite slave plan |
 | 19 | [Building a UVM Testbench From Scratch](19-building-uvm-testbench-from-scratch.md) | Bring-up order, file/package structure, working skeleton (interface, driver, monitor, agent, scoreboard, tests), independent reference model, proving the scoreboard can fail |
+| 20 | [Leading Verification: Metrics & Sign-off Decisions](20-leading-verification-metrics-and-signoff-decisions.md) | Milestone-based timeline, effort estimation, metrics dashboard, bug-curve reading, when to stop, low-power/performance/security, escape analysis, asking for resources, behavioural questions |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
