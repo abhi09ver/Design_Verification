@@ -27,6 +27,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 18 | [Coverage Architecture](18-coverage-architecture.md) | Cycle / transaction / scenario coverage levels, covergroup placement, controlling cross explosion, merging & ranking, static vs. dynamic closure, AXI-Lite slave plan |
 | 19 | [Building a UVM Testbench From Scratch](19-building-uvm-testbench-from-scratch.md) | Bring-up order, file/package structure, working skeleton (interface, driver, monitor, agent, scoreboard, tests), independent reference model, proving the scoreboard can fail |
 | 20 | [Leading Verification: Metrics & Sign-off Decisions](20-leading-verification-metrics-and-signoff-decisions.md) | Milestone-based timeline, effort estimation, metrics dashboard, bug-curve reading, when to stop, low-power/performance/security, escape analysis, asking for resources, behavioural questions |
+| 21 | [Protocol Bridge Verification (AXI ↔ PCIe)](21-protocol-bridge-verification-axi-to-pcie.md) | No AXI read-after-write guarantee, AXI4-Lite limits, translation & splitting, byte enables, tags & split completions, error mapping, LCRC vs. TLP errors, end-to-end scoreboard, clock ratios |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
