@@ -298,3 +298,38 @@ No. It updates the mirror. Mismatch detection happens on reads with check enable
 | The predictor "**catches mismatches**" automatically | Same myth as Section 2: the predictor **updates the mirror**; mismatches are found on **checked reads** (`mirror(UVM_CHECK)`, `check_on_read`) |
 | The adapter makes the same register objects drive "simulation and **emulation**" | Partly true: with transaction-based acceleration the **register model and sequences run on the host**, and the adapter feeds the **bus transactor** on the emulator (Challenge 12, Section 5). It doesn't run on the emulator itself |
 | "Cadence Incisive, Mentor Questa" | Now Xcelium and Siemens Questa; RAL is part of UVM and simulator-independent |
+
+### 15.1 A third RAL post: back-door, "RAL enforces…", and lock bits
+
+| Claim | Reality |
+|---|---|
+| RAL classes are "**the sole source of truth** for bus-level stimulus" | RAL covers **register** accesses; data traffic (DMA, streams) uses normal sequences. The real source of truth is the **register specification** (IP-XACT / SystemRDL) that generates **both** the RTL register block and the RAL model, so they can't drift (Section 4) |
+| Back-door "**bypasses the predictor entirely**" | It bypasses the **bus** and the **explicit predictor component** (no bus transaction to observe), but `poke`/`peek` still **update the RAL mirror** directly. What's lost is **bus decode, protocol and side-effect** checking (Section 6) |
+| "Reserve back-door for **stress** only" | Back-door is mainly for **fast setup and non-intrusive observation**; stress testing of the register interface should be **front-door** |
+| RAL "enforces word alignment, endianness, **clock-domain binding**, and **per-field security tags**" | The map handles **bus width, byte addressing and endianness**. RAL has **no clock-domain** concept, and **no built-in security tags**: secure/non-secure access is modelled with **separate maps** (different rights) and/or passing the security attribute through the **`extension`** argument of `write()`/`read()` to your adapter (which sets, e.g., AXI `AxPROT`) |
+| A lock-bit test | Correct concern; but RAL doesn't know about locks **unless you model them** (below) |
+
+**Modelling a lock bit with a field callback** (writes to `ctrl.mode` ignored while `ctrl.lock == 1`):
+```systemverilog
+class lock_cb extends uvm_reg_cbs;
+  `uvm_object_utils(lock_cb)
+  uvm_reg_field lock_fld;
+  function new(string name = "lock_cb"); super.new(name); endfunction
+
+  virtual function void post_predict(input uvm_reg_field  fld,
+                                     input uvm_reg_data_t previous,
+                                     inout uvm_reg_data_t value,
+                                     input uvm_predict_e  kind,
+                                     input uvm_path_e     path,
+                                     input uvm_reg_map    map);
+    if (kind == UVM_PREDICT_WRITE && lock_fld.get_mirrored_value() == 1)
+      value = previous;          // hardware ignores the write while locked
+  endfunction
+endclass
+
+// after the model is built (e.g., env build_phase)
+lock_cb cb = lock_cb::type_id::create("cb");
+cb.lock_fld = regmodel.ctrl.lock;
+uvm_reg_field_cb::add(regmodel.ctrl.mode, cb);
+```
+Then a lock test is meaningful: write `mode` while unlocked (mirror updates), set `lock`, write `mode` again, `mirror(UVM_CHECK)`: the DUT and the model must **both** keep the old value. Cover: write while locked / unlocked, lock set then cleared (if the spec allows unlocking; many lock bits are **sticky until reset**, which is another thing to model and check). Also exclude such fields from bit-bash or the built-in sequence will report false mismatches (Section 8).
