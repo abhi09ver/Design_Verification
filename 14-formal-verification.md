@@ -339,3 +339,28 @@ A templated post suggested this structure. The post itself has no technical cont
 | "You get a counterexample that can't happen in real use" | Formal explores **all** inputs, including illegal ones | Add an **assume** from the spec, never one invented to silence the CEX | The spec clause for the assumption, the same rule **asserted** on the driving block, and covers still reachable after adding it (Section 5) |
 
 **And "which assertion catches the bug earliest"** (from the same post) is a real point: a property at the **source** of a bug (e.g., `full |-> !in_ready` on the FIFO) fires at the faulty cycle, while an end-to-end check (scoreboard, data integrity) fires many cycles later. Write both: local properties to **locate**, end-to-end ones to **guarantee** (Challenge 25, Section 6).
+
+---
+
+## 16. Worked Review: A Formal "Case Study" That Doesn't Hold Together
+
+A post presented an anonymous automotive case study: a BMC run "stopped at 8 cycles yielding unknown"; the fix was cone-of-influence pruning, "replacing 32-bit counters with 4-bit abstract models", a 12-cycle unwind, and "hand-crafted CDC assumptions"; result: "the latch proved safe across **10M random cycles**", plus "a **metastability** bug found".
+
+**What's right:**
+- A **bounded** result is only meaningful if the depth covers the design's **sequential depth** for the behaviour in question (here, a 12-cycle reset-recovery path). That's Section 3.3 and Section 8.
+- **Cone-of-influence reduction** and abstraction are standard convergence tools (Section 6).
+
+**What doesn't hold up (and what an interviewer would challenge):**
+
+| Claim | Problem |
+|---|---|
+| Replace 32-bit counters with **4-bit** models | Narrowing a counter **changes behaviour** (wraps at 16 instead of 2^32), so proofs may no longer apply to the real design. A **safe** abstraction **over-approximates**: cut the counter (free value) and keep only what the property needs, e.g., a free "threshold reached" signal (Section 6, last paragraph) |
+| A 12-cycle unwind means the latch is "**proved safe**" | A 12-cycle BMC shows **no failure within 12 cycles from reset**. A full proof needs **induction / IC3** (Section 14.2) |
+| "Proved safe across **10M random cycles**" | Mixes formal and simulation. Formal results aren't measured in random cycles; 10M simulation cycles **sample** behaviour, they don't prove it |
+| Removing an assumption caused "**unknown**" results and slow solving | Missing assumptions cause **spurious counterexamples** (Section 5), not "unknown". Slow or inconclusive results come from **state-space size and depth** |
+| "**Hand-crafted CDC assumption set**" | Assumptions on CDC behaviour are exactly where **over-constraint** hides bugs. They must come from the spec/clocking architecture and be reviewed; covers must stay reachable (Section 5) |
+| Formal flow "caught a **metastability** bug" | Standard RTL formal and simulation **don't model metastability** (Challenge 12, Section 3.3). What can be found: **CDC protocol** bugs (data not held stable while sampled) with structural CDC tools, or with formal using **metastability-injection** models (random extra delay on synchronizer outputs) |
+| "8-cycle unwind → **1% coverage**", "95% coverage" | Which coverage? Formal coverage has specific meanings (cover reachability, COI, proof core, Section 8); unnamed percentages mean nothing |
+| "Missed **ISO 26262**" because of one property | ISO 26262 (automotive functional safety) compliance covers the **process** and **safety mechanisms** (fault injection, diagnostic coverage metrics), not a single proof result |
+
+**Interview takeaway:** when someone presents a formal success story, ask four things: (1) **proven or bounded**, and at what depth vs. sequential depth? (2) are the **abstractions over-approximations**? (3) were **assumptions reviewed** and covers reachable? (4) which **formal coverage** metric backs the claim?
