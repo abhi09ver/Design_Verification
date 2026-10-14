@@ -335,7 +335,7 @@ A third SVA post. Corrections:
 |---|---|
 | SVA in simulation means "**the tool will prove it works**" | Simulation **checks** the scenarios you ran. Only **formal** proves a property for all inputs (Challenge 14) |
 | AXI-Lite write is the sequence **AW → W → B**, "a one-line property" | **AW and W are independent**: W may come before AW, or in the same cycle. The rule is that **B comes only after both** handshakes (needs a little tracking, 15.1) |
-| A "**single-cycle** property for the address handshake" | Handshake rules (valid held until ready, payload stable) span **two cycles**: `awvalid && !awready |=> awvalid && $stable(awaddr)` (Challenge 10) |
+| A "**single-cycle** property for the address handshake" | Handshake rules (valid held until ready, payload stable) span **two cycles**: `awvalid && !awready \|=> awvalid && $stable(awaddr)` (Challenge 10) |
 | Simulators "**automatically** generate coverage for each assertion" | Assertion coverage must be **enabled** with compile/run options; it reports attempts, successes, vacuous successes and failures. To see which **scenarios** happened, write **`cover property`** statements (Challenge 13, Section 7) |
 | "Eliminates **90%** of spurious bugs" | Invented number |
 | Print the offending values in the `$error` message | Good advice, with a trap (15.2) |
