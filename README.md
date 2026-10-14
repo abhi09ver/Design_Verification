@@ -29,6 +29,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 20 | [Leading Verification: Metrics & Sign-off Decisions](20-leading-verification-metrics-and-signoff-decisions.md) | Milestone-based timeline, effort estimation, metrics dashboard, bug-curve reading, when to stop, low-power/performance/security, escape analysis, asking for resources, behavioural questions |
 | 21 | [Protocol Bridge Verification (AXI ↔ PCIe)](21-protocol-bridge-verification-axi-to-pcie.md) | No AXI read-after-write guarantee, AXI4-Lite limits, translation & splitting, byte enables, tags & split completions, error mapping, LCRC vs. TLP errors, end-to-end scoreboard, clock ratios |
 | 22 | [PCIe Link Training & Recovery (LTSSM)](22-pcie-ltssm-link-recovery.md) | LTSSM states, Recovery triggers, speed/width changes, PIPE, no TLP loss across retrain, scaled timeouts, Recovery monitor, coverage; AXI 4KB & unaligned bursts, AHB ERROR rules |
+| 23 | [SystemVerilog OOP for Verification](23-systemverilog-oop.md) | Handles vs. objects, shallow vs. deep copy, virtual vs. non-virtual dispatch, `$cast`, abstract & interface classes, `kind` field vs. subclasses, constraint inheritance, how UVM uses OOP |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
