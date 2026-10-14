@@ -304,7 +304,7 @@ A follow-up post repeats the AXI "ready within N cycles" myth (Challenge 10, Sec
 
 ```systemverilog
 // Spec: grant exactly 3 cycles after req rises
-a_exact:   assert property ($rose(req) |-> !gnt ##1 !gnt ##1 gnt);   // fails on early AND late grant
+a_exact:   assert property ($rose(req) |-> ##1 !gnt ##1 !gnt ##1 gnt);   // cycle 1: no, 2: no, 3: grant
 
 // Spec: grant within 1 to 3 cycles
 a_range:   assert property ($rose(req) |-> ##[1:3] gnt);             // accepts 1, 2 or 3
@@ -313,7 +313,7 @@ a_range:   assert property ($rose(req) |-> ##[1:3] gnt);             // accepts 
 c_lat_min: cover property ($rose(req) ##1 gnt);
 c_lat_max: cover property ($rose(req) ##1 !gnt ##1 !gnt ##1 gnt);
 ```
-(`##3 gnt` alone wouldn't fail on an **early** grant at cycle 1 or 2; the `!gnt` terms make early grants fail too. Note `a_exact` is written with `##1` steps from the `$rose(req)` cycle, so `gnt` is checked 3 cycles later.)
+(`##3 gnt` alone wouldn't fail on an **early** grant at cycle 1 or 2; the `!gnt` terms make early grants fail too. Count carefully: the consequent starts in the **same** cycle as `$rose(req)` (cycle 0), so the leading `##1` is needed to put `gnt` at cycle 3. Writing `!gnt ##1 !gnt ##1 gnt` without it would check cycle 2, an off-by-one in the assertion itself.)
 
 ### X in the antecedent
 
