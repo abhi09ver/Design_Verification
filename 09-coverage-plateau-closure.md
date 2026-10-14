@@ -185,3 +185,26 @@ Coverage model reviewed against the vplan early; legal vs. bias constraints sepa
 - [ ] Can I explain the two ways formal helps coverage, and its caveats?
 - [ ] Can I spot a sampling bug from the symptom?
 - [ ] Can I explain why 85% may or may not be a problem?
+
+---
+
+## 13. Addendum: A Second Coverage-Plateau Post
+
+The good part: grouping coverage by **feature and risk** and putting effort where risk is highest (that's Section 4 step 2 and Challenge 06's risk matrix; `option.weight` can encode it in covergroups, Challenge 18). The rest:
+
+| Claim | Reality |
+|---|---|
+| "**Seed the random pool with a curated seed set**" → 3× fewer zero-hit bins | Same myth as Section 2: seeds have no meaning across code changes. Curate **constraints and sequences**, not seeds |
+| A daily loop that "**extracts uncovered bins and generates targeted sequences**" automatically | Extracting holes is easy to automate; **writing** the targeted sequence is mostly an engineering task (ML-assisted tools help tune constraints, Section 5.5). The loop's real value is the **classification** of each hole (Section 3) |
+| Formal "**proves corner cases random can't hit**", eliminating stimulus | Formal does one of two things for a hole: proves it **unreachable** (→ reviewed exclusion), or produces a **witness trace** (→ the corner is reachable, so it still needs checking). See 13.1 for when formal can **replace** simulation coverage |
+| "In my experience at ARM…", "95% → 99% in two weeks", "30% faster" | Unverifiable first-person numbers |
+
+### 13.1 When can a formal result count toward coverage sign-off?
+
+Only by **explicit agreement in the verification plan**, for a specific block or feature, when:
+1. The feature's **properties are proven** (not just bounded), or bounded at an agreed depth ≥ the required sequential depth.
+2. The related **covers are reachable** under the formal assumptions (no over-constraint).
+3. The **assumptions are reviewed** and asserted on the driving logic.
+4. **Formal coverage** (proof core or mutation) shows the relevant logic was actually exercised by the proofs.
+
+Then the plan can say "feature X: verified by formal; simulation coverage for X waived with reference to proof report Y". Without that agreement, a formal run doesn't close a simulation coverage bin.
