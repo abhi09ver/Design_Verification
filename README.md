@@ -21,6 +21,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 12 | [Emulation and FPGA Prototyping](12-emulation-and-fpga-prototyping.md) | Platform spectrum & realistic speeds, what each finds/misses, 2-state & no timing, transaction-based acceleration, emulator debug |
 | 13 | [SVA Beyond the Happy Path](13-sva-beyond-happy-path.md) | What `disable iff` hides, reset properties, error responses, illegal states, correct AXI W-channel rules, assertion coverage, testing the checkers |
 | 14 | [Formal Verification](14-formal-verification.md) | FPV vs. equivalence checking, proven/CEX/bounded, assumptions & over-constraint, convergence techniques, symbolic FIFO data integrity, formal coverage & sign-off |
+| 15 | [UVM Register Model (RAL)](15-uvm-register-model-ral.md) | Block/map/reg/field, register generation, adapter, explicit vs. implicit prediction, desired/mirrored, front- vs. back-door, volatile fields, built-in sequences, SoC submaps |
 
 ## How each file is structured
 
