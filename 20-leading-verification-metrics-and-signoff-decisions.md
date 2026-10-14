@@ -209,3 +209,47 @@ Feature list with complexity and risk, reuse factor, historical data, method mix
 - [ ] Can I list 6 dashboard metrics and their warning signs?
 - [ ] Can I answer "when do we stop?" and "tape-out is fixed, what now?"
 - [ ] Do I have 3 real STAR stories: a bug found, a bug missed, a disagreement?
+
+---
+
+## 15. Addendum: Who Owns Which Sign-off (DV vs. Physical vs. Others)
+
+A post presented as a "senior verification lead briefing" listed IR-drop, interposer crosstalk, side-channel analysis and DVFS ramps as things a DV lead must "prove coverage" for with tools like Voltus and PrimeTime PX. A senior candidate should know **which team signs off what**, and how DV connects to each.
+
+### 15.1 The sign-off map
+
+| Sign-off area | Typical owner | Main method / tools | DV's role |
+|---|---|---|---|
+| **Functional correctness** | DV | Simulation (UVM), formal, emulation | **Owns it** |
+| **CDC / RDC** | DV or design | Structural CDC/RDC tools, targeted formal | Owns or co-owns; adds protocol checks on synchronizers |
+| **Low-power intent** (power states, isolation, retention, sequencing) | DV + power architects | **UPF-aware simulation**, static low-power checks | Owns the **functional** part |
+| **Timing** (setup/hold, all corners) | Physical design / STA | **Static timing analysis** (e.g., PrimeTime, Tempus) | None directly; gate-level sim with SDF for specific checks |
+| **Signal integrity / crosstalk** (incl. 2.5D/3D interposers) | Physical design / SI | SI-aware STA, extraction, package/interposer analysis | None |
+| **Power integrity / IR drop** | Physical design / PI | Static + dynamic IR-drop and EM analysis (e.g., Voltus, RedHawk) | Provides **realistic activity** (often from **emulation**) as input |
+| **Power estimation** | Power team | Power analysis (e.g., PrimeTime PX / PrimePower, Joules) | Provides activity (SAIF/FSDB) from representative tests |
+| **DFT** (scan, BIST, test coverage) | DFT team | ATPG, BIST, gate-level pattern sims | Sometimes runs DFT pattern simulations |
+| **Physical verification** (DRC, LVS) | Physical design | Calibre, IC Validator, etc. | None |
+| **Security** | Security architects + DV | Threat model, access-control tests, **information-flow formal**; side-channel analysis by specialists | Owns functional security checks (access control, debug lock, secure/non-secure isolation) |
+| **Functional safety** (e.g., ISO 26262) | Safety team + DV | Safety mechanisms, **fault injection** campaigns, diagnostic-coverage metrics | Runs fault-injection simulations, verifies safety mechanisms |
+| **Post-silicon validation** | Validation team | Silicon bring-up, system tests | Reproduces silicon failures on emulation/simulation |
+
+### 15.2 Specific corrections
+
+| Claim | Reality |
+|---|---|
+| "**UVM-2.0**" | There's no UVM 2.0. UVM is standardized as **IEEE 1800.2** (with Accellera library releases); **UVM-ML** is a separate multi-language interoperability library, not a metrics system |
+| "**AI-generated stimulus**" as a mandatory requirement | ML-assisted regression tools exist (Challenge 09, Section 5.5); they're optional aids, not a requirement |
+| Metastability missed because "random traffic never hits the **setup/hold window**" | RTL simulation has **no setup/hold**: it can't show metastability at all. Async FIFO / CDC correctness comes from **CDC tools**, correct **synchronizer and Gray-code** design, and formal (optionally with **metastability injection**) (Challenge 14, Section 16) |
+| Power-gate sequencing bugs "dropped **yield** from 96% to 88%" | **Yield** is about manufacturing defects. A functional sequencing bug makes **every** chip fail in that scenario; it's a functional escape, not a yield loss |
+| "IR-drop functional errors" as a DV coverage item | IR drop is a **power-integrity sign-off** item; DV's contribution is realistic **activity** for dynamic analysis |
+| "Side-channel formal analysis required for RISC-V cores" | Required only where the **threat model** demands it (e.g., crypto engines). Most security verification is access control and isolation |
+| "Deadlock: timeout taken as success" | A good point: a timed-out test is a **failure**; and deadlock needs **bounded-progress assertions** or formal liveness (Challenge 25, Section 9) |
+| "RISC-V compliance suite skipped" | Good point for CPU teams: see 15.3 |
+| "If you cannot prove coverage with these tools, you are not a senior lead" | Gatekeeping with a tool list. Seniority shows in **knowing the sign-off map**, owning DV's part, and **feeding** the other sign-offs correctly |
+
+### 15.3 Bonus: how RISC-V cores are typically verified (for CPU-focused roles)
+- **Architectural compliance tests** (the RISC-V architecture test suite) for ISA conformance.
+- **Random instruction generation** (e.g., open-source generators such as riscv-dv) to stress pipelines, hazards and exceptions.
+- **Lock-step co-simulation with an ISS** (instruction-set simulator such as Spike): compare architectural state (PC, registers, CSRs) after **every retired instruction**; the first divergence points straight at the bug.
+- **Formal** on pipeline control, hazards and specific ISA properties (open frameworks exist for RISC-V formal).
+- **Micro-architectural coverage** (hazards, forwarding, exceptions: Challenge 11, Section 6).
