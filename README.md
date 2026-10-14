@@ -16,6 +16,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 07 | [UVM Pillars: Phasing, Factory, config_db](07-uvm-pillars-phasing-factory-config-db.md) | 9 common + 12 run-time phases, objections & drain time, clocking blocks for races, factory overrides & pitfalls, config_db precedence & performance |
 | 08 | [SystemVerilog Assertions (SVA)](08-sva-assertions.md) | Immediate vs. concurrent, sampling, implication operators, vacuity, goto `[->n]`, local variables, stalls, liveness, assume/cover in formal, debugging a failing property |
 | 09 | [Coverage Plateau at 85%](09-coverage-plateau-closure.md) | Six causes of coverage holes, sampling bugs, targeted sequences, config sweeps, formal unreachability & witness traces, exclusions, worked arbiter example |
+| 10 | [Ready/Valid Handshake Assertions](10-ready-valid-handshake-assertions.md) | Ready/valid rules, stall vs. error, reference-queue checker for dropped data, bounded deadlock check, ID-matched latency, simulator disagreements |
 
 ## How each file is structured
 
