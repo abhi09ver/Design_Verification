@@ -222,3 +222,23 @@ When coverage plateaus on a specific hole, for a reproduction of a known bug, fo
 - [ ] Can I explain why the post's bug story is inconsistent?
 - [ ] Can I describe a tiered regression and coverage ranking?
 - [ ] Do I have my own STAR bug story, with how I proved it was real?
+
+---
+
+## 11. Addendum: "What's the Difference Between a Good Seed and a Bad Seed?"
+
+A second CRV post asks this as an interview question and claims "a poor seed can lead to **30% reduced coverage**" and "a well-crafted seed improves efficiency by **up to 25%**". It also says to learn "**UVM's built-in CRV features**".
+
+| Claim | Reality |
+|---|---|
+| Seeds have "quality"; a "well-crafted seed" | Seeds aren't crafted. A seed just selects **one** sequence from the space your **constraints** define. Any seed is as good as any other **on average**; variation between seeds is **luck**, and it changes when the code changes (Section 2.2, Challenge 09 Section 2) |
+| 30% / 25% figures | Invented |
+| "UVM's built-in CRV features" | **Randomization is a SystemVerilog language feature** (`rand`, `randc`, `constraint`, `randomize()`, `dist`, `solve…before`). UVM adds the **structure** around it: sequences, sequencers, factory overrides and config to steer stimulus |
+
+### The answer that impresses
+
+> "A seed has no quality of its own. It picks one path through the stimulus space my constraints define. If coverage differs a lot between seeds, that tells me the interesting scenarios are **rare** under my constraints. The fix is to bias them with `dist`, add scenario constraints or targeted sequences, not to hunt for lucky seeds. And a seed that 'worked' stops meaning anything once the testbench changes, because of random stability.
+>
+> Seeds matter for two things: **reproducing** a failure, so I always log them, and **coverage grading**: ranking test-and-seed combinations on a frozen snapshot to build an efficient regression, while still running fresh seeds every night."
+
+Related follow-up: **"How do you balance coverage and performance?"** → rank tests by unique coverage, tier the regression (smoke / nightly / weekly), stop adding seeds when the coverage-vs-seeds curve flattens, and change stimulus instead (Section 4, Q2).
