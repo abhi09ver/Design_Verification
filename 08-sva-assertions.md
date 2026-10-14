@@ -378,3 +378,60 @@ a_good_msg: assert property (wvalid && !wready |=> $stable(wdata))
   else $error("wdata changed while stalled: now %h (sampled)", $sampled(wdata));
 ```
 Use **`$sampled()`** in action blocks. Include IDs/addresses (as the post suggests), but sampled.
+
+---
+
+## 16. Addendum: Where Assertions Can Live, and a Classic "Complex Property" Question
+
+A fourth SVA post. Corrections:
+
+| Claim | Reality |
+|---|---|
+| "**Instantiate the property inside a UVM monitor**" | **Concurrent assertions can't be written in classes** (monitors, scoreboards). They live in **modules, interfaces, or `checker` blocks**, attached with **`bind`** (Section 4). Classes can only use **immediate** assertions. Link to coverage via `cover property` in the same checker, or by having the monitor observe the same scenario |
+| "Immediate vs. concurrent: know when to use **assert vs. cover**" | Two separate ideas. **Immediate vs. concurrent** is *how* it's evaluated (procedural vs. clocked, Section 3.1). **assert vs. assume vs. cover** is *what* it does (Section 8). Both immediate and concurrent assertions can be used with assert/cover |
+| "`disable iff` is **not optional**; red flag if omitted" | Use it for normal-operation rules, but it **hides reset behaviour**: you also need reset properties without it (Challenge 13, Section 3) |
+| "One-line **data integrity** assertion for a FIFO" | Data integrity needs **tracking**: a reference queue (Challenge 10, Section 5) or symbolic tracking in formal (Challenge 14, Section 7) |
+| "IEEE 1800-2017 intent"; "a real bug at Intel or NVIDIA" | Current standard is 1800-2023; and tell **your own** bug story (Challenge 24) |
+
+### 16.1 The question: "`req` → `ack` within 5 cycles, and no second `req` until `ack`"
+
+**Clarify first** (interviewers reward this): is `req` a one-cycle **pulse** or a **level** held until `ack`? Can a new `req` come in the **same cycle** as `ack`? Here: `req` is a one-cycle pulse, and a new `req` is allowed only **after** the `ack` cycle.
+
+```systemverilog
+checker req_ack_chk (logic clk, rst_n, req, ack, int MAX_LAT = 5);   // reusable, parameterized
+  default clocking @(posedge clk); endclocking
+  default disable iff (!rst_n);
+
+  // 1. ack within 1..MAX_LAT cycles of req
+  a_ack_in_time: assert property (req |-> ##[1:MAX_LAT] ack)
+    else $error("ack not seen within %0d cycles of req", MAX_LAT);
+
+  // 2. no new req until ack has been seen (up to and including the ack cycle)
+  a_no_2nd_req:  assert property (req |=> (!req until_with ack))
+    else $error("second req before ack");
+
+  // 3. no ack without an outstanding req
+  // (aux tracking: outstanding is set by req, cleared by ack)
+  logic outstanding;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) outstanding <= 0;
+    else if (req) outstanding <= 1;
+    else if (ack) outstanding <= 0;
+  a_no_spurious_ack: assert property (ack |-> outstanding);
+
+  // Covers: the interesting latencies and back-to-back
+  c_lat_min:    cover property (req ##1 ack);
+  c_lat_max:    cover property (req ##MAX_LAT ack);
+  c_back2back:  cover property (req ##[1:MAX_LAT] ack ##1 req);
+endchecker
+
+// Reuse across several agents/instances without touching RTL:
+bind dut_top req_ack_chk u_chk0 (.clk(clk), .rst_n(rst_n), .req(req0), .ack(ack0), .MAX_LAT(5));
+bind dut_top req_ack_chk u_chk1 (.clk(clk), .rst_n(rst_n), .req(req1), .ack(ack1), .MAX_LAT(8));
+```
+Notes worth saying out loud:
+- `until_with` means "`!req` holds **up to and including** the cycle where `ack` holds". Use plain `until` if a new `req` is allowed **in** the `ack` cycle.
+- `until_with` is **weak**: alone it would pass if `ack` never came. Assertion 1 supplies the bound.
+- If `req` is a **level** held until `ack`, use `$rose(req)` as the antecedent and add "req held until ack" (Section 4) instead of assertion 2.
+- If you can't use `checker` blocks (tool support), the same code works in a **module** with parameters, attached with `bind`.
+- Assertion 3 uses the auxiliary `outstanding` flag: same idea as the tracking code in 15.1. It assumes `req` and `ack` never occur in the same cycle, which assertion 2 enforces.
