@@ -205,3 +205,28 @@ As soon as the architecture/spec draft exists, in parallel with RTL design. Earl
 - [ ] Can I build a small risk matrix and justify priorities?
 - [ ] Can I list 8 sign-off criteria?
 - [ ] Can I explain why TPUs, "IEEE 1800 coverage model" and "lock before RTL" are wrong?
+
+---
+
+## 13. Addendum: A Second Verification-Plan Post (and a Real Compute Budget)
+
+| Claim | Reality |
+|---|---|
+| "In my experience … **30% fewer post-silicon bugs**, budget variance under **5%**" | Unverifiable first-person statistics. Quote only numbers from **your** projects (Challenge 20, Section 2) |
+| H100 bandwidth "forces early verification of the memory controller's **timing closure**" | **Timing closure** is physical design + **STA**, not DV. DV verifies the controller's **function and performance** (throughput, latency, ordering) against the spec |
+| Product specs (H100 bandwidth, "TPU v5 with a 256-lane systolic array") as plan inputs | Use **your** design's architecture spec. Numbers quoted in posts are often wrong or for a different product variant |
+| "**99.9%** arithmetic-unit coverage target" | Targets are **100% of planned bins** with reviewed waivers (Section 6); arbitrary decimals mean nothing |
+| Budget testbenches with "**AWS F1 FPGA** instances at **$0.12 per core-hour**" | FPGA instances aren't where RTL simulation regressions run; simulators run on **CPU** machines (Section 2.1). Cloud pricing is per **instance-hour** and changes; use current pricing. And the dominant cost is usually **simulator licences**, not compute |
+| "Reserve **15%** of the schedule" for risk | A buffer for unknowns is good practice; the size should come from **risk and history**, stated as an assumption (Challenge 20, Section 4) |
+
+### 13.1 The real regression budget (a useful senior-level calculation)
+
+```
+Nightly CPU-hours  =  Σ over tests ( seeds_per_night × avg_runtime_hours )
+Licences needed    ≈  Nightly CPU-hours / available_hours_per_night      (one licence per concurrent job)
+Machines needed    ≈  concurrent_jobs / jobs_per_machine                  (limited by memory per job)
+```
+
+Example: 300 tests × 10 seeds × 0.2 h = **600 CPU-hours** per night. With a 10-hour nightly window you need **~60 concurrent jobs**, so **~60 simulator licences**, plus machines with enough memory for 60 jobs.
+
+If you only have 30 licences, the options are: **rank tests** (Challenge 02) and cut redundant seeds, move long tests to a **weekly** run, speed up tests (less logging, shorter tests, no waveform dumping in regression), or ask for licences **with this data** (Challenge 20, Section 9). Put this calculation in the vplan's resource section; it's the honest version of "bake the cost model into the plan from day one".
