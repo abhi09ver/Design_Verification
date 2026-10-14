@@ -19,6 +19,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 10 | [Ready/Valid Handshake Assertions](10-ready-valid-handshake-assertions.md) | Ready/valid rules, stall vs. error, reference-queue checker for dropped data, bounded deadlock check, ID-matched latency, simulator disagreements |
 | 11 | [Functional vs. Code Coverage](11-functional-vs-code-coverage.md) | Code coverage types, what each metric misses, coverage ≠ checking, exclusions & sign-off, 4-stage pipeline coverage matrix |
 | 12 | [Emulation and FPGA Prototyping](12-emulation-and-fpga-prototyping.md) | Platform spectrum & realistic speeds, what each finds/misses, 2-state & no timing, transaction-based acceleration, emulator debug |
+| 13 | [SVA Beyond the Happy Path](13-sva-beyond-happy-path.md) | What `disable iff` hides, reset properties, error responses, illegal states, correct AXI W-channel rules, assertion coverage, testing the checkers |
 
 ## How each file is structured
 
