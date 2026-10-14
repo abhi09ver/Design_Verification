@@ -8,6 +8,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | # | Topic | Key concepts |
 |---|---|---|
 | 01 | [The `uvm_config_db` "Phasing Trap"](01-uvm-config-db-phasing-trap.md) | `create()` vs `build_phase`, config_db lookup (scope/name/type), factory overrides, `super.build_phase`, objections, debug flow |
+| 02 | [Constrained-Random Verification Storytelling](02-constrained-random-verification-storytelling.md) | Constraint layering, `dist`/`soft`/`solve-before`, seeds vs. constraints, regression budgeting, coverage ranking, STAR bug story |
 
 ## How each file is structured
 
