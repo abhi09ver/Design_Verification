@@ -485,7 +485,7 @@ It checks an **internal pointer**, so it only works for this implementation. An 
 ### Smaller points
 - `|-> ##1` is the same as `|=>`; the latter is clearer.
 - `disable iff (reset)` assumes an **active-high** reset; check the polarity, and add reset properties separately (Challenge 13).
-- The message should print **sampled** values: `$error("wr_ptr %0d, expected %0d", $sampled(wr_ptr), $sampled($past(wr_ptr)) + 1)`... or simpler, print `$sampled(wr_ptr)` and let the waveform show the rest (Section 15.2).
+- The message should print **sampled** values, e.g. `$error("wr_ptr=%0d after write", $sampled(wr_ptr))`, and let the waveform show the history (Section 15.2).
 - Add **covers**: write when one entry from full, write at pointer wrap, write and read in the same cycle.
 - Claims from the post: it "runs in parallel with every stimulus" but only fires when stimulus **reaches** the scenario; "a scoreboard would miss the temporal relationship": a scoreboard catches the **data** effect, the assertion **localizes** it (Challenge 25, Section 6); "synthesizable-friendly": a subset of SVA can be synthesized for emulation, but that's a tool feature, not why it catches bugs.
 
