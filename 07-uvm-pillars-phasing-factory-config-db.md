@@ -325,3 +325,13 @@ Same "8 phases" and `uvm_factory::create` errors as Section 2, plus these:
 | Broadcast a parameter "**to every monitor**" via `config_db` | Put it in a **config object** set once, with a narrow scope (Section 5.3) |
 | "Portable across FPGA boards or **ASIC corners**" | Corners are a timing sign-off concept, not a testbench setting (Challenge 18, Section 2) |
 | OpenTitan / AMD examples | Unverifiable details. (OpenTitan's open-source DV is real and worth reading, but read its actual code rather than quoting a post) |
+
+### 13.1 A third version of the same post
+
+Repeats "8 phases" and the GPU-simulation myth (Section 13), and adds:
+
+| Claim | Reality |
+|---|---|
+| The factory "can **clone any component** on demand" | The factory **creates** objects of a registered type (applying overrides). `clone()` is a `uvm_object` method, and **components can't be cloned** (UVM reports an error for `uvm_component::clone`): each component needs its own `create()` with a unique name and parent |
+| Spin up "thousands of agents across a **multi-core** testbench" | Mainstream SystemVerilog simulation of a testbench runs essentially **single-threaded**; more agents mean more work for the same core. Instantiate agents with a loop + `create()` and per-instance config, sized to the DUT's real interface count |
+| "Skipping a phase" causes nondeterministic failures | You don't "skip" phases: UVM runs all of them. Problems come from doing work in the **wrong** phase (e.g., getting config after children are built, Challenge 01) |
