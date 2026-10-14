@@ -238,3 +238,31 @@ Either works. A virtual sequencer gives one place for handles and supports `defa
 - [ ] Can I explain why `start_item` on a virtual sequencer is wrong?
 - [ ] Can I swap a sub-sequence with a factory override from the command line?
 - [ ] Can I explain `disable fork` scope and lock vs. grab?
+
+---
+
+## 11. Addendum: A Second Post on the Same Topic
+
+A follow-up post repeats the "forwarding" myth (Section 2.1) and adds a new code error.
+
+| Claim | Reality |
+|---|---|
+| Virtual sequencer "**arbitrates** calls" and "**forwards the next_item request** to the child sequencer" | Same myth as Section 2.1. The virtual sequencer holds **handles**; the virtual sequence starts sub-sequences explicitly on them. **Arbitration** happens inside each **real** sequencer, between the sequences running on it |
+| `uvm_config_db#(virtual sequencer)::set(null, "*", "vseqr", vseqr_handle);` | **Won't compile.** In SystemVerilog, `virtual` before a type means a **virtual interface**. The parameter must be the **class type**, e.g. `uvm_config_db#(soc_vsqr)`. Also `set(null, "*", ...)` matches **every** component (Challenge 01, Q4) |
+| Connect the virtual sequencer to agent sequencers "**via `uvm_config_db`**" | Possible, but fragile. The usual way is **direct assignment in the env's `connect_phase`** (Section 3.3); and the test simply calls `vseq.start(env.vsqr)` with no config_db needed |
+| "Print the handle's name at the start to **confirm binding**" | Printing the virtual sequencer's name proves almost nothing: the usual bug is a **null sub-sequencer handle** inside it. Check each one with a fatal (below) |
+| "No driver" errors come from a **missing config_db entry** | Typical real causes: a **null sub-sequencer handle** (forgot the connect_phase assignment, or agent is **passive**), or starting an **item-generating** sequence directly on the **virtual** sequencer (which has no driver) |
+| "Typically 30–40% fewer lines of code" | Invented number |
+| Intel Agilex / Synopsys / Incisive mentions | Irrelevant to how virtual sequences work |
+
+### A useful binding check (instead of printing a name)
+
+```systemverilog
+// in the base virtual sequence
+task pre_body();
+  if (p_sequencer.pcie_sqr == null) `uvm_fatal("VSEQ", "pcie_sqr handle is null: check env connect_phase / agent is_active")
+  if (p_sequencer.ddr_sqr  == null) `uvm_fatal("VSEQ", "ddr_sqr handle is null")
+  if (p_sequencer.acc_sqr  == null) `uvm_fatal("VSEQ", "acc_sqr handle is null")
+endtask
+```
+Better still: do the same null checks in the env's `end_of_elaboration_phase`, so the problem is reported at **time 0**, before any test runs, and skip the check for agents that are intentionally passive.
