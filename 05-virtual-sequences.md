@@ -322,6 +322,8 @@ When the DUT accepts several requests before answering, the driver can't wait fo
 
 **Driver: complete items early, send responses later, tagged with the request's IDs**
 ```systemverilog
+mem_txn pending[int];                               // outstanding requests, keyed by DUT tag
+
 task run_phase(uvm_phase phase);
   fork
     forever begin                                   // request side
