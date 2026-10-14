@@ -284,3 +284,43 @@ Each property uses one clock. Check each side in its own domain; CDC correctness
 - [ ] Can I write the 3 handshake properties + covers from memory?
 - [ ] Can I explain why `disable iff (stall)` is wrong, and write the goto version?
 - [ ] Can I explain assert/assume/cover in sim vs. formal, and over-constraining?
+
+---
+
+## 14. Addendum: A Second Post on the Same Topic
+
+A follow-up post repeats the AXI "ready within N cycles" myth (Challenge 10, Section 2) and adds two subtle errors worth knowing.
+
+| Claim | Reality |
+|---|---|
+| `##[1:3]` "**catches off-by-one errors**" | A **range accepts every latency inside it**. If the spec says *exactly 3 cycles* and the RTL responds in 2, `##[1:3]` **passes**. Use `##3` (plus `!grant` in cycles 1–2 if early grants are illegal) for a fixed latency; use a range only when the spec allows a range |
+| "**`disable_if`** for reset or power-down" | The keyword is **`disable iff`**. And disabling during power-down hides power-sequencing bugs: write separate power-state properties (Challenge 13, Section 3) |
+| Add **`$isunknown`** checks to **prevent X from triggering spurious failures** | Backwards. In SVA a boolean that evaluates to **X is treated as false**, so an X on the **antecedent** makes the property **silently not fire**. That hides X bugs. Use `$isunknown` in **its own assertion** to **detect** X (`assert property (!$isunknown(req))`), never to suppress checks |
+| Cover "**hits 95% of the time**" means the critical path is exercised | A cover counts **matches**; "% of cycles" isn't a meaningful target. A high hit count on the **happy path** says nothing about corners. What matters: covers for the **specific corner scenarios** (minimum latency, maximum latency, back-to-back, during back-pressure) are **each hit** |
+| "3-cycle request→grant latency is **typical for a PCIe controller**" | Latency bounds come from **your design spec**, not from a "typical" value |
+| Review covers in "**Cadence Incisive**" | Older simulator name (now Xcelium). Tool choice doesn't matter here |
+
+### Exact vs. range latency (the off-by-one point)
+
+```systemverilog
+// Spec: grant exactly 3 cycles after req rises
+a_exact:   assert property ($rose(req) |-> !gnt ##1 !gnt ##1 gnt);   // fails on early AND late grant
+
+// Spec: grant within 1 to 3 cycles
+a_range:   assert property ($rose(req) |-> ##[1:3] gnt);             // accepts 1, 2 or 3
+
+// Corner covers for the range version: each must be hit
+c_lat_min: cover property ($rose(req) ##1 gnt);
+c_lat_max: cover property ($rose(req) ##1 !gnt ##1 !gnt ##1 gnt);
+```
+(`##3 gnt` alone wouldn't fail on an **early** grant at cycle 1 or 2; the `!gnt` terms make early grants fail too. Note `a_exact` is written with `##1` steps from the `$rose(req)` cycle, so `gnt` is checked 3 cycles later.)
+
+### X in the antecedent
+
+```systemverilog
+// If req is X, this property never starts an attempt: X → treated as false
+a_hs:     assert property ($rose(req) |-> ##[1:3] gnt);
+// So check X explicitly, separately:
+a_req_x:  assert property (!$isunknown(req));
+a_gnt_x:  assert property (req |-> !$isunknown(gnt));
+```
