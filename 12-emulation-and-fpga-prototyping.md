@@ -218,3 +218,14 @@ When must part of the DUT stay in software? Only for parts that **can't** be emu
 ### 12.2 Interview answer (30 seconds)
 
 > "I put the entire DUT plus synthesizable transactors on the emulator and keep the class-based testbench on the host, communicating per transaction. Splitting the DUT itself across simulator and emulator forces a per-cycle round trip, and Amdahl's law kills the speedup. And an FPGA prototype never replaces sign-off: it validates function and software, while timing, power and physical sign-off happen on the ASIC implementation."
+
+### 12.3 A third emulation post
+
+| Claim | Reality |
+|---|---|
+| Put datapaths on **Palladium** and control blocks on **ZeBu**, for the same DUT | Palladium (Cadence) and ZeBu (Synopsys) are **competing platforms** with different compilers and runtimes; one DUT isn't split across both. Choose one platform for the DUT; keep the **testbench** on the host (Section 12.1) |
+| "High-frequency datapaths where **cycle-accurate timing** matters" go to emulation | Emulation is **cycle-accurate but has no timing** (no delays). Timing is STA's job (Section 3.3) |
+| Emulation validates "timing, power intent, and **packaging** constraints" | **Timing:** no. **Packaging:** no. **Power intent:** partly; some platforms support **UPF-aware emulation** of power states and switching, and emulation **activity** feeds power estimation (Section 4) |
+| Gate: "**≥95% functional and ≥80% toggle coverage** before moving to emulation" | Emulation entry is gated on **maturity** (block-level regressions passing, integration smoke tests running), not on coverage closure, which happens later. Toggle coverage as an entry gate has no basis |
+| "Three-day silicon-prototype spin-up on a **RISC-V evaluation board**" | FPGA prototype bring-up (partitioning, clocks, memories, I/O) usually takes **weeks to months**. A RISC-V eval board is unrelated to prototyping **your** design |
+| "Intel 7nm FinFET tape-out calendar", "30% time-to-first-bug" | Same name-drop and invented-number pattern as earlier posts |
