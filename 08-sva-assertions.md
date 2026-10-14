@@ -435,3 +435,16 @@ Notes worth saying out loud:
 - If `req` is a **level** held until `ack`, use `$rose(req)` as the antecedent and add "req held until ack" (Section 4) instead of assertion 2.
 - If you can't use `checker` blocks (tool support), the same code works in a **module** with `parameter int MAX_LAT = 5`, attached with `bind`. Cycle-delay bounds like `##[1:MAX_LAT]` must be **elaboration-time constants**; the module-parameter form guarantees that on every tool.
 - Assertion 3 uses the auxiliary `outstanding` flag: same idea as the tracking code in 15.1. It assumes `req` and `ack` never occur in the same cycle, which assertion 2 enforces.
+
+### 16.2 A fifth SVA post (truncated): assertions inside UVM components
+
+The post suggests "an `uvm_analysis_imp` that fires an `assert` every time a transaction hits the monitor". That's a **valid technique**, but be precise about what it is:
+
+| | Concurrent SVA (module / interface / checker, via `bind`) | Immediate assertion in a UVM subscriber's `write()` |
+|---|---|---|
+| Sees | Signals, **every clock**, sampled values | **Completed transactions** only |
+| Good for | Cycle-level rules: handshakes, stability, latency, X | Transaction-level rules: legal field combinations, response vs. request, ordering |
+| Reuse | `bind` into RTL; also usable in **formal** | Testbench only (simulation) |
+| Example | `valid && !ready \|=> $stable(data)` | `assert (t.resp != EXOKAY) else `uvm_error(...)` |
+
+Use both: they catch different classes of bugs. Other points in the post are covered above: **four** directives including `restrict` (Section 2), `##1` vs. `##[1:3]` (Section 14), and assertion options differ by simulator, so check your tool's documentation rather than a remembered flag name.
