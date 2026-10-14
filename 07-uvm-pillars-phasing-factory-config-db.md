@@ -335,3 +335,13 @@ Repeats "8 phases" and the GPU-simulation myth (Section 13), and adds:
 | The factory "can **clone any component** on demand" | The factory **creates** objects of a registered type (applying overrides). `clone()` is a `uvm_object` method, and **components can't be cloned** (UVM reports an error for `uvm_component::clone`): each component needs its own `create()` with a unique name and parent |
 | Spin up "thousands of agents across a **multi-core** testbench" | Mainstream SystemVerilog simulation of a testbench runs essentially **single-threaded**; more agents mean more work for the same core. Instantiate agents with a loop + `create()` and per-instance config, sized to the DUT's real interface count |
 | "Skipping a phase" causes nondeterministic failures | You don't "skip" phases: UVM runs all of them. Problems come from doing work in the **wrong** phase (e.g., getting config after children are built, Challenge 01) |
+
+### 13.2 A fourth version of the same post
+
+| Claim | Reality |
+|---|---|
+| A "**7-step pipeline**" ending at `check` | 9 common phases: `report` and `final` follow `check` (plus 12 run-time sub-phases, Section 3) |
+| `run_phase` consumes ~70% of wall-clock time, "so placing **heavy stimulus there is a performance pitfall**" | `run_phase` is the **only** phase that consumes simulation time, so it's exactly **where stimulus belongs**. Function phases are zero-time and can't drive stimulus at all |
+| Push a **virtual sequencer handle** via `config_db` and "**pull it in every driver**" | Drivers don't need the virtual sequencer. The env assigns sub-sequencer handles **into** the virtual sequencer, and the test starts virtual sequences on it (Challenge 05) |
+| Pass a **random seed** via `config_db` to all sequencers for reproducibility | Reproducibility comes from the **simulation seed** plus random stability (Challenge 25, Section 4). Passing seeds by hand isn't needed and can break UVM's deterministic per-object seeding |
+| An "**AWS F1-accelerated scoreboard**" in `config_db` | A scoreboard is a testbench class running in the simulator. (Reference models can be C/C++ via DPI, still on the same host) |
