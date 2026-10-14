@@ -420,3 +420,51 @@ Several of its structural claims would produce a broken testbench. Compare each 
 | "UVM's phases: build, connect, run, and **extract**" do the heavy lifting | Also `check` and `report` (end-of-test checks live there) (Challenge 07) |
 
 The exercise in the post (4-bit bus, cover all 16 values) is fine as a first step: the coverpoint is `coverpoint bus_val;` with automatic bins for all 16 values.
+
+---
+
+## 12. Worked Review: Two Snippets From a Third "TB From Scratch" Post
+
+This post still contained its generator's template text ("One short sentence. One long descriptive sentence…"), a reminder to read such posts critically. Its "myth vs. reality" list is mostly fine (don't copy a TB blindly; track coverage from the start). Its code isn't.
+
+### 12.1 The transaction class: missing constructor
+
+```systemverilog
+class my_trans extends uvm_sequence_item;
+  rand bit [31:0] addr, data;
+  rand bit        we;
+  `uvm_object_utils_begin(my_trans) ... `uvm_object_utils_end
+endclass                                   // no new() !
+```
+`` `uvm_object_utils `` generates a factory `create()` that calls **`new(name)`**. Without a constructor taking a `name` argument, the class only has an implicit `new()` with **no arguments**, so this **doesn't compile**. Always add:
+```systemverilog
+function new(string name = "my_trans");
+  super.new(name);
+endfunction
+```
+(Components need `new(string name, uvm_component parent)`.)
+
+### 12.2 The "protocol check embedded in the monitor"
+
+```systemverilog
+property p_write_seq;
+  @(posedge vif.clk) disable iff (!vif.rst_n)
+  (vif.we && vif.addr == $past(vif.addr)) |-> (vif.data == $past(vif.data));
+endproperty
+```
+Three problems:
+1. **Location:** a concurrent assertion **can't be placed in a class** like a monitor. Put it in the interface or a bound checker module (Challenge 08, Section 16).
+2. **Wrong rule:** it says "a write to the same address as last cycle must carry the same data". Back-to-back writes to the same address with **different data are normally legal**, so this flags correct behaviour. The post claims it catches "illegal back-to-back writes", but nothing in the property defines what's illegal.
+3. **Sloppy antecedent:** `$past(vif.addr)` is compared whether or not the previous cycle was a **valid write**; idle-cycle address values trigger checks too.
+
+If the spec really forbids back-to-back writes to the same address, write **that** rule:
+```systemverilog
+a_no_b2b_same_addr: assert property (@(posedge clk) disable iff (!rst_n)
+  (valid && we) ##1 (valid && we) |-> addr != $past(addr));
+```
+
+### 12.3 Other claims
+| Claim | Reality |
+|---|---|
+| `uvm_test` "configures **seeds**" | Seeds come from the simulator command line (Challenge 02, Section 11) |
+| Driving stimulus from `initial` blocks "collapses under **race conditions**" | You lose objections, reporting and reuse, which is reason enough. **Races** come from how signals are driven at clock edges (fix: clocking blocks, Challenge 07, Section 3.4), not from skipping phases |
