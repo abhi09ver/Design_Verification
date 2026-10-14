@@ -182,3 +182,75 @@ Each item traces to a vplan feature/test point and a bug class; it's reviewed wi
 - [ ] Can I explain why both are needed at sign-off?
 - [ ] Can I write a pipeline coverage matrix linking items to bug classes?
 - [ ] Can I explain condition vs. branch coverage with an example?
+
+---
+
+## 11. Addendum: A Second Post on the Same Topic
+
+A follow-up LinkedIn post asks you to explain the difference "in 30 seconds", and adds some numbers. Corrections:
+
+| Claim | Reality |
+|---|---|
+| Code coverage reports "how much of the RTL was **toggled**" | Only **toggle** coverage measures toggling. Line coverage measures lines **executed**; branch, condition and FSM measure decisions and states (Section 3.1) |
+| ">90% functional coverage is the **success threshold**" | Sign-off is normally **100% of planned bins** (P0/P1), with every hole **reviewed and waived** with a reason. "90%" without saying *which* 10% is missing means nothing (see Challenge 09, Section 8) |
+| "Early regressions rarely exceed 80% code coverage" | Early-project numbers don't matter; they rise as stimulus matures. What matters is the **trend** and the **sign-off** value |
+| "Cite a realistic percentage target" | Cite the **sign-off rule** (100% or reviewed exclusions), not a percentage you can't source |
+
+The post's red flag is correct, though: never quote "95% coverage" without saying **which metric**, and be ready to map a missing bin to a cause and a fix.
+
+### 11.1 The 30-second answer
+
+> "Code coverage is automatic and structural: which lines, branches, conditions, FSM transitions and bits of the RTL were exercised. Functional coverage is what I define from the verification plan: values, crosses and sequences that represent features and corner cases. Code coverage finds logic I forgot to plan or dead code; functional coverage finds planned scenarios and combinations I never hit. Neither proves correctness, that's the checkers' job, so sign-off needs both closed, or reviewed exclusions."
+
+### 11.2 Worked example: ALU coverage plan (what the post asks for)
+
+ALU: `W`-bit, ops `ADD, SUB, AND, OR, XOR, SLL, SRL, SRA`, flags `Z, N, C, V`.
+
+| Functional group | Coverpoints / crosses | Stimulus knob | Bug class |
+|---|---|---|---|
+| **Opcodes** | every op | `op dist` uniform | Missing/wrong decode |
+| **Operand corners** | A, B ∈ {0, 1, −1, MAX_POS, MIN_NEG, alternating 0101…, random}; cross `op × A_class × B_class` | `dist` biased to corner classes | Off-by-one, sign-extension |
+| **Flags per op** | `op × {Z, N, C, V}` each set and clear; ignore impossible (e.g., V on logic ops) | targeted constraints (below) | Wrong carry/overflow logic |
+| **Shifts** | shift amount ∈ {0, 1, W−1, ≥ W}; `SRA` with negative input | `shamt dist {0, 1, W-1, [W:31]}` | Arithmetic vs. logical shift, out-of-range shift |
+| **Sequences** (if pipelined) | back-to-back dependent ops; op change every cycle | zero-delay, dependency constraints | Forwarding / hazard bugs |
+
+```systemverilog
+class alu_txn extends uvm_sequence_item;
+  rand alu_op_e        op;
+  rand bit [W-1:0]     a, b;
+  rand operand_class_e a_cls, b_cls;
+
+  // Stimulus knob: pick a corner class first, then the value
+  constraint c_a_cls { a_cls dist {ZERO:=10, ONE:=10, NEG1:=10, MAXP:=10, MINN:=10, ALT:=10, RAND:=40}; }
+  constraint c_a_val { a_cls == ZERO -> a == 0;
+                       a_cls == ONE  -> a == 1;
+                       a_cls == NEG1 -> a == '1;
+                       a_cls == MAXP -> a == {1'b0, {(W-1){1'b1}}};
+                       a_cls == MINN -> a == {1'b1, {(W-1){1'b0}}};
+                       a_cls == ALT  -> a inside {{(W/2){2'b01}}, {(W/2){2'b10}}}; }
+  constraint c_order { solve a_cls before a; }
+  // (same for b)
+endclass
+
+// Targeted scenario: signed overflow on ADD (same signs in, different sign out)
+class add_overflow_seq extends alu_base_seq;
+  task body();
+    `uvm_do_with(req, { op == ADD; a[W-1] == b[W-1]; (a + b) >> (W-1) != a[W-1]; })
+  endtask
+endclass
+
+covergroup cg_alu with function sample(alu_txn t, bit z, n, c, v);
+  cp_op:  coverpoint t.op;
+  cp_a:   coverpoint t.a_cls;
+  cp_b:   coverpoint t.b_cls;
+  cp_v:   coverpoint v;
+  x_op_ab: cross cp_op, cp_a, cp_b;
+  x_op_v:  cross cp_op, cp_v {
+    ignore_bins logic_v = binsof(cp_op) intersect {AND, OR, XOR} && binsof(cp_v) intersect {1};
+  }
+endgroup
+```
+
+Note: the overflow constraint's sum is evaluated at `W` bits because `a`, `b` are `W`-bit; check that your solver widens expressions the way you expect, or compute the condition in a function.
+
+**Where the two metrics diverge on this ALU:** a test running only random operands can reach **100% line and branch coverage** (every `case` arm executes) while `x_op_v` shows **signed overflow on SUB never happened**. That's the 45-second "divergence" example the post asks for.
