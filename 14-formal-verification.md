@@ -327,3 +327,15 @@ Formal proofs don't have a fixed runtime, and results can change from **proven**
 | **Weekly / milestone** | Full proofs + formal coverage (cover reachability, proof core) | Long | Feeds sign-off (Section 8) |
 
 Track per property: **status** (proven / bounded with depth / CEX / covers reached) and **runtime**. A property that used to be proven and is now bounded is a **regression**, even if nothing failed: something in the RTL made the proof harder, or an assumption changed.
+
+### 15.2 Answer framework: problem → constraint → trade-off → proof
+
+A templated post suggested this structure. The post itself has no technical content, but the structure works well for formal questions, because it forces you to name **what limits you**, **what you gave up**, and **what evidence you'd accept**.
+
+| Question | Constraint | Trade-off accepted | Proof artifact you'd show |
+|---|---|---|---|
+| "Prove the 8-port arbiter never starves a requester" | Liveness over unbounded time; 8 requesters → large state space; inputs must be legal | Prove for 4 ports and argue symmetry, or use a bounded **wait counter** (`wait < MAX`) instead of pure liveness; fairness **assumptions** on request behaviour | Proven safety version of "no requester waits ≥ MAX grants", **covers** showing max-wait scenarios are reachable, reviewed assumptions |
+| "Prove the FIFO never corrupts data" | 2^256+ data states; ordering across any number of entries | Symbolic tracking of **one** arbitrary item; small `DEPTH`/`W` parameters (Section 7) | Proven `a_data_integrity`, covers for "tracked item while FIFO full", invariants (`count == wr_ptr - rd_ptr`) proven as helpers |
+| "You get a counterexample that can't happen in real use" | Formal explores **all** inputs, including illegal ones | Add an **assume** from the spec, never one invented to silence the CEX | The spec clause for the assumption, the same rule **asserted** on the driving block, and covers still reachable after adding it (Section 5) |
+
+**And "which assertion catches the bug earliest"** (from the same post) is a real point: a property at the **source** of a bug (e.g., `full |-> !in_ready` on the FIFO) fires at the faulty cycle, while an end-to-end check (scoreboard, data integrity) fires many cycles later. Write both: local properties to **locate**, end-to-end ones to **guarantee** (Challenge 25, Section 6).
