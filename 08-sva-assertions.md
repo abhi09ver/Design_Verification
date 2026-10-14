@@ -433,5 +433,5 @@ Notes worth saying out loud:
 - `until_with` means "`!req` holds **up to and including** the cycle where `ack` holds". Use plain `until` if a new `req` is allowed **in** the `ack` cycle.
 - `until_with` is **weak**: alone it would pass if `ack` never came. Assertion 1 supplies the bound.
 - If `req` is a **level** held until `ack`, use `$rose(req)` as the antecedent and add "req held until ack" (Section 4) instead of assertion 2.
-- If you can't use `checker` blocks (tool support), the same code works in a **module** with parameters, attached with `bind`.
+- If you can't use `checker` blocks (tool support), the same code works in a **module** with `parameter int MAX_LAT = 5`, attached with `bind`. Cycle-delay bounds like `##[1:MAX_LAT]` must be **elaboration-time constants**; the module-parameter form guarantees that on every tool.
 - Assertion 3 uses the auxiliary `outstanding` flag: same idea as the tracking code in 15.1. It assumes `req` and `ack` never occur in the same cycle, which assertion 2 enforces.
