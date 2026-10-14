@@ -308,3 +308,20 @@ endtask
 // `uvm_do_with(req, { kind == WRITE; }) does the same create/start/randomize/finish steps
 ```
 Why randomize **after** `start_item`: the item is randomized at the moment it's granted, so it can react to the latest state (e.g., values from a previous response).
+
+---
+
+## 13. Addendum: Another "Three Pillars" Post
+
+Same "8 phases" and `uvm_factory::create` errors as Section 2, plus these:
+
+| Claim | Reality |
+|---|---|
+| `report_phase` is "where **coverage is collected**" | Coverage is **sampled during `run_phase`** (covergroup `sample()` calls). `report_phase` only **prints** results; coverage databases are written at the end of simulation |
+| Missing `connect_phase` makes the test "**stall**" | An unconnected non-analysis port is reported as an **error at end of elaboration**; a missing handle assignment gives a **null-handle fatal**. Not a silent stall (Challenge 16, Section 3.3) |
+| "**Truncate the phase schedule to the first 5 phases**" to save simulation time | The function phases (all except `run`) take **zero simulation time**. Skipping `extract/check/report` saves nothing and **throws away end-of-test checks** (e.g., scoreboard queues empty). Simulation time is spent in `run_phase` |
+| "On a single **GPU**" / "**GPU-accelerated simulator**" | Mainstream RTL simulators run on **CPUs** (Challenge 06, Section 2.1) |
+| Read `config_db` in the driver's **`connect_phase`** | Works, but the convention is **`build_phase`** (before children are built, Challenge 01) |
+| Broadcast a parameter "**to every monitor**" via `config_db` | Put it in a **config object** set once, with a narrow scope (Section 5.3) |
+| "Portable across FPGA boards or **ASIC corners**" | Corners are a timing sign-off concept, not a testbench setting (Challenge 18, Section 2) |
+| OpenTitan / AMD examples | Unverifiable details. (OpenTitan's open-source DV is real and worth reading, but read its actual code rather than quoting a post) |
