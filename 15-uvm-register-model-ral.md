@@ -286,3 +286,15 @@ No. It updates the mirror. Mismatch detection happens on reads with check enable
 - [ ] Can I explain implicit vs. explicit prediction and why not both?
 - [ ] Can I list 4 built-in sequences and what each catches?
 - [ ] Can I explain why back-door can hide bugs?
+
+---
+
+## 15. Addendum: A Second RAL Post (truncated)
+
+| Claim | Reality |
+|---|---|
+| RAL works "**without ever touching the DUT's RTL**" | **Front-door** goes through the bus (no RTL access); **back-door** reaches **directly into RTL signals** through HDL paths (Section 6). Both are part of RAL |
+| `uvm_reg_field` slices a 32-bit register "into **4-byte fields**" | Fields are **bit ranges of any width** (1-bit enable, 2-bit mode, 20-bit address…), set by `configure(parent, size, lsb, ...)` (Section 4) |
+| The predictor "**catches mismatches**" automatically | Same myth as Section 2: the predictor **updates the mirror**; mismatches are found on **checked reads** (`mirror(UVM_CHECK)`, `check_on_read`) |
+| The adapter makes the same register objects drive "simulation and **emulation**" | Partly true: with transaction-based acceleration the **register model and sequences run on the host**, and the adapter feeds the **bus transactor** on the emulator (Challenge 12, Section 5). It doesn't run on the emulator itself |
+| "Cadence Incisive, Mentor Questa" | Now Xcelium and Siemens Questa; RAL is part of UVM and simulator-independent |
