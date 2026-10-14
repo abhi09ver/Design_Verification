@@ -222,3 +222,31 @@ Keep block RAL models; nest them in the SoC model with `add_submap` at the right
 - [ ] Can I explain block → SoC migration step by step, including RAL?
 - [ ] Can I explain the parameterized-interface problem and 2 solutions?
 - [ ] Can I explain why process node and Specman e are red flags in the post?
+
+---
+
+## 11. Addendum: A Second Post on the Same Topic
+
+A follow-up post repeats the process-node myth (Section 2.1, "stable across process migrations", "Intel's 7nm") and adds new claims:
+
+| Claim | Reality |
+|---|---|
+| Abstract the interface "with **SystemVerilog DPI and a generic driver**" to isolate timing | **DPI** connects SystemVerilog to **C/C++** (reference models, firmware, scripts). Timing is isolated with a **BFM inside the interface** (`vif.write(addr, data)`), the same split used for emulation (Challenge 12, Section 5). There's no single "generic driver" for all protocols: each protocol needs its own driver; what's generic is the **API and config pattern** |
+| One **YAML** file swaps "memory models, bus protocols, or clock domains" by editing key/value pairs | YAML-driven configuration is a **real and good practice**, but SystemVerilog can't read YAML directly: a **script generates** SV config classes, plusargs, or `tb_top` code from it (or a DPI-based parser reads it). It can **select** between existing agents/models and set parameters; it can't make an AXI agent drive PCIe |
+| A **shared coverage model that aggregates metrics across projects** | Coverage models are **design-specific**; merging coverage from different chips is meaningless. What is shared: the **VIP's protocol coverage** (instantiated per project) and **trend metrics** (bring-up time, bug rates) compared across projects for planning |
+| Map high-level functional checkpoints "**to low-level toggle coverage**" | Toggle coverage is **structural** (bits moved). Features map to **functional coverage** and to **code coverage of the RTL that implements them**; toggle is mostly useful for **connectivity** at integration (Challenge 11) |
+| "Migrate to **Cadence Incisive**/UVM" | Incisive is the older Cadence simulator (now Xcelium); and UVM is simulator-independent |
+| "5-day window", "30% increase" | Unsourced numbers |
+
+### The real version of "configuration as a single source of truth"
+
+```
+project_cfg.yaml  ──► gen_cfg.py ──►  generated/
+                                        ├── soc_cfg_pkg.sv     (config classes with defaults)
+                                        ├── tb_top_params.svh  (clock periods, instance counts)
+                                        └── run_args.f         (plusargs per test)
+```
+- One reviewed source for **parameters** (widths, instance counts, address maps, clock periods, which memory model).
+- **Generated** SV, never hand-edited, kept in sync by the build.
+- The same source can feed the **register generator** (Challenge 15) and **emulation build scripts**.
+- Selecting between implementations (e.g., a fast behavioural memory vs. a vendor memory model) uses **factory overrides** driven by the generated config (Challenge 07).
