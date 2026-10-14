@@ -243,3 +243,24 @@ If posted traffic gets stuck behind non-posted requests waiting for credits. Ord
 - [ ] Can I explain the two-cycle ERROR response and why?
 - [ ] Can I list the 6 PCIe credit types and explain "0 = infinite"?
 - [ ] Can I explain how credit deadlock happens and how to test for it?
+
+---
+
+## 10. Addendum: Handshake Order and AHB Alignment
+
+A later protocol post (cut off mid-sentence) adds two claims worth correcting:
+
+| Claim | Reality |
+|---|---|
+| An AXI read is the ordered chain "**ARVALID → ARREADY → RVALID → RREADY**" | There are **two independent handshakes** (AR, then R). Within each, **READY may come before, with, or after VALID**: `ARREADY` can already be high before `ARVALID`, and `RREADY` can be high before `RVALID`. The only ordering: **R data comes after the AR handshake** for that transaction |
+| AHB "**unaligned transfer across a 4-byte boundary**" (with HRESP handling) | AHB transfers must be **aligned to `HSIZE`** (a word transfer at a word-aligned address, a halfword at a halfword-aligned address). There's **no unaligned single transfer**: a master needing unaligned data **splits it** into smaller aligned transfers. An unaligned address is a **master protocol error** to flag with an assertion, not a slave error-response scenario |
+| "78% of recent hires' interviews at ARM and Xilinx" | Invented statistic |
+
+```systemverilog
+// AHB: address aligned to transfer size (HSIZE: 0=byte, 1=halfword, 2=word, 3=doubleword)
+a_ahb_aligned: assert property (@(posedge HCLK) disable iff (!HRESETn)
+  (HTRANS inside {NONSEQ, SEQ}) |-> (HADDR & ((1 << HSIZE) - 1)) == 0);
+```
+Contrast with **AXI**, where an **unaligned start address is legal** for INCR/FIXED bursts (the first beat is partial, Challenge 22, Section 2).
+
+The post's "do this next" is good advice and matches Challenge 20, Section 10: one concrete project story, the trade-off you chose, the bug or edge case you handled, told in under two minutes.
