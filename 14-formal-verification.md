@@ -303,3 +303,27 @@ Two nuances that impress interviewers:
 - If the model is SystemVerilog RTL: **SEC** (or LEC if both are combinational with mapped I/O).
 - If the model is **C/C++**: **C-to-RTL / datapath equivalence** tools (vendor datapath-formal apps).
 - **Multipliers and dividers** are hard for SAT-based engines; datapath-specific engines or decomposition are used.
+
+---
+
+## 15. Addendum: Formal in CI, and Another Round of Myths
+
+| Claim | Reality |
+|---|---|
+| Jasper, VC Formal and Questa Formal "**each excel at one layer**", so use a **mixed-tool strategy** | All three are full formal platforms. Teams usually **standardize on one** (licences, setup and expertise are expensive to duplicate); a second tool is sometimes used to cross-check critical proofs |
+| A formal layer for "**end-to-end constraints spanning clock-domain crossings**" | CDC correctness is mainly checked with **structural CDC tools**, plus targeted formal on synchronizer handshakes (Section 2). End-to-end multi-clock proofs are hard to converge |
+| Formal gives "a **12% increase in toggle coverage**" | Toggle coverage is a **simulation** metric. Formal contributes **unreachability** results (exclusions) and **cover witnesses** (Challenge 09, Section 6) |
+| "Formal failures caught **before the first simulation run**" | Good when designer-level formal starts early (Section 4). But it complements simulation; it doesn't replace it |
+| Intel 30%/2.5×, IBM 45%, NVIDIA/AMD 25%, "15% of budget" | Unsourced company statistics |
+
+### 15.1 Running formal in CI (the realistic version)
+
+Formal proofs don't have a fixed runtime, and results can change from **proven** to **bounded** when the RTL changes. So formal CI is set up differently from simulation CI:
+
+| Run | What | Time limit | Gate |
+|---|---|---|---|
+| **Per commit** | Small set of fast properties on changed blocks (handshakes, FIFO invariants, one-hot) | Minutes | Any **new CEX** fails the commit |
+| **Nightly** | Full property set per block, with saved engine settings | Hours | CEX → bug triage; **proven → bounded** or **depth dropped** → investigate |
+| **Weekly / milestone** | Full proofs + formal coverage (cover reachability, proof core) | Long | Feeds sign-off (Section 8) |
+
+Track per property: **status** (proven / bounded with depth / CEX / covers reached) and **runtime**. A property that used to be proven and is now bounded is a **regression**, even if nothing failed: something in the RTL made the proof harder, or an assumption changed.
