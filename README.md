@@ -18,6 +18,7 @@ Each file takes one real-world DV challenge, explains it from first principles, 
 | 09 | [Coverage Plateau at 85%](09-coverage-plateau-closure.md) | Six causes of coverage holes, sampling bugs, targeted sequences, config sweeps, formal unreachability & witness traces, exclusions, worked arbiter example |
 | 10 | [Ready/Valid Handshake Assertions](10-ready-valid-handshake-assertions.md) | Ready/valid rules, stall vs. error, reference-queue checker for dropped data, bounded deadlock check, ID-matched latency, simulator disagreements |
 | 11 | [Functional vs. Code Coverage](11-functional-vs-code-coverage.md) | Code coverage types, what each metric misses, coverage ≠ checking, exclusions & sign-off, 4-stage pipeline coverage matrix |
+| 12 | [Emulation and FPGA Prototyping](12-emulation-and-fpga-prototyping.md) | Platform spectrum & realistic speeds, what each finds/misses, 2-state & no timing, transaction-based acceleration, emulator debug |
 
 ## How each file is structured
 
