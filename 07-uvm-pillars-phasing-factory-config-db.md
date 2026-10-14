@@ -272,3 +272,39 @@ Type: all instances of that type. Instance: only at the given path. Instance win
 - [ ] Can I explain why phasing doesn't fix races, and how clocking blocks do?
 - [ ] Can I list 4 reasons a factory override doesn't work?
 - [ ] Can I explain config_db precedence and why to `get` only in build?
+
+---
+
+## 12. Addendum: A Combined Factory / Virtual-Sequence / TLM Post
+
+A later post mixes three topics. Corrections, with links to the full explanations:
+
+| Claim | Reality | See |
+|---|---|---|
+| Factory is the "**single source of truth**" for the testbench | The factory decides **which class** gets built. **Configuration** (config objects, `config_db`, generated config) is the source of truth for **settings** | 03 §11, 07 §4–5 |
+| Three steps: "register the override, set the type, then instantiate" | Correct order: (1) **register the class** (`` `uvm_component_utils ``), (2) **set the override** before creation, (3) **create** with `type_id::create` | 07 §4.2 |
+| Factory gives substitution "**without recompiling**" | Only **command-line** overrides (`+uvm_set_type_override`) and test selection (`+UVM_TESTNAME`) avoid recompiling. Overrides written in a test are code; they need that test compiled in (normally all tests are compiled once) | 07 §4.3 |
+| Factory overrides give ">20% **compile-time** reduction" | The factory has nothing to do with compile time | — |
+| Swap an Ethernet driver "on a **7nm ASIC**" | Process node is irrelevant to testbench components | 03 §2.1 |
+| Sequences "launched on a `uvm_virtual_sequencer` that **arbitrates** multiple agents" | In UVM 1.x, `uvm_virtual_sequencer` is just a **typedef of `uvm_sequencer`**. It holds handles; **arbitration happens in each real sequencer** | 05 §2–3 |
+| Call `start_item()`/`finish_item()` in the virtual-sequence flow | `start_item`/`finish_item` are for sequences that **generate items** on a real sequencer. A **virtual** sequence **starts sub-sequences** (`seq.start(p_sequencer.x_sqr)`) | 05 §2.1 |
+| "The **virtual sequencer's `run_phase`** drives both sequences" | Sequences are started from the **test** (or a parent sequence). You don't write stimulus in a sequencer's `run_phase` | 05 §3.3 |
+| `uvm_blocking_put_port` is "the safe choice for **back-pressure-aware drivers**" | Drivers **pull** items through `seq_item_port` (`get_next_item`/`item_done`); back-pressure from the DUT is handled in the driver's pin-level code | 16 §7 |
+| `uvm_tlm_fifo` depth 4–8 "hides latency spikes in a **multi-clock domain** design" | TLM is **untimed** and has no clock domains. FIFO depth is about testbench producer/consumer behaviour | 16 §2, §6 |
+| "Dual-clock environment" races with a virtual sequencer | Races are **signal-level** (driving/sampling at clock edges); fixed with **clocking blocks**, not sequencer changes | 07 §3.4 |
+| "Scoreboard with `uvm_analysis_imp` + `uvm_tlm_fifo` of depth 6" | For monitor → scoreboard, use **analysis imps** or **analysis FIFOs** (unbounded). A sized `uvm_tlm_fifo` can't be connected to an analysis port's `write()` | 16 §5–6 |
+
+### The correct item flow inside a normal (non-virtual) sequence
+```systemverilog
+task body();
+  repeat (n) begin
+    req = mem_txn::type_id::create("req");
+    start_item(req);                                   // wait for sequencer grant (arbitration)
+    if (!req.randomize() with { kind == WRITE; })      // late randomization: after grant
+      `uvm_fatal("RAND", "randomize failed")
+    finish_item(req);                                  // hand to driver; returns after item_done
+  end
+endtask
+// `uvm_do_with(req, { kind == WRITE; }) does the same create/start/randomize/finish steps
+```
+Why randomize **after** `start_item`: the item is randomized at the moment it's granted, so it can react to the latest state (e.g., values from a previous response).
