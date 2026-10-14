@@ -266,3 +266,105 @@ task pre_body();
 endtask
 ```
 Better still: do the same null checks in the env's `end_of_elaboration_phase`, so the problem is reported at **time 0**, before any test runs, and skip the check for agents that are intentionally passive.
+
+---
+
+## 12. Addendum: Sequence Libraries and Out-of-Order Responses
+
+A later post (factory + virtual sequencer + TLM) gets the mechanics wrong, but points at two real topics.
+
+| Claim | Reality |
+|---|---|
+| The factory "must expose a **parameterized `build()`** that returns a fully-configured sequence" | The factory only **creates** the type (`type_id::create`). You configure the sequence **after** creation: set its fields, randomize it, or let it read a config object |
+| "Inject randomization **seeds**" per sequence | Seeds come from the simulation seed. UVM seeds objects deterministically (by type and path), and `reseed()` exists, but you rarely need it. Determinism comes from **random stability**, not from injecting seeds (Challenge 25, Section 4) |
+| Virtual sequencer "**merges N-agent streams into a single TLM port**" adding "**2–5 cycles of latency**" | Nothing is merged: each sub-sequence runs on its **own** agent's sequencer (Sections 2–3). Sequencers and TLM are **untimed**, so there's no added latency |
+| Extend "**`uvml_port#(my_pkt)`**" for out-of-order responses | No such class. Out-of-order responses are handled with **response IDs** between driver and sequence (12.2) |
+| "Without breaking the UVM phase ordering" | Phases aren't involved: this all happens inside `run_phase` |
+
+### 12.1 `uvm_sequence_library` (built into UVM)
+
+A sequence library runs a randomly chosen mix of registered sequences: useful for "random test" regressions.
+
+```systemverilog
+class mem_seq_lib extends uvm_sequence_library #(mem_txn);
+  `uvm_object_utils(mem_seq_lib)
+  `uvm_sequence_library_utils(mem_seq_lib)
+  function new(string name = "mem_seq_lib");
+    super.new(name);
+    init_sequence_library();
+  endfunction
+endclass
+
+// Register sequences with the library (in each sequence class)
+class mem_rw_seq extends mem_base_seq;
+  `uvm_object_utils(mem_rw_seq)
+  `uvm_add_to_seq_lib(mem_rw_seq, mem_seq_lib)
+  ...
+endclass
+
+// In a test
+task run_phase(uvm_phase phase);
+  mem_seq_lib lib = mem_seq_lib::type_id::create("lib");
+  lib.selection_mode   = UVM_SEQ_LIB_RANDC;   // also UVM_SEQ_LIB_RAND, UVM_SEQ_LIB_ITEM, UVM_SEQ_LIB_USER
+  lib.min_random_count = 10;
+  lib.max_random_count = 20;
+  if (!lib.randomize()) `uvm_fatal("LIB", "randomize failed")   // picks sequence_count in [min:max]
+  phase.raise_objection(this);
+  lib.start(env.agt.sqr);
+  phase.drop_objection(this);
+endtask
+```
+Many teams prefer an explicit "random virtual sequence" with weighted `randcase`, for clearer control; know both.
+
+### 12.2 Out-of-order responses (pipelined drivers)
+
+When the DUT accepts several requests before answering, the driver can't wait for each response before taking the next item.
+
+**Driver: complete items early, send responses later, tagged with the request's IDs**
+```systemverilog
+task run_phase(uvm_phase phase);
+  fork
+    forever begin                                   // request side
+      seq_item_port.get_next_item(req);
+      drive_request(req);
+      pending[req.tag] = req;                       // remember by DUT tag/ID
+      seq_item_port.item_done();                    // free the sequencer immediately
+    end
+    forever begin                                   // response side
+      mem_txn rsp;
+      collect_response(rsp);                        // from pins, any order
+      rsp.set_id_info(pending[rsp.tag]);            // copy sequence + transaction IDs
+      pending.delete(rsp.tag);
+      seq_item_port.put_response(rsp);              // routed back to the right sequence
+    end
+  join
+endtask
+```
+
+**Sequence: receive responses asynchronously**
+```systemverilog
+class mem_ooo_seq extends mem_base_seq;
+  `uvm_object_utils(mem_ooo_seq)
+  int outstanding;
+  function new(string name = "mem_ooo_seq"); super.new(name); endfunction
+
+  task body();
+    use_response_handler(1);                        // responses go to response_handler()
+    repeat (20) begin
+      `uvm_do_with(req, { kind == READ; })
+      outstanding++;
+    end
+    wait (outstanding == 0);                         // don't end before all responses arrive
+  endtask
+
+  virtual function void response_handler(uvm_sequence_item response);
+    mem_txn rsp;
+    if (!$cast(rsp, response)) `uvm_fatal("RSP", "bad type")
+    // match by rsp.get_transaction_id() or rsp.tag; check or record as needed
+    outstanding--;
+  endfunction
+endclass
+```
+Alternative: fork one thread per request that calls `get_response(rsp, req.get_transaction_id())`.
+
+**Gotcha interviewers like:** if a sequence never collects its responses, the sequencer's **response queue fills** (default depth is small) and UVM reports a **response queue overflow** error. Either consume responses (handler or `get_response`), or call `set_response_queue_error_report_enabled(0)` deliberately when responses aren't needed.
