@@ -242,3 +242,64 @@ Large datapaths, full-chip scale, very deep sequential behaviour without abstrac
 - [ ] Can I list 5 convergence techniques?
 - [ ] Can I explain the symbolic FIFO tracking trick?
 - [ ] Can I explain why Formality isn't property checking and why formal doesn't replace PCIe compliance?
+
+---
+
+## 14. Addendum: State-Space Estimates, Induction, and How Equivalence Checking Really Works
+
+A second formal post is closer to correct than most, but gets the numbers and the equivalence-checking flow wrong.
+
+| Claim | Reality |
+|---|---|
+| Data abstraction gives "a **10× reduction**" | For a FIFO, removing or shrinking data reduces the state space by **many orders of magnitude** (see 14.1), not 10× |
+| Equivalence: "partition into combinational blocks and run **directed** equivalence, then lift sequential logic into an **undirected** proof" | Not real terminology. LEC works by **mapping key points** and comparing **combinational cones** between them; **sequential** differences need **SEC** (14.3) |
+| Run **Conformal** on an open-source core | Conformal and Formality are commercial. Open-source options: **Yosys** equivalence passes or a **miter** checked with **SymbiYosys** |
+| "Scan interview debriefs for phrasing" | Same advice as Challenge 20: use your own words and real experience |
+
+### 14.1 The FIFO state-space estimate (a classic interview exercise)
+
+FIFO: depth 8, 32-bit data.
+
+| Part | Bits | States |
+|---|---|---|
+| Storage: 8 × 32 | 256 | 2^256 |
+| Read pointer, write pointer (3 bits each) | 6 | 2^6 |
+| Full flag (or a 4-bit count) | 1 | 2^1 |
+| **Total** (upper bound) | **263** | **~2^263** |
+
+Abstractions:
+- **Control-only** (cut the data: storage becomes free/irrelevant for control properties such as "no overflow"): ~2^7 = **128** states. Reduction ≈ 2^256.
+- **Data-width reduction** (32 → 1 bit): storage 2^8, total ~2^15.
+- **Symbolic tracking of one item** (Section 7): proves data integrity for **all** values while the solver reasons about one tracked entry + a counter.
+
+Two nuances that impress interviewers:
+1. These are **upper bounds**: what matters is the **reachable** state space (e.g., pointers and count are correlated, so fewer states are reachable).
+2. Modern engines (SAT-based BMC, **IC3/PDR**, BDDs) **don't enumerate states**; they reason symbolically. The estimate explains *why* proofs get hard, not how tools work internally.
+
+### 14.2 Bounded proofs vs. k-induction
+- **BMC (bounded model checking):** "no failure within k cycles from reset". Finds bugs; proves nothing beyond k.
+- **k-induction:**
+  1. *Base case:* property holds for the first k cycles from reset (BMC).
+  2. *Inductive step:* if the property holds for **any** k consecutive cycles, it holds in the next one.
+  - The step often **fails on unreachable states** (e.g., `count != wr_ptr - rd_ptr`), giving a "counterexample" that can't happen from reset. Fix by adding **helper invariants** (strengthening), e.g., `assert property (count == wr_ptr - rd_ptr);`, then using them as lemmas.
+- **IC3/PDR:** the engine that learns these invariants automatically; it's often the default for full proofs.
+- **Symmetry reduction:** for identical components (e.g., 8 identical requesters of an arbiter), prove for one representative and argue by symmetry, or the tool exploits it directly.
+
+### 14.3 Equivalence checking, correctly
+
+**LEC (combinational equivalence)**: e.g., RTL vs. synthesized netlist.
+1. **Setup:** read both designs; set constraints (e.g., scan/test mode off); black-box the same blocks on both sides (memories, analog).
+2. **Mapping:** match **key points**: inputs, outputs, flops, black-box pins.
+3. **Compare:** prove each mapped point's **combinational logic cone** is equivalent.
+4. **Debug** non-equivalences: unmapped points, wrong constraints, real synthesis issues.
+
+**SEC (sequential equivalence)**: when the state elements don't map one-to-one (retiming, pipelining, clock gating, FSM re-encoding). The tool proves the outputs match over time from reset.
+
+**X and don't-cares** (a real interview trap):
+- An RTL `default: out = 'x;` tells synthesis "anything is fine here". LEC treats X in the **reference** (golden) design as a **don't-care**, so the netlist can be anything there and still be "equivalent".
+- That's legal, but it can hide **simulation/synthesis mismatch**: RTL simulation shows X (or some value), silicon does something else. Review X assignments and run **X-propagation** checks (Challenge 13).
+
+**ALU vs. a behavioural model:**
+- If the model is SystemVerilog RTL: **SEC** (or LEC if both are combinational with mapped I/O).
+- If the model is **C/C++**: **C-to-RTL / datapath equivalence** tools (vendor datapath-formal apps).
+- **Multipliers and dividers** are hard for SAT-based engines; datapath-specific engines or decomposition are used.
