@@ -448,3 +448,45 @@ The post suggests "an `uvm_analysis_imp` that fires an `assert` every time a tra
 | Example | `valid && !ready \|=> $stable(data)` | `` assert (t.resp != EXOKAY) else `uvm_error(...) `` |
 
 Use both: they catch different classes of bugs. Other points in the post are covered above: **four** directives including `restrict` (Section 2), `##1` vs. `##[1:3]` (Section 14), and assertion options differ by simulator, so check your tool's documentation rather than a remembered flag name.
+
+---
+
+## 17. Worked Review: "Find the Bugs in This Assertion"
+
+A sixth SVA post offered this FIFO property as an example of catching real bugs. Interviewers often hand you exactly this kind of code and ask you to review it.
+
+```systemverilog
+property p_fifo_write;
+  @(posedge clk) disable iff (reset)
+  (wr_en && !full) |-> ##1 (wr_ptr == $past(wr_ptr)+1);
+endproperty
+assert property (p_fifo_write) else $error("FIFO write pointer mismatch");
+```
+
+### Bug 1 (real false failure): pointer wrap-around and expression width
+`1` is a **32-bit** integer literal, so `$past(wr_ptr)+1` is computed in **32 bits**. With a 3-bit pointer at 7: `$past(wr_ptr)+1 = 8`, but the RTL correctly wraps `wr_ptr` to 0, so `0 == 8` is false: **the assertion fails on correct hardware**, every time the pointer wraps.
+
+Fix (keep the arithmetic at pointer width):
+```systemverilog
+(wr_en && !full) |=> (wr_ptr == $past(wr_ptr) + 1'b1);                 // 1-bit literal: result sized to wr_ptr
+// or explicitly:  wr_ptr == ptr_t'($past(wr_ptr) + 1)
+```
+For a **non-power-of-2** depth, the wrap is explicit: `wr_ptr == (($past(wr_ptr) == DEPTH-1) ? 0 : $past(wr_ptr) + 1'b1)`.
+
+### Bug 2 (missing half of the rule): pointer must NOT move otherwise
+The property only checks that the pointer advances on a write. A bug where the pointer **moves without a write** (or **moves when full**) passes silently.
+```systemverilog
+!(wr_en && !full) |=> $stable(wr_ptr);
+```
+
+### Bug 3 (design assumption): it's white-box and implementation-specific
+It checks an **internal pointer**, so it only works for this implementation. An **asynchronous FIFO** usually uses **Gray-coded** pointers, which don't increment by 1 in binary; the same property would fail everywhere. Prefer black-box properties on the **interface** (no accept when full, data integrity via a reference queue, Challenge 10, Section 5) and keep white-box ones clearly tied to the micro-architecture.
+
+### Smaller points
+- `|-> ##1` is the same as `|=>`; the latter is clearer.
+- `disable iff (reset)` assumes an **active-high** reset; check the polarity, and add reset properties separately (Challenge 13).
+- The message should print **sampled** values: `$error("wr_ptr %0d, expected %0d", $sampled(wr_ptr), $sampled($past(wr_ptr)) + 1)`... or simpler, print `$sampled(wr_ptr)` and let the waveform show the rest (Section 15.2).
+- Add **covers**: write when one entry from full, write at pointer wrap, write and read in the same cycle.
+- Claims from the post: it "runs in parallel with every stimulus" but only fires when stimulus **reaches** the scenario; "a scoreboard would miss the temporal relationship": a scoreboard catches the **data** effect, the assertion **localizes** it (Challenge 25, Section 6); "synthesizable-friendly": a subset of SVA can be synthesized for emulation, but that's a tool feature, not why it catches bugs.
+
+**Interview takeaway:** when reviewing an assertion, check (1) **expression widths and wrap**, (2) the **other direction** of the rule, (3) **black-box vs. white-box** assumptions, (4) reset polarity and vacuity/covers.
