@@ -230,3 +230,16 @@ Machines needed    ≈  concurrent_jobs / jobs_per_machine                  (lim
 Example: 300 tests × 10 seeds × 0.2 h = **600 CPU-hours** per night. With a 10-hour nightly window you need **~60 concurrent jobs**, so **~60 simulator licences**, plus machines with enough memory for 60 jobs.
 
 If you only have 30 licences, the options are: **rank tests** (Challenge 02) and cut redundant seeds, move long tests to a **weekly** run, speed up tests (less logging, shorter tests, no waveform dumping in regression), or ask for licences **with this data** (Challenge 20, Section 9). Put this calculation in the vplan's resource section; it's the honest version of "bake the cost model into the plan from day one".
+
+### 13.2 A third verification-plan post
+
+The useful part: **entry/exit criteria per stage** really are what senior interviewers want (Challenge 20, Section 3). The rest:
+
+| Claim | Reality |
+|---|---|
+| Exit criterion "**90% toggle coverage** before moving to integration" | Toggle coverage isn't a meaningful stage gate. Typical gates: test points implemented, regressions passing with fresh seeds, no open P0/P1 bugs, functional coverage per plan (Challenge 20, Section 3) |
+| **Incisive** for simulation, **VCS** for regression, **Questa** for functional coverage | A project normally uses **one** simulator for simulation, regression **and** coverage: coverage databases are **vendor-specific** and don't merge across tools. (Incisive is now Xcelium; "Mentor" is now **Siemens EDA**) |
+| "Intel's **FPGA-UVM library**" | Not a known UVM library to cite. Assertion-based checking uses **SVA** (Challenges 08, 13) |
+| "**Coverage-driven assertions**" | Mixes two things: **assertions** check rules; **covers** (`cover property`) measure scenarios (Challenge 13, Section 7) |
+| Put "**proven 30% regression reduction**" on LinkedIn | Only list results **you measured**. Interviewers ask "how did you measure that?", and an invented number ends the conversation (Challenge 24) |
+| The "five mandatory artifacts" | Reasonable list (spec/feature matrix, test plan, stimulus strategy, bug tracking, coverage reports); add **sign-off criteria** and **waiver records** (Section 6) |
