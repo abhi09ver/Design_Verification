@@ -261,3 +261,22 @@ It pulls from the sequencer through `seq_item_port` with `get_next_item` / `item
 - [ ] Can I explain and fix the pass-by-handle bug?
 - [ ] Can I write a two-stream scoreboard with `_decl` macros?
 - [ ] Can I compare `uvm_tlm_fifo` and `uvm_tlm_analysis_fifo`?
+
+---
+
+## 14. Addendum: A Second Post on the Same Topic
+
+A follow-up post repeats the same pattern with new invented numbers. Quick corrections:
+
+| Claim | Reality |
+|---|---|
+| Analysis port "ingests the raw pixel stream at ~2 GB/s" on a Jetson | TLM is a testbench construct running in the simulator. There's no bandwidth figure, and the hardware platform is irrelevant |
+| Attach "up to 4 monitors" with "no delta-cycle overhead" | No fixed limit on subscribers. `write()` is zero **simulation** time, but each subscriber's `write()` runs **one after another in the caller's thread**, so it costs **CPU time**. A slow subscriber slows the whole simulation |
+| "Add an analysis port **to your scoreboard**" | Monitors **have** analysis ports; scoreboards **receive** through analysis imps or analysis FIFOs |
+| FIFO absorbs a generator emitting "**256 transactions per cycle**" | TLM is untimed; "per cycle" is meaningless for TLM. Size a `uvm_tlm_fifo` from the producer/consumer behaviour of **your** testbench |
+| "The export simply **forwards the call to the underlying port**" | Backwards. A **port** calls through **exports** down to the **imp** that implements the method |
+| An export "shared by 3 agents", "a shared driver bound to two agents" | A driver belongs to **one** agent and pulls from **one** sequencer. To feed several analysis consumers (coverage, power activity, error checks), connect **one monitor's analysis port** to several subscribers (Section 4) |
+| "Run regressions on NVIDIA Jetson and AMD Ryzen **reference models** to see TLM latency" | Meaningless. TLM latency is zero simulation time; workstation choice only affects wall-clock speed |
+| "**Power estimation**" as a TLM analysis pass | Power is estimated by power tools from switching activity (often captured on emulators), not by a TLM subscriber (Challenge 12) |
+
+**Takeaway:** if a TLM claim mentions **cycles, bandwidth, or hardware platforms**, it's wrong. TLM is untimed, in-simulator communication between testbench components.
