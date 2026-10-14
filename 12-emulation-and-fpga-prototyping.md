@@ -181,3 +181,40 @@ Emulation: faster compile, better debug, supports TBA, more expensive per hour. 
 - [ ] Can I explain why an FPGA prototype can't verify ASIC timing or power?
 - [ ] Can I draw the HVL/HDL split for transaction-based acceleration?
 - [ ] Can I describe how to debug a failure after billions of cycles?
+
+---
+
+## 12. Addendum: A Second Post on the Same Topic
+
+A follow-up post repeats the FPGA-timing/power myths (Section 2) and adds new claims:
+
+| Claim | Reality |
+|---|---|
+| Put **compute blocks** on Palladium/ZeBu, **keep control logic in RTL simulation**, for a **10× speedup** | Splitting the **DUT** between emulator and simulator usually makes things **slower**, not faster (see 12.1) |
+| A two-week FPGA bring-up "gives **the same confidence as full silicon sign-off**" | No. Prototypes check **function and software** on FPGA technology. Silicon sign-off includes STA, power, DFT, physical verification, and real-silicon validation, none of which a prototype provides |
+| One TB drives sim and emulation "with the **same constrained-random stimulus and coverage model**" | The goal is right, but it only works if the TB is **split** (HVL/HDL, Section 5). Class-based randomization and covergroups stay on the simulator side; coverage on the emulator side is limited |
+| "Compile the same UVM TB for both Cadence and Synopsys accelerators" | Possible for the HVL side, but transactors/BFMs and compile flows are **platform-specific**. Plan for a thin per-platform layer |
+| "Validate timing closure and power margins" on Agilex; "10 μs per test-cycle" | Same myth as Section 2 (FPGA ≠ ASIC timing/power); the "per test-cycle" number has no meaning as stated |
+
+### 12.1 Why splitting the DUT across sim and emulator hurts (Amdahl's law)
+
+If control logic stays in the simulator and talks to the emulated compute blocks **every clock cycle**:
+- Every cycle needs a **round trip** between workstation and emulator to exchange signal values.
+- Total speed is limited by the **slowest part**: the simulator running control logic, plus the communication overhead.
+- Result: often **slower than pure simulation**.
+
+**Correct partitioning:**
+
+| Put on the emulator | Keep on the simulator (host) |
+|---|---|
+| The **whole DUT** (or as much of it as possible) | UVM test, sequences, scoreboard, coverage |
+| Synthesizable BFMs / transactors, clock and reset generation | Reference models (C/C++ via DPI) |
+| Memory models (emulator memory) | Anything untimed and class-based |
+
+Communicate **per transaction**, not per cycle, and keep the host side light, because emulation speed now depends on how often the emulator has to wait for the host.
+
+When must part of the DUT stay in software? Only for parts that **can't** be emulated (e.g., analog models, non-synthesizable IP models). Then replace them with a **transaction-level** or synthesizable stand-in where possible.
+
+### 12.2 Interview answer (30 seconds)
+
+> "I put the entire DUT plus synthesizable transactors on the emulator and keep the class-based testbench on the host, communicating per transaction. Splitting the DUT itself across simulator and emulator forces a per-cycle round trip, and Amdahl's law kills the speedup. And an FPGA prototype never replaces sign-off: it validates function and software, while timing, power and physical sign-off happen on the ASIC implementation."
