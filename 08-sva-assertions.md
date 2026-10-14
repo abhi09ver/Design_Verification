@@ -324,3 +324,57 @@ a_hs:     assert property ($rose(req) |-> ##[1:3] gnt);
 a_req_x:  assert property (!$isunknown(req));
 a_gnt_x:  assert property (req |-> !$isunknown(gnt));
 ```
+
+---
+
+## 15. Addendum: AXI-Lite Write Ordering and Printing Values in Action Blocks
+
+A third SVA post. Corrections:
+
+| Claim | Reality |
+|---|---|
+| SVA in simulation means "**the tool will prove it works**" | Simulation **checks** the scenarios you ran. Only **formal** proves a property for all inputs (Challenge 14) |
+| AXI-Lite write is the sequence **AW → W → B**, "a one-line property" | **AW and W are independent**: W may come before AW, or in the same cycle. The rule is that **B comes only after both** handshakes (needs a little tracking, 15.1) |
+| A "**single-cycle** property for the address handshake" | Handshake rules (valid held until ready, payload stable) span **two cycles**: `awvalid && !awready |=> awvalid && $stable(awaddr)` (Challenge 10) |
+| Simulators "**automatically** generate coverage for each assertion" | Assertion coverage must be **enabled** with compile/run options; it reports attempts, successes, vacuous successes and failures. To see which **scenarios** happened, write **`cover property`** statements (Challenge 13, Section 7) |
+| "Eliminates **90%** of spurious bugs" | Invented number |
+| Print the offending values in the `$error` message | Good advice, with a trap (15.2) |
+
+### 15.1 B only after both AW and W (one outstanding write)
+
+```systemverilog
+logic aw_done, w_done;
+always_ff @(posedge clk or negedge rst_n)
+  if (!rst_n) begin aw_done <= 0; w_done <= 0; end
+  else if (bvalid && bready) begin aw_done <= 0; w_done <= 0; end
+  else begin
+    if (awvalid && awready) aw_done <= 1;
+    if (wvalid  && wready)  w_done  <= 1;
+  end
+
+a_b_after_aw_w: assert property (@(posedge clk) disable iff (!rst_n)
+  $rose(bvalid) |-> aw_done && w_done)
+  else $error("BVALID before both AW and W handshakes (aw_done=%0b w_done=%0b)",
+              $sampled(aw_done), $sampled(w_done));
+
+c_w_before_aw: cover property (@(posedge clk) disable iff (!rst_n)
+  (wvalid && wready && !aw_done && !(awvalid && awready)));
+c_same_cycle:  cover property (@(posedge clk) disable iff (!rst_n)
+  (awvalid && awready && wvalid && wready));
+```
+(BVALID can't rise in the same cycle as the last handshake, so the registered `*_done` flags are already set when it rises. For multiple outstanding writes, use counters instead of flags.)
+
+### 15.2 The action-block trap: printed values aren't the sampled values
+
+The property is evaluated with values **sampled before** the clock edge, but the **action block** (`else $error(...)`) runs **later in the same time step**, after the design's flops have updated. Printing a signal directly can show the **new** value, not the one that failed:
+
+```systemverilog
+// Misleading: 'wdata' here may already be the post-edge value
+a_bad_msg:  assert property (wvalid && !wready |=> $stable(wdata))
+  else $error("wdata changed: %h", wdata);
+
+// Correct: print the values the assertion actually saw
+a_good_msg: assert property (wvalid && !wready |=> $stable(wdata))
+  else $error("wdata changed while stalled: now %h (sampled)", $sampled(wdata));
+```
+Use **`$sampled()`** in action blocks. Include IDs/addresses (as the post suggests), but sampled.
