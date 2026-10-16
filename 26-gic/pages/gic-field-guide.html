@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GIC Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a datasheet-style study guide. Sticky chapter rail on wide screens, single column on phones.
+   Each interrupt class owns one signal colour that is reused in every diagram. */
+:root{
+  --bg:#eef1f0; --surface:#f9fbfa; --ink:#13201c; --muted:#53635d; --line:#c6d0cc; --accent:#0b6b5a;
+  --sgi:#6a4cc0; --ppi:#2161ad; --spi:#a86a07; --lpi:#0b7f6d; --virt:#b2346f; --spec:#7b8784;
+  --warn:#b4471b; --tint:#e2e8e6;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1513; --surface:#151f1c; --ink:#e2ebe7; --muted:#97a8a1; --line:#2b3a35; --accent:#4cc3a8;
+  --sgi:#a28cf2; --ppi:#6ea8ef; --spi:#e6a743; --lpi:#45c7b0; --virt:#ef7aae; --spec:#8f9b97;
+  --warn:#f08a5d; --tint:#1c2925; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1513; --surface:#151f1c; --ink:#e2ebe7; --muted:#97a8a1; --line:#2b3a35; --accent:#4cc3a8;
+  --sgi:#a28cf2; --ppi:#6ea8ef; --spi:#e6a743; --lpi:#45c7b0; --virt:#ef7aae; --spec:#8f9b97;
+  --warn:#f08a5d; --tint:#1c2925; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;padding-block:40px 80px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:0;padding-block:24px 60px}.rail{display:none}}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13px}
+.rail b{font-family:var(--f-display);font-stretch:85%;letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:var(--muted);display:block;margin-bottom:10px}
+.rail a{display:flex;gap:10px;color:var(--muted);text-decoration:none;padding:4px 0;border-left:2px solid transparent;padding-left:10px}
+.rail a:hover,.rail a:focus-visible{color:var(--ink);border-left-color:var(--accent);outline:none}
+.rail a span{font-family:var(--f-mono);font-size:11px;color:var(--accent);min-width:18px}
+main{min-width:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(2.3rem,5.5vw,3.9rem);font-weight:800;font-stretch:80%;letter-spacing:-.01em}
+h2{font-size:clamp(1.55rem,3vw,2.05rem);font-weight:750;font-stretch:88%}
+h3{font-size:1.08rem;font-weight:700;font-stretch:95%}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+code{background:var(--tint);padding:.08em .35em;border-radius:3px;white-space:nowrap}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hero{display:grid;gap:18px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.hero .lede{font-size:1.12rem;color:var(--muted);max-width:62ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+section{padding-block:44px 8px;display:grid;gap:18px;scroll-margin-top:16px}
+.sec-head{display:grid;gap:6px}
+.sec-head .num{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:640px;height:auto}
+.fig.narrow svg{min-width:520px}
+.cap{font-size:12.5px;color:var(--muted);margin-top:8px;max-width:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:grid;gap:8px;align-content:start;min-width:0}
+.card ul,.plain{margin:0;padding-left:18px;display:grid;gap:4px}
+.card li,.plain li{max-width:66ch}
+.key{border-left:3px solid var(--accent);padding:10px 14px;background:var(--tint);border-radius:0 4px 4px 0;max-width:72ch}
+.key b{font-family:var(--f-display);font-stretch:90%}
+.trap{border-left-color:var(--warn)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-display);font-stretch:90%;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--tint)}
+tr:last-child td{border-bottom:0}
+td .mono{white-space:nowrap}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid currentColor;white-space:nowrap}
+.c-sgi{color:var(--sgi)}.c-ppi{color:var(--ppi)}.c-spi{color:var(--spi)}.c-lpi{color:var(--lpi)}.c-virt{color:var(--virt)}.c-warn{color:var(--warn)}.c-acc{color:var(--accent)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:0}
+details+details{margin-top:-8px}
+summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:flex;gap:12px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";font-family:var(--f-mono);color:var(--accent);width:12px;flex:none}
+details[open] summary::before{content:"–"}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+details .ans{padding:0 16px 14px 40px;display:grid;gap:8px;color:var(--ink)}
+details .ans p{max-width:72ch}
+.lvl{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);margin-left:auto;flex:none}
+.qa-tools{display:flex;gap:10px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+/* SVG tokens */
+svg text{font-family:var(--f-body);fill:var(--ink)}
+svg .t-s{font-size:11px;fill:var(--muted)}
+svg .t-m{font-family:var(--f-mono);font-size:10.5px}
+svg .t-h{font-family:var(--f-display);font-weight:700;font-size:14px}
+svg .box{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+svg .boxt{fill:var(--tint);stroke:var(--line);stroke-width:1}
+svg .ln{stroke:var(--muted);stroke-width:1.4;fill:none}
+svg .dash{stroke-dasharray:4 4}
+svg .arrowhead{fill:var(--muted)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<nav class="rail" aria-label="Chapters">
+  <b>Chapters</b>
+  <a href="#big"><span>01</span>Big picture</a>
+  <a href="#intid"><span>02</span>INTID map</a>
+  <a href="#life"><span>03</span>Lifecycle</a>
+  <a href="#sec"><span>04</span>Groups &amp; security</a>
+  <a href="#prio"><span>05</span>Priority</a>
+  <a href="#route"><span>06</span>Routing &amp; SGIs</a>
+  <a href="#its"><span>07</span>LPIs &amp; ITS</a>
+  <a href="#virt"><span>08</span>Virtualization</a>
+  <a href="#power"><span>09</span>Power &amp; stream</a>
+  <a href="#regs"><span>10</span>Register map</a>
+  <a href="#design"><span>11</span>Design view</a>
+  <a href="#dv"><span>12</span>Verification</a>
+  <a href="#bugs"><span>13</span>Bug hunt list</a>
+  <a href="#qa"><span>14</span>Interview Q&amp;A</a>
+  <a href="#pitch"><span>15</span>60-second pitch</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Arm GICv3 / GICv4 · IHI 0069H.b · Senior CPU DV prep</div>
+  <h1>GIC Field Guide</h1>
+  <p class="lede">The Generic Interrupt Controller takes interrupts from wires, messages and software, decides which processing element (PE) should take each one, ranks them by priority and security group, and hands the winner to the CPU. This guide covers it as an architect would explain it, a designer would build it and a verification lead would break it.</p>
+  <div class="legend" aria-label="Colour key used in every diagram">
+    <span><i style="background:var(--sgi)"></i>SGI · software generated</span>
+    <span><i style="background:var(--ppi)"></i>PPI · private peripheral</span>
+    <span><i style="background:var(--spi)"></i>SPI · shared peripheral</span>
+    <span><i style="background:var(--lpi)"></i>LPI · message based</span>
+    <span><i style="background:var(--virt)"></i>Virtual</span>
+  </div>
+</header>
+
+<!-- 01 -->
+<section id="big">
+  <div class="sec-head"><span class="num">01 · Architecture</span><h2>Four blocks, one pipeline</h2></div>
+  <p>GICv3 splits the old monolithic controller into blocks that scale to hundreds of cores. Keep this picture in your head; nearly every interview question maps onto one arrow in it.</p>
+  <div class="fig">
+  <svg viewBox="0 0 940 470" role="img" aria-label="GIC system topology: peripherals feed the Distributor and ITS, which feed per-PE Redistributors, which talk to CPU interfaces over the GIC Stream Protocol.">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <!-- sources -->
+    <rect x="10" y="40" width="150" height="70" rx="5" class="box"/><text x="22" y="64" class="t-h">Wired peripherals</text><text x="22" y="82" class="t-s">level / edge lines</text><text x="22" y="98" class="t-s">timers, UART, DMA</text>
+    <rect x="10" y="150" width="150" height="70" rx="5" class="box"/><text x="22" y="174" class="t-h">MSI devices</text><text x="22" y="192" class="t-s">PCIe, SMMU events</text><text x="22" y="208" class="t-s">write DeviceID+EventID</text>
+    <rect x="10" y="400" width="150" height="50" rx="5" class="box"/><text x="22" y="422" class="t-h">Software (SGIs)</text><text x="22" y="440" class="t-s t-m">ICC_SGI1R_EL1 write</text>
+    <!-- distributor -->
+    <rect x="230" y="30" width="200" height="110" rx="5" class="box" style="stroke:var(--spi);stroke-width:2"/>
+    <text x="244" y="54" class="t-h">Distributor  GICD_*</text>
+    <text x="244" y="74" class="t-s">One per system. Owns SPIs:</text>
+    <text x="244" y="90" class="t-s">enable, priority, group, trigger,</text>
+    <text x="244" y="106" class="t-s">route (IROUTER), pending/active</text>
+    <text x="244" y="126" class="t-s t-m" style="fill:var(--spi)">SPI 32–1019 · ESPI 4096–5119</text>
+    <!-- ITS -->
+    <rect x="230" y="160" width="200" height="110" rx="5" class="box" style="stroke:var(--lpi);stroke-width:2"/>
+    <text x="244" y="184" class="t-h">ITS  GITS_*</text>
+    <text x="244" y="204" class="t-s">Translates (DeviceID, EventID)</text>
+    <text x="244" y="220" class="t-s">to (LPI INTID, target RD)</text>
+    <text x="244" y="236" class="t-s">via tables in memory; driven by</text>
+    <text x="244" y="252" class="t-s">a command queue</text>
+    <!-- memory -->
+    <rect x="230" y="300" width="200" height="90" rx="5" class="boxt"/>
+    <text x="244" y="322" class="t-h">Memory tables</text>
+    <text x="244" y="340" class="t-s t-m">Device · ITT · Collection</text>
+    <text x="244" y="356" class="t-s t-m">LPI Config (PROPBASER)</text>
+    <text x="244" y="372" class="t-s t-m">LPI Pending (PENDBASER) · vPE</text>
+    <!-- redistributors -->
+    <g>
+      <rect x="500" y="30" width="190" height="420" rx="5" class="boxt"/>
+      <text x="514" y="54" class="t-h">Redistributors  GICR_*</text>
+      <text x="514" y="72" class="t-s">One per PE. Owns SGI, PPI, LPI</text>
+      <rect x="514" y="88" width="162" height="96" rx="4" class="box"/><text x="526" y="108" class="t-h" style="font-size:12.5px">RD · PE 0.0.0.0</text><text x="526" y="126" class="t-s">SGI/PPI config (SGI_base)</text><text x="526" y="142" class="t-s">LPI pending cache</text><text x="526" y="158" class="t-s">WAKER, PROPBASER,</text><text x="526" y="174" class="t-s">PENDBASER, VPENDBASER</text>
+      <rect x="514" y="196" width="162" height="60" rx="4" class="box"/><text x="526" y="218" class="t-h" style="font-size:12.5px">RD · PE 0.0.0.1</text><text x="526" y="238" class="t-s">same frame layout</text>
+      <text x="590" y="285" class="t-s" text-anchor="middle">⋮</text>
+      <rect x="514" y="300" width="162" height="60" rx="4" class="box"/><text x="526" y="322" class="t-h" style="font-size:12.5px">RD · PE n</text><text x="526" y="342" class="t-s">GICR_TYPER.Last = 1</text>
+      <text x="514" y="390" class="t-s">Ranks the highest-priority</text>
+      <text x="514" y="406" class="t-s">pending interrupt (HPPI) for</text>
+      <text x="514" y="422" class="t-s">its PE and forwards it</text>
+    </g>
+    <!-- CPU -->
+    <rect x="760" y="30" width="170" height="420" rx="5" class="box" style="stroke:var(--accent);stroke-width:2"/>
+    <text x="774" y="54" class="t-h">PE + CPU interface</text>
+    <text x="774" y="72" class="t-s">System registers, no MMIO</text>
+    <text x="774" y="100" class="t-s t-m">ICC_*  physical</text>
+    <text x="774" y="116" class="t-s t-m">ICH_*  hypervisor ctl</text>
+    <text x="774" y="132" class="t-s t-m">ICV_*  VM view</text>
+    <text x="774" y="164" class="t-s">Applies PMR, running</text>
+    <text x="774" y="180" class="t-s">priority, group enables,</text>
+    <text x="774" y="196" class="t-s">then raises:</text>
+    <text x="774" y="222" class="t-m" style="fill:var(--accent)">IRQ  FIQ</text>
+    <text x="774" y="240" class="t-m" style="fill:var(--virt)">vIRQ vFIQ</text>
+    <text x="774" y="270" class="t-s">Software: IAR → handle →</text>
+    <text x="774" y="286" class="t-s">EOIR (→ DIR)</text>
+    <text x="774" y="330" class="t-s">List registers hold</text>
+    <text x="774" y="346" class="t-s">virtual interrupts</text>
+    <text x="774" y="362" class="t-s">for the running VM</text>
+    <!-- arrows -->
+    <path d="M160 75 H230" class="ln" style="stroke:var(--spi)" marker-end="url(#ah)"/>
+    <path d="M160 185 H230" class="ln" style="stroke:var(--lpi)" marker-end="url(#ah)"/>
+    <path d="M160 175 C195 175 195 120 230 118" class="ln dash" style="stroke:var(--spi)" marker-end="url(#ah)"/>
+    <text x="166" y="140" class="t-s" style="font-size:9.5px">SETSPI_NSR</text>
+    <path d="M330 270 V300" class="ln dash" marker-end="url(#ah)"/>
+    <path d="M430 85 H500" class="ln" style="stroke:var(--spi)" marker-end="url(#ah)"/>
+    <path d="M430 215 H500" class="ln" style="stroke:var(--lpi)" marker-end="url(#ah)"/>
+    <path d="M430 345 H500" class="ln dash" marker-end="url(#ah)"/>
+    <text x="436" y="338" class="t-s" style="font-size:9.5px">LPI tables</text>
+    <path d="M160 425 H480 V250 H500" class="ln" style="stroke:var(--sgi)" marker-end="url(#ah)"/>
+    <text x="300" y="418" class="t-s" style="font-size:9.5px">SGI request via CPU IF → RD of target</text>
+    <path d="M690 136 H760" class="ln" style="stroke:var(--accent)" marker-end="url(#ah)"/>
+    <path d="M760 160 H690" class="ln" style="stroke:var(--accent)" marker-end="url(#ah)"/>
+    <text x="696" y="128" class="t-s" style="font-size:9.5px">Set/Clear</text>
+    <text x="696" y="176" class="t-s" style="font-size:9.5px">Act/Deact</text>
+    <text x="700" y="200" class="t-s" style="font-size:9.5px;fill:var(--accent)">GIC Stream</text>
+    <text x="700" y="212" class="t-s" style="font-size:9.5px;fill:var(--accent)">Protocol</text>
+  </svg>
+  <p class="cap">The Distributor and ITS are shared. Redistributors and CPU interfaces are per PE. The Redistributor ↔ CPU interface link (GIC Stream Protocol, Appendix A) is the natural cut point for block-level verification.</p>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>What changed from GICv2</h3><ul>
+      <li>Affinity routing (Aff3.Aff2.Aff1.Aff0) replaces the 8-bit CPU target mask, so the 8-core limit is gone.</li>
+      <li>CPU interface moved to system registers (<code>ICC_*</code>), which is faster than MMIO.</li>
+      <li>LPIs and the ITS add message-signaled interrupts.</li>
+      <li>Two Security states with three groups, not just Group 0/1.</li></ul></div>
+    <div class="card"><h3>Version ladder</h3><ul>
+      <li><b>v3.0</b>: affinity routing, LPIs, ITS, sysreg CPU IF</li>
+      <li><b>v3.1</b>: Extended SPI/PPI ranges, MPAM, Secure EL2</li>
+      <li><b>v3.2</b>: Armv8-R AArch64</li>
+      <li><b>v3.3</b>: non-maskable interrupts (NMI)</li>
+      <li><b>v4.0</b>: direct injection of vLPIs</li>
+      <li><b>v4.1</b>: direct vSGIs, reworked vPE tables</li>
+      <li><b>v4.2</b>: virtual NMIs</li></ul></div>
+    <div class="card"><h3>Spec map (IHI 0069H.b)</h3><ul>
+      <li>Ch 2 routing · Ch 3 partitioning</li>
+      <li>Ch 4 physical handling &amp; priority</li>
+      <li>Ch 5 LPIs &amp; ITS · Ch 6 virtualization</li>
+      <li>Ch 7–8 GICv4.0 / v4.1</li>
+      <li>Ch 11 power · Ch 12 programmers' model</li>
+      <li>Ch 14 system errors · App A stream protocol</li>
+      <li>App B pseudocode (great for ref models)</li></ul></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="intid">
+  <div class="sec-head"><span class="num">02 · Specification</span><h2>The INTID map</h2></div>
+  <p>The interrupt ID (INTID) alone tells you the type, who owns its state and which block configures it. Interviewers expect these boundaries without hesitation.</p>
+  <div class="fig">
+  <svg viewBox="0 0 940 200" role="img" aria-label="INTID ranges: SGI 0-15, PPI 16-31, SPI 32-1019, special 1020-1023, extended PPI 1056-1119, extended SPI 4096-5119, LPI 8192 and up.">
+    <g>
+      <rect x="10" y="40" width="70" height="56" style="fill:var(--sgi)"/>
+      <rect x="82" y="40" width="70" height="56" style="fill:var(--ppi)"/>
+      <rect x="154" y="40" width="230" height="56" style="fill:var(--spi)"/>
+      <rect x="386" y="40" width="44" height="56" style="fill:var(--spec)"/>
+      <rect x="432" y="40" width="80" height="56" style="fill:var(--ppi);opacity:.6"/>
+      <rect x="514" y="40" width="40" height="56" class="boxt"/>
+      <rect x="556" y="40" width="150" height="56" style="fill:var(--spi);opacity:.6"/>
+      <rect x="708" y="40" width="40" height="56" class="boxt"/>
+      <rect x="750" y="40" width="180" height="56" style="fill:var(--lpi)"/>
+    </g>
+    <g class="t-m" style="font-size:10px">
+      <text x="10" y="30">0</text><text x="82" y="30">16</text><text x="154" y="30">32</text><text x="386" y="30">1020</text>
+      <text x="432" y="30">1056</text><text x="556" y="30">4096</text><text x="750" y="30">8192 →</text>
+    </g>
+    <g style="font-weight:600;font-size:12.5px">
+      <text x="18" y="74" style="fill:#fff">SGI</text><text x="90" y="74" style="fill:#fff">PPI</text>
+      <text x="162" y="74" style="fill:#fff">SPI · 32–1019</text><text x="390" y="74" style="fill:#fff;font-size:10px">Spec</text>
+      <text x="438" y="74" style="fill:#fff;font-size:11px">EPPI</text><text x="562" y="74" style="fill:#fff">ESPI 4096–5119</text>
+      <text x="758" y="74" style="fill:#fff">LPI (no upper bound*)</text>
+    </g>
+    <g class="t-s">
+      <text x="10" y="120">per PE, RD</text><text x="82" y="120">per PE, RD</text>
+      <text x="154" y="120">shared, Distributor</text><text x="386" y="120">1020+</text>
+      <text x="432" y="120">v3.1, per PE</text><text x="556" y="120">v3.1, Distributor</text><text x="750" y="120">per PE, RD + memory</text>
+      <text x="10" y="138">software</text><text x="82" y="138">timer, PMU</text>
+      <text x="154" y="138">wire or SETSPI msg</text><text x="386" y="138">special</text>
+      <text x="432" y="138">1056–1119</text><text x="556" y="138">needs ≥13 INTID bits</text><text x="750" y="138">via ITS or GICR_SETLPIR</text>
+    </g>
+    <text x="10" y="180" class="t-s">Schematic, not to scale. Grey gaps are reserved (1024–1055, 1120–4095, 5120–8191). *LPI ceiling set by GICD_TYPER.IDbits and GICR_PROPBASER.IDbits.</text>
+  </svg>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Special INTID</th><th>Meaning when read from IAR/HPPIR</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">1020</td><td>EL3 read of <code>ICC_IAR0_EL1</code>: the pending interrupt is Secure Group 1, meant for Secure EL1/EL2.</td></tr>
+      <tr><td class="mono">1021</td><td>EL3 read of <code>ICC_IAR0_EL1</code>: the pending interrupt is Non-secure Group 1, meant for NS EL1/EL2.</td></tr>
+      <tr><td class="mono">1022</td><td>GICv3.3: read of <code>ICC_IAR1_EL1</code> with <code>SCTLR_ELx.NMI</code>=1 when the HPPI is an NMI. Use <code>ICC_NMIAR1_EL1</code> to take it.</td></tr>
+      <tr><td class="mono">1023</td><td>Spurious: nothing pending has enough priority, or the HPPI does not suit the current Security state / exception level / register used.</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 03 -->
+<section id="life">
+  <div class="sec-head"><span class="num">03 · Specification</span><h2>Interrupt lifecycle</h2></div>
+  <p>Every SGI, PPI and SPI moves through four states. LPIs have only two: they have no Active state, so acknowledging an LPI clears its pending bit and nothing needs deactivating.</p>
+  <div class="fig">
+  <svg viewBox="0 0 940 330" role="img" aria-label="State machine: Inactive to Pending on assert, Pending to Active on acknowledge, Active to Inactive on deactivate, Active to Active and Pending on new edge, Active and Pending to Pending on deactivate.">
+    <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <rect x="40" y="40" width="160" height="60" rx="30" class="box" style="stroke-width:2"/><text x="120" y="76" text-anchor="middle" class="t-h">Inactive</text>
+    <rect x="390" y="40" width="160" height="60" rx="30" class="box" style="stroke:var(--spi);stroke-width:2"/><text x="470" y="76" text-anchor="middle" class="t-h">Pending</text>
+    <rect x="390" y="220" width="160" height="60" rx="30" class="box" style="stroke:var(--accent);stroke-width:2"/><text x="470" y="256" text-anchor="middle" class="t-h">Active</text>
+    <rect x="720" y="130" width="190" height="60" rx="30" class="box" style="stroke:var(--warn);stroke-width:2"/><text x="815" y="166" text-anchor="middle" class="t-h">Active &amp; Pending</text>
+    <path d="M200 62 H390" class="ln" marker-end="url(#ah2)"/><text x="215" y="54" class="t-s">edge / level assert / ISPENDR / SGI</text>
+    <path d="M390 82 H200" class="ln" marker-end="url(#ah2)"/><text x="215" y="98" class="t-s">level deassert / ICPENDR</text>
+    <path d="M470 100 V220" class="ln" marker-end="url(#ah2)"/><text x="480" y="160" class="t-s">read IAR (acknowledge)</text>
+    <path d="M390 250 C200 250 120 200 120 100" class="ln" marker-end="url(#ah2)"/><text x="150" y="250" class="t-s">EOIR (EOImode=0) or DIR</text>
+    <path d="M550 240 C650 240 700 210 730 190" class="ln" marker-end="url(#ah2)"/><text x="600" y="268" class="t-s">new edge while active</text>
+    <path d="M760 130 C700 90 620 72 550 72" class="ln" marker-end="url(#ah2)"/><text x="620" y="104" class="t-s">deactivate</text>
+    <path d="M550 50 C640 20 760 30 815 128" class="ln dash" marker-end="url(#ah2)"/><text x="660" y="30" class="t-s">read IAR on level SPI still asserted: → A&amp;P</text>
+    <text x="40" y="312" class="t-s">LPI: Pending → (acknowledge) → Inactive. No active state, no EOI deactivation, but EOIR still performs the priority drop.</text>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="key"><b>Edge vs level.</b> A level interrupt that stays asserted after acknowledge goes straight to Active &amp; Pending. Software must clear the source before EOI, or it fires again immediately. An edge that arrives while Active becomes Active &amp; Pending and is taken again after deactivation, so no edge is lost (but two edges while pending merge into one).</div>
+    <div class="key trap"><b>Interview trap.</b> "Can an LPI be active?" No. "Does an LPI need EOI?" Yes, for the priority drop. With <code>EOImode</code>=1, a write to <code>ICC_DIR_EL1</code> for an LPI has no effect.</div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="sec">
+  <div class="sec-head"><span class="num">04 · Architecture</span><h2>Groups and security</h2></div>
+  <p>Each interrupt is in one of three groups, set by <code>IGROUPR</code> together with <code>IGRPMODR</code>. Whether it arrives as IRQ or FIQ depends on the group and on the Security state and EL the PE is in right now. This is the most common whiteboard question.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Group</th><th>IGROUPR / IGRPMODR</th><th>Typical owner</th><th>PE in Secure EL1/EL2</th><th>PE in Non-secure</th><th>PE at EL3</th></tr></thead>
+    <tbody>
+      <tr><td><b>Group 0</b></td><td class="mono">0 / 0</td><td>EL3 firmware</td><td class="c-warn"><b>FIQ</b></td><td class="c-warn"><b>FIQ</b></td><td class="c-warn"><b>FIQ</b></td></tr>
+      <tr><td><b>Secure Group 1</b></td><td class="mono">0 / 1</td><td>Secure OS / TEE</td><td class="c-acc"><b>IRQ</b></td><td class="c-warn"><b>FIQ</b></td><td class="c-warn"><b>FIQ</b></td></tr>
+      <tr><td><b>Non-secure Group 1</b></td><td class="mono">1 / 0</td><td>Rich OS / hypervisor</td><td class="c-warn"><b>FIQ</b></td><td class="c-acc"><b>IRQ</b></td><td class="c-warn"><b>FIQ</b></td></tr>
+    </tbody></table></div>
+  <div class="grid3">
+    <div class="card"><h3>Rule of thumb</h3><p>An interrupt for the world you are in arrives as IRQ. An interrupt for another world arrives as FIQ, which routes to EL3 (<code>SCR_EL3.FIQ</code>=1) so the monitor can switch worlds.</p></div>
+    <div class="card"><h3>Register banking</h3><p>Non-secure accesses to Secure-group state read as zero and ignore writes. <code>GICD_CTLR</code> has separate <code>ARE_S</code>/<code>ARE_NS</code> and <code>EnableGrp0/1S/1NS</code> bits. <code>DS</code>=1 collapses to a single Security state.</p></div>
+    <div class="card"><h3>Priority split</h3><p>Non-secure software sees a shifted priority view: its value <code>p</code> is stored as <code>(p&gt;&gt;1)|0x80</code>. NS interrupts therefore always occupy the lower-priority half, so Secure can always preempt.</p></div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="prio">
+  <div class="sec-head"><span class="num">05 · Specification</span><h2>Priority, masking and preemption</h2></div>
+  <p>Priority is 8 bits and lower means more urgent. A GIC with two Security states implements at least 32 levels (5 bits); one with a single state, at least 16. The CPU interface signals an interrupt only if it passes three gates.</p>
+  <div class="fig">
+  <svg viewBox="0 0 940 260" role="img" aria-label="Three gates: group enable, priority below PMR, group priority below running priority. Binary point splits 8-bit priority into group priority and subpriority.">
+    <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <rect x="10" y="30" width="150" height="70" rx="5" class="boxt"/><text x="22" y="56" class="t-h">HPPI from RD</text><text x="22" y="76" class="t-s">highest priority pending,</text><text x="22" y="90" class="t-s">enabled, routed here</text>
+    <rect x="200" y="30" width="170" height="70" rx="5" class="box"/><text x="212" y="56" class="t-h">Gate 1 · enable</text><text x="212" y="76" class="t-s t-m">ICC_IGRPEN0/1 = 1</text><text x="212" y="90" class="t-s">and GICD_CTLR.EnableGrpX</text>
+    <rect x="410" y="30" width="170" height="70" rx="5" class="box"/><text x="422" y="56" class="t-h">Gate 2 · mask</text><text x="422" y="76" class="t-s t-m">prio &lt; ICC_PMR_EL1</text><text x="422" y="90" class="t-s">(strictly less)</text>
+    <rect x="620" y="30" width="170" height="70" rx="5" class="box"/><text x="632" y="56" class="t-h">Gate 3 · preempt</text><text x="632" y="76" class="t-s t-m">grp-prio &lt; ICC_RPR</text><text x="632" y="90" class="t-s">running priority</text>
+    <rect x="830" y="30" width="100" height="70" rx="5" class="box" style="stroke:var(--accent);stroke-width:2"/><text x="842" y="62" class="t-h">IRQ/FIQ</text><text x="842" y="82" class="t-s">signaled</text>
+    <path d="M160 65 H200" class="ln" marker-end="url(#ah3)"/><path d="M370 65 H410" class="ln" marker-end="url(#ah3)"/><path d="M580 65 H620" class="ln" marker-end="url(#ah3)"/><path d="M790 65 H830" class="ln" marker-end="url(#ah3)"/>
+    <text x="10" y="150" class="t-h">Binary point (ICC_BPR0/1) splits the priority byte</text>
+    <g class="t-m">
+      <rect x="10" y="165" width="440" height="40" class="boxt"/>
+      <rect x="10" y="165" width="275" height="40" style="fill:var(--accent);opacity:.85"/>
+      <text x="20" y="190" style="fill:#fff">group priority  [7:3]  → decides preemption</text>
+      <text x="295" y="190">subpriority [2:0]</text>
+      <text x="460" y="182" class="t-s">Example BPR0 = 2: bits [7:3] preempt, [2:0] only order</text>
+      <text x="460" y="198" class="t-s">pending interrupts at the same group priority.</text>
+    </g>
+    <text x="10" y="240" class="t-s">Active priorities are tracked as one bit per group-priority level in ICC_AP0Rn / ICC_AP1Rn. Running priority = highest set bit. EOIR clears it (priority drop).</text>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>The acknowledge / end sequence</h3><ul>
+      <li><b>Acknowledge</b>: read <code>ICC_IAR1_EL1</code>. Returns INTID, Pending→Active, sets active-priority bit, raises running priority.</li>
+      <li><b>Priority drop</b>: write <code>ICC_EOIR1_EL1</code>. Clears the highest active-priority bit.</li>
+      <li><b>Deactivate</b>: if <code>ICC_CTLR.EOImode</code>=0, the same EOIR write deactivates. If =1, a later write to <code>ICC_DIR_EL1</code> deactivates.</li>
+      <li>EOIs must happen in reverse order of acknowledges (nested). DIR can be done in any order.</li></ul></div>
+    <div class="card"><h3>Why split EOImode?</h3><p>Priority drop re-opens the CPU to new interrupts quickly, while the source stays Active so it cannot re-fire. Linux uses this for threaded handlers. Hypervisors use it so that the VM's virtual EOI performs the physical deactivation through a hardware-linked list register (HW=1).</p>
+    <h3>NMI (v3.3)</h3><p>An NMI is presented with superpriority. It ignores PMR and running-priority masking unless <code>PSTATE.ALLINT</code> masks it. Acknowledge with <code>ICC_NMIAR1_EL1</code>.</p></div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="route">
+  <div class="sec-head"><span class="num">06 · Architecture</span><h2>Routing and SGIs</h2></div>
+  <div class="grid2">
+    <div class="card"><h3>SPI routing with affinity (ARE=1)</h3><ul>
+      <li><code>GICD_IROUTER&lt;n&gt;</code> holds a full Aff3.Aff2.Aff1.Aff0 target.</li>
+      <li><code>Interrupt_Routing_Mode</code> (IRM)=0 sends to that exact PE. IRM=1 sends to <b>any one</b> participating PE (1-of-N); the choice is IMPLEMENTATION DEFINED.</li>
+      <li>A PE participates in 1-of-N only if its group enable is set, <code>GICR_CTLR.DPG*</code> does not exclude it, and it is awake.</li>
+      <li>Changing routing while an SPI is pending: the spec allows either old or new target for in-flight signaling. Your scoreboard must allow both.</li></ul></div>
+    <div class="card"><h3>SGI generation</h3><ul>
+      <li>Write <code>ICC_SGI1R_EL1</code> (NS G1 / own group), <code>ICC_ASGI1R_EL1</code> (the other Security state's G1) or <code>ICC_SGI0R_EL1</code> (G0).</li>
+      <li>Fields: INTID[3:0], Aff3/2/1, TargetList (16 bits of Aff0), RS range selector (TargetList covers Aff0 = RS×16 + bit), IRM.</li>
+      <li>IRM=1 broadcasts to every PE <b>except the sender</b>.</li>
+      <li>Delivery is not synchronous with the write. Software needs a DSB plus ISB to order it, and the TB must not assume a fixed latency.</li></ul></div>
+  </div>
+  <div class="key"><b>Legacy mode.</b> ARE=0 brings back GICv2-style 8-bit targets and memory-mapped CPU interface (Chapter 15). It is deprecated, and removed when Secure EL2 is implemented. Expect a question on why ARE must be programmed before anything else and why changing it with groups enabled is UNPREDICTABLE.</div>
+</section>
+
+<!-- 07 -->
+<section id="its">
+  <div class="sec-head"><span class="num">07 · Architecture + design</span><h2>LPIs and the Interrupt Translation Service</h2></div>
+  <p>LPIs scale to tens of thousands of interrupts because their configuration lives in memory, not flops. The Redistributor caches it. The ITS turns a device's MSI write into an LPI on the right core.</p>
+  <div class="fig">
+  <svg viewBox="0 0 940 300" role="img" aria-label="ITS translation: MSI write to GITS_TRANSLATER carries DeviceID and EventID. Device table indexed by DeviceID gives ITT address. ITT indexed by EventID gives INTID and ICID. Collection table indexed by ICID gives target Redistributor.">
+    <defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <rect x="10" y="40" width="160" height="80" rx="5" class="box"/><text x="22" y="64" class="t-h">MSI write</text><text x="22" y="84" class="t-s t-m">→ GITS_TRANSLATER</text><text x="22" y="100" class="t-s">data = EventID</text><text x="22" y="114" class="t-s">sideband = DeviceID</text>
+    <rect x="210" y="40" width="160" height="80" rx="5" class="boxt"/><text x="222" y="64" class="t-h">Device table</text><text x="222" y="84" class="t-s">[DeviceID] →</text><text x="222" y="100" class="t-s">ITT base, size</text><text x="222" y="114" class="t-s t-m">MAPD</text>
+    <rect x="410" y="40" width="170" height="80" rx="5" class="boxt"/><text x="422" y="64" class="t-h">ITT (per device)</text><text x="422" y="84" class="t-s">[EventID] → pINTID, ICID</text><text x="422" y="100" class="t-s">or vINTID, vPEID, doorbell</text><text x="422" y="114" class="t-s t-m">MAPTI / MAPI / VMAPTI</text>
+    <rect x="620" y="40" width="150" height="80" rx="5" class="boxt"/><text x="632" y="64" class="t-h">Collection table</text><text x="632" y="84" class="t-s">[ICID] → RDbase</text><text x="632" y="100" class="t-s">(target Redistributor)</text><text x="632" y="114" class="t-s t-m">MAPC</text>
+    <rect x="810" y="40" width="120" height="80" rx="5" class="box" style="stroke:var(--lpi);stroke-width:2"/><text x="822" y="64" class="t-h">RD</text><text x="822" y="84" class="t-s">set pending</text><text x="822" y="100" class="t-s">bit for INTID</text>
+    <path d="M170 80 H210" class="ln" marker-end="url(#ah4)"/><path d="M370 80 H410" class="ln" marker-end="url(#ah4)"/><path d="M580 80 H620" class="ln" marker-end="url(#ah4)"/><path d="M770 80 H810" class="ln" marker-end="url(#ah4)"/>
+    <text x="10" y="165" class="t-h">At the Redistributor</text>
+    <rect x="10" y="180" width="440" height="92" rx="5" class="box"/>
+    <text x="22" y="202" class="t-s"><tspan class="t-m" style="fill:var(--ink)">LPI Configuration table</tspan>  (GICR_PROPBASER, shared): 1 byte per</text>
+    <text x="22" y="218" class="t-s">LPI = priority[7:2] + enable[0]. Cached; change needs INV/INVALL.</text>
+    <text x="22" y="242" class="t-s"><tspan class="t-m" style="fill:var(--ink)">LPI Pending table</tspan>  (GICR_PENDBASER, per RD): 1 bit per INTID.</text>
+    <text x="22" y="258" class="t-s">Only written back fully when RD is quiesced (EnableLPIs=0, power off).</text>
+    <rect x="480" y="180" width="450" height="92" rx="5" class="box"/>
+    <text x="492" y="202" class="t-s"><tspan class="t-m" style="fill:var(--ink)">Command queue</tspan>: ring buffer at GITS_CBASER, 32-byte commands.</text>
+    <text x="492" y="218" class="t-s">SW writes commands, then advances GITS_CWRITER. ITS advances</text>
+    <text x="492" y="234" class="t-s">GITS_CREADR as it consumes. Empty when CREADR == CWRITER.</text>
+    <text x="492" y="258" class="t-s">On a command error the ITS may stall (GITS_CREADR.Stalled).</text>
+  </svg>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Command</th><th>Arguments</th><th>What it does, and the DV angle</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">MAPD</td><td class="mono">DeviceID, ITT_addr, Size, V</td><td>Map or unmap a device's ITT. Unmap with live mappings or pending LPIs is a classic corner.</td></tr>
+      <tr><td class="mono">MAPC</td><td class="mono">ICID, RDbase, V</td><td>Point a collection at a Redistributor. RDbase is a PA or a processor number, per <code>GITS_TYPER.PTA</code>.</td></tr>
+      <tr><td class="mono">MAPTI / MAPI</td><td class="mono">DeviceID, EventID, [pINTID], ICID</td><td>Create the event → LPI mapping (MAPI uses pINTID = EventID).</td></tr>
+      <tr><td class="mono">MOVI</td><td class="mono">DeviceID, EventID, ICID</td><td>Retarget one LPI. A pending instance must move with it, never be lost or duplicated.</td></tr>
+      <tr><td class="mono">MOVALL</td><td class="mono">RDbase1, RDbase2</td><td>Move all pending LPIs between RDs, used for CPU hotplug.</td></tr>
+      <tr><td class="mono">INT / CLEAR</td><td class="mono">DeviceID, EventID</td><td>Set or clear pending by command, as if the device wrote. Great TB stimulus.</td></tr>
+      <tr><td class="mono">DISCARD</td><td class="mono">DeviceID, EventID</td><td>Remove the mapping and clear pending state.</td></tr>
+      <tr><td class="mono">INV / INVALL</td><td class="mono">DeviceID, EventID / ICID</td><td>Make RD re-read config bytes from memory after software edits them.</td></tr>
+      <tr><td class="mono">SYNC</td><td class="mono">RDbase</td><td>Barrier: all earlier physical-LPI effects on that RD are visible before SYNC completes.</td></tr>
+      <tr><td class="mono">VMAPP / VMAPTI / VMOVI / VMOVP / VSYNC / VINVALL</td><td class="mono">vPEID, …</td><td>GICv4 virtual equivalents. VMOVP carries a SequenceNumber to coordinate across multiple ITSs. v4.1 adds VSGI and INVDB.</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 08 -->
+<section id="virt">
+  <div class="sec-head"><span class="num">08 · Architecture</span><h2>Virtualization: v3 list registers to v4 direct injection</h2></div>
+  <div class="fig">
+  <svg viewBox="0 0 940 300" role="img" aria-label="GICv3: physical interrupt goes to hypervisor which writes a list register, VM acknowledges via ICV registers. GICv4: ITS writes the virtual pending table of a vPE directly, resident vPE gets vIRQ, non-resident vPE triggers a doorbell.">
+    <defs><marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <text x="10" y="24" class="t-h">GICv3 · software injection</text>
+    <rect x="10" y="40" width="130" height="64" rx="5" class="box"/><text x="20" y="64" class="t-h">pIRQ</text><text x="20" y="84" class="t-s">to EL2 (HCR_EL2.IMO)</text>
+    <rect x="180" y="40" width="160" height="64" rx="5" class="box"/><text x="190" y="64" class="t-h">Hypervisor</text><text x="190" y="84" class="t-s">ack, maybe EOI-drop</text>
+    <rect x="380" y="40" width="210" height="64" rx="5" class="box" style="stroke:var(--virt);stroke-width:2"/><text x="390" y="64" class="t-h">ICH_LR&lt;n&gt;_EL2</text><text x="390" y="84" class="t-s t-m">vINTID pINTID HW Grp Prio State</text>
+    <rect x="630" y="40" width="140" height="64" rx="5" class="box"/><text x="640" y="64" class="t-h">VM at EL1</text><text x="640" y="84" class="t-s t-m">ICV_IAR1 / EOIR1</text>
+    <rect x="810" y="40" width="120" height="64" rx="5" class="boxt"/><text x="820" y="64" class="t-h" style="font-size:12px">HW=1</text><text x="820" y="84" class="t-s">vEOI deactivates</text><text x="820" y="98" class="t-s">the pINTID</text>
+    <path d="M140 72 H180" class="ln" marker-end="url(#ah5)"/><path d="M340 72 H380" class="ln" marker-end="url(#ah5)"/><path d="M590 72 H630" class="ln" style="stroke:var(--virt)" marker-end="url(#ah5)"/><path d="M770 72 H810" class="ln" marker-end="url(#ah5)"/>
+    <text x="10" y="128" class="t-s">Overflow / bookkeeping via maintenance interrupt (PPI 25): ICH_HCR_EL2 UIE (LRs nearly empty), NPIE (no pending), LRENPIE (EOI with no LR entry → EOIcount), VGrp0/1E/DIE.</text>
+    <text x="10" y="176" class="t-h">GICv4 · direct injection (no hypervisor on the hot path)</text>
+    <rect x="10" y="192" width="150" height="80" rx="5" class="box" style="stroke:var(--lpi);stroke-width:2"/><text x="20" y="216" class="t-h">ITS</text><text x="20" y="236" class="t-s">ITT entry is virtual:</text><text x="20" y="252" class="t-s">vINTID → vPEID</text>
+    <rect x="200" y="192" width="170" height="80" rx="5" class="boxt"/><text x="210" y="216" class="t-h">vPE table</text><text x="210" y="236" class="t-s">vPEID → RD, VPT addr</text><text x="210" y="252" class="t-s t-m">VMAPP / VMOVP</text>
+    <rect x="410" y="192" width="200" height="80" rx="5" class="box"/><text x="420" y="216" class="t-h">Set bit in vPE's VPT</text><text x="420" y="236" class="t-s">virtual pending table</text><text x="420" y="252" class="t-s">in memory</text>
+    <rect x="650" y="192" width="130" height="36" rx="5" class="box" style="stroke:var(--virt);stroke-width:2"/><text x="660" y="215" class="t-s" style="fill:var(--ink)">resident → vIRQ</text>
+    <rect x="650" y="236" width="130" height="36" rx="5" class="box" style="stroke:var(--warn);stroke-width:2"/><text x="660" y="259" class="t-s" style="fill:var(--ink)">not resident →</text>
+    <rect x="810" y="236" width="120" height="36" rx="5" class="boxt"/><text x="820" y="259" class="t-s" style="fill:var(--ink)">doorbell pLPI</text>
+    <path d="M160 232 H200" class="ln" marker-end="url(#ah5)"/><path d="M370 232 H410" class="ln" marker-end="url(#ah5)"/><path d="M610 222 H650" class="ln" marker-end="url(#ah5)"/><path d="M610 246 H650" class="ln" marker-end="url(#ah5)"/><path d="M780 254 H810" class="ln" marker-end="url(#ah5)"/>
+    <text x="10" y="292" class="t-s">Resident = hypervisor programmed GICR_VPENDBASER.Valid=1 for this vPE on this RD. The doorbell wakes the hypervisor to schedule the vPE.</text>
+  </svg>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>v4.0</h3><p>vLPIs injected directly. Scheduling a vPE writes <code>GICR_VPROPBASER</code>/<code>VPENDBASER</code>. Doorbells are per-interrupt (Dbell_pINTID in VMAPTI).</p></div>
+    <div class="card"><h3>v4.1</h3><p>Direct vSGIs (<code>VSGI</code> command, <code>GICD_CTLR.nASSGIreq</code>). Per-vPE default doorbell, <code>INVDB</code>, vPE table shared and addressed through the RD (<code>GICR_VPROPBASER</code> becomes the vPE table pointer).</p></div>
+    <div class="card"><h3>v4.2</h3><p>Virtual interrupts can carry the NMI attribute, so a VM gets NMIs without trapping.</p></div>
+  </div>
+  <div class="key trap"><b>Classic bug area.</b> Descheduling a vPE (VPENDBASER.Valid 1→0) while a vLPI is in flight. The RD must finish writing the pending table (the <code>Dirty</code> bit) before the hypervisor reuses it, and the interrupt must either be in the VPT or raise a doorbell, never neither.</div>
+</section>
+
+<!-- 09 -->
+<section id="power">
+  <div class="sec-head"><span class="num">09 · Design</span><h2>Power management and the stream interface</h2></div>
+  <div class="grid2">
+    <div class="card"><h3>Redistributor power handshake (GICR_WAKER)</h3>
+      <ol class="plain">
+        <li>Before powering down a PE, software sets <code>ProcessorSleep</code>=1.</li>
+        <li>The RD quiesces the CPU interface over the stream (Quiesce / Quiesce Acknowledge).</li>
+        <li>The RD sets <code>ChildrenAsleep</code>=1. Software polls it, then removes power.</li>
+        <li>While asleep, an interrupt targeted at this PE raises a wake request (for example <code>WakeRequest</code> to the power controller) instead of IRQ.</li>
+        <li>Wake-up: clear <code>ProcessorSleep</code>, poll <code>ChildrenAsleep</code>=0.</li>
+      </ol>
+      <p class="cap">Asleep PEs drop out of 1-of-N SPI selection. GICR_PWRR (IMPLEMENTATION DEFINED in some designs) can power the RD itself.</p></div>
+    <div class="card"><h3>GIC Stream Protocol (Appendix A)</h3>
+      <p>AXI4-Stream style packets between the Interrupt Routing Infrastructure (IRI: Distributor + RDs) and the CPU interface (ICC).</p>
+      <div class="tbl"><table style="min-width:0">
+        <thead><tr><th>IRI → CPU IF</th><th>CPU IF → IRI</th></tr></thead>
+        <tbody>
+          <tr><td>Set (offer HPPI)</td><td>Activate (on IAR read)</td></tr>
+          <tr><td>Clear (withdraw)</td><td>Clear Acknowledge</td></tr>
+          <tr><td>Activate Acknowledge</td><td>Deactivate (EOI/DIR)</td></tr>
+          <tr><td>Deactivate Acknowledge</td><td>Release (decline offered int)</td></tr>
+          <tr><td>Generate SGI Ack</td><td>Generate SGI</td></tr>
+          <tr><td>Quiesce</td><td>Quiesce Acknowledge</td></tr>
+          <tr><td>Upstream Control Ack</td><td>Upstream Control</td></tr>
+          <tr><td>Downstream Control</td><td>Downstream Control Ack</td></tr>
+          <tr><td>VSet / VClear (v4.1+)</td><td>—</td></tr>
+        </tbody></table></div>
+      <p class="cap">Key race: the RD sends Clear while the CPU is reading IAR. The CPU interface must either Activate the INTID the RD still owns or return 1023. A Set it cannot accept must get a Release.</p></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="regs">
+  <div class="sec-head"><span class="num">10 · Programmers' model</span><h2>Register map at a glance</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Block</th><th>Must-know registers</th><th>Interview note</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag c-spi">GICD_</span></td><td class="mono" style="white-space:normal">CTLR TYPER IIDR IGROUPR IGRPMODR ISENABLER ICENABLER ISPENDR ICPENDR ISACTIVER ICACTIVER IPRIORITYR ICFGR IROUTER SETSPI_NSR NSACR</td><td>Set/clear register pairs give atomic per-bit updates without read-modify-write. <code>CTLR.RWP</code> must be polled after disabling groups or ARE changes.</td></tr>
+      <tr><td><span class="tag c-ppi">GICR_ RD_base</span></td><td class="mono" style="white-space:normal">CTLR TYPER WAKER PROPBASER PENDBASER SETLPIR CLRLPIR INVLPIR SYNCR VPROPBASER VPENDBASER</td><td><code>TYPER</code> gives affinity and <code>Last</code>; software walks frames to find its RD. <code>CTLR.EnableLPIs</code> may be one-way (RES1 once set) in some implementations.</td></tr>
+      <tr><td><span class="tag c-ppi">GICR_ SGI_base</span></td><td class="mono" style="white-space:normal">IGROUPR0 IGRPMODR0 ISENABLER0 ICENABLER0 IPRIORITYR0-7 ICFGR0/1 NSACR</td><td>The per-PE copy of what GICD holds for SPIs; SGIs are always edge.</td></tr>
+      <tr><td><span class="tag c-lpi">GITS_</span></td><td class="mono" style="white-space:normal">CTLR TYPER IIDR BASER&lt;n&gt; CBASER CWRITER CREADR TRANSLATER</td><td><code>BASER</code> types: Device, Collection, vPE. Indirect (two-level) tables save memory for sparse DeviceIDs.</td></tr>
+      <tr><td><span class="tag c-acc">ICC_</span></td><td class="mono" style="white-space:normal">SRE PMR IAR0/1 NMIAR1 EOIR0/1 DIR HPPIR0/1 BPR0/1 RPR CTLR IGRPEN0/1 AP0R/AP1R SGI0R SGI1R ASGI1R</td><td><code>ICC_SRE_ELx.SRE</code>=1 enables system-register access. Self-synchronization: a PMR write needs no ISB to take effect for signaling, but software uses one for ordering.</td></tr>
+      <tr><td><span class="tag c-virt">ICH_ / ICV_</span></td><td class="mono" style="white-space:normal">HCR VTR VMCR LR&lt;n&gt; AP0R/AP1R MISR EISR ELRSR · ICV_ mirrors ICC_</td><td><code>HCR_EL2.IMO/FMO</code>=1 redirects EL1 ICC_ accesses to the ICV_ virtual interface. <code>VTR.ListRegs</code> gives the number of LRs (up to 16).</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 11 -->
+<section id="design">
+  <div class="sec-head"><span class="num">11 · Microarchitecture</span><h2>How it is actually built</h2></div>
+  <p>The spec says what must be observable. Silicon makes choices that create the bugs you will be asked about.</p>
+  <div class="grid3">
+    <div class="card"><h3>HPPI selection</h3><p>Priority-select tree across up to ~1000 SPIs plus per-PE PPIs and LPI cache entries. Often pipelined or iterative, so the "current best" can be stale by a few cycles. Ties break on IMPLEMENTATION DEFINED order, usually the lowest INTID.</p></div>
+    <div class="card"><h3>LPI caching</h3><p>RDs hold a small cache of pending LPIs and config bytes. Fill from memory on miss, evict back to the pending table. Coherency with software edits relies on INV/INVALL/SYNC. This is where ordering bugs live.</p></div>
+    <div class="card"><h3>ITS caching</h3><p>Device, ITT and collection entries are cached. Commands must invalidate them in order. Command processing overlaps translation, so a MOVI racing an incoming MSI is the hardest scenario.</p></div>
+    <div class="card"><h3>Topology</h3><p>Large SoCs use multi-chip (GICD_CHIPR / multi-chip operation) or distribute the Distributor across clusters. RDs often sit next to the cluster, linked by the stream interface or a NoC.</p></div>
+    <div class="card"><h3>Clock and reset domains</h3><p>Wired SPIs cross into the GIC clock (synchronizers, glitch filters for level lines). CPU interface runs at core clock. RD and Distributor can be power-gated independently.</p></div>
+    <div class="card"><h3>Errors and RAS</h3><p>Chapter 14 covers system error reporting: ITS command errors (an error code in <code>GITS_CREADR</code>/IMPLEMENTATION DEFINED syndrome), bad table walks, ECC on caches. Errors can stall the queue or be signaled as SError/an interrupt.</p></div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="dv">
+  <div class="sec-head"><span class="num">12 · Verification mindset</span><h2>How a senior DV engineer attacks the GIC</h2></div>
+  <div class="fig">
+  <svg viewBox="0 0 940 330" role="img" aria-label="UVM testbench: wire agent, MSI agent, register agent, CPU sysreg agent and memory model drive the GIC DUT. A reference model predicts per-PE HPPI and states; scoreboards compare IRQ/FIQ pins, IAR values and memory writes.">
+    <defs><marker id="ah6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+    <g>
+      <rect x="10" y="20" width="190" height="44" rx="4" class="box"/><text x="20" y="40" class="t-h" style="font-size:12.5px">SPI/PPI wire agent</text><text x="20" y="56" class="t-s">level/edge, glitches, async</text>
+      <rect x="10" y="74" width="190" height="44" rx="4" class="box"/><text x="20" y="94" class="t-h" style="font-size:12.5px">MSI agent (AXI/CHI)</text><text x="20" y="110" class="t-s">TRANSLATER writes + DeviceID</text>
+      <rect x="10" y="128" width="190" height="44" rx="4" class="box"/><text x="20" y="148" class="t-h" style="font-size:12.5px">Register agent (APB/AXI)</text><text x="20" y="164" class="t-s">GICD/GICR/GITS + RAL</text>
+      <rect x="10" y="182" width="190" height="44" rx="4" class="box"/><text x="20" y="202" class="t-h" style="font-size:12.5px">CPU agent per PE</text><text x="20" y="218" class="t-s">sysreg seq or stream BFM</text>
+      <rect x="10" y="236" width="190" height="44" rx="4" class="box"/><text x="20" y="256" class="t-h" style="font-size:12.5px">Memory model</text><text x="20" y="272" class="t-s">tables, backdoor, latency</text>
+    </g>
+    <rect x="260" y="20" width="220" height="260" rx="6" class="boxt" style="stroke:var(--accent);stroke-width:2"/>
+    <text x="276" y="48" class="t-h">DUT</text>
+    <text x="276" y="72" class="t-s">Distributor · ITS · RDs</text>
+    <text x="276" y="88" class="t-s">(+ CPU IF, or cut at stream)</text>
+    <text x="276" y="130" class="t-s">SVA bound inside:</text>
+    <text x="276" y="148" class="t-s t-m">stream handshake</text>
+    <text x="276" y="164" class="t-s t-m">no IRQ when IGRPEN=0</text>
+    <text x="276" y="180" class="t-s t-m">one owner per INTID</text>
+    <text x="276" y="196" class="t-s t-m">CREADR ≤ CWRITER (mod)</text>
+    <text x="276" y="212" class="t-s t-m">WAKER handshake order</text>
+    <rect x="540" y="20" width="200" height="150" rx="6" class="box" style="stroke:var(--virt);stroke-width:2"/>
+    <text x="556" y="46" class="t-h">Reference model</text>
+    <text x="556" y="66" class="t-s">per-INTID state + config</text>
+    <text x="556" y="82" class="t-s">per-PE HPPI, APR, RPR</text>
+    <text x="556" y="98" class="t-s">ITS tables + command exec</text>
+    <text x="556" y="114" class="t-s">from Appendix B pseudocode</text>
+    <text x="556" y="140" class="t-s">predicts a <tspan style="font-style:italic">set</tspan> of legal</text>
+    <text x="556" y="156" class="t-s">outcomes, not one</text>
+    <rect x="540" y="190" width="200" height="90" rx="6" class="box"/>
+    <text x="556" y="214" class="t-h">Scoreboards</text>
+    <text x="556" y="234" class="t-s">IAR value ∈ legal set</text>
+    <text x="556" y="250" class="t-s">IRQ/FIQ eventually + bounded</text>
+    <text x="556" y="266" class="t-s">memory writes (pending tbl)</text>
+    <rect x="780" y="20" width="150" height="260" rx="6" class="box"/>
+    <text x="794" y="46" class="t-h">Coverage</text>
+    <text x="794" y="68" class="t-s">type × trigger</text>
+    <text x="794" y="84" class="t-s">× group × sec state</text>
+    <text x="794" y="100" class="t-s">× EL × prio vs PMR</text>
+    <text x="794" y="124" class="t-s">all FSM arcs</text>
+    <text x="794" y="140" class="t-s">ITS cmd × table state</text>
+    <text x="794" y="156" class="t-s">cmd × in-flight MSI</text>
+    <text x="794" y="172" class="t-s">LR count × MISR bits</text>
+    <text x="794" y="188" class="t-s">power state × arrival</text>
+    <text x="794" y="204" class="t-s">queue wrap, full, err</text>
+    <text x="794" y="228" class="t-s">cross with config</text>
+    <text x="794" y="244" class="t-s">(#PEs, IDbits, DS,</text>
+    <text x="794" y="260" class="t-s">LPI support, v4.x)</text>
+    <path d="M200 42 H260 M200 96 H260 M200 150 H260 M200 204 H260 M200 258 H260" class="ln" marker-end="url(#ah6)"/>
+    <path d="M480 95 H540" class="ln dash" marker-end="url(#ah6)"/><text x="486" y="88" class="t-s" style="font-size:9.5px">monitors</text>
+    <path d="M640 170 V190" class="ln" marker-end="url(#ah6)"/>
+    <text x="10" y="312" class="t-s">Run the same tests on several configurations; most GIC escapes are config-specific (DS=1, no ITS, 1 PE, max PEs, non-power-of-two IDbits).</text>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Principles to say out loud</h3><ul>
+      <li><b>Model the set of legal outcomes.</b> The spec leaves timing open ("eventually", IMPLEMENTATION DEFINED 1-of-N, either old or new target). A scoreboard that predicts one exact answer floods you with false fails.</li>
+      <li><b>Check at architectural observation points:</b> IAR/HPPIR reads, IRQ/FIQ pins, register readback, memory written by the GIC. Do not check internal timing.</li>
+      <li><b>Separate signaling from acknowledge.</b> Signaling may be stale; the IAR value must be legal at the moment of the read.</li>
+      <li><b>Layer the TB:</b> block level (ITS alone with a stream/RD stub; CPU IF alone with a stream BFM), then GIC subsystem, then SoC with real cores running a bare-metal or Linux driver.</li>
+      <li><b>Use the pseudocode.</b> Appendix B gives functions such as priority and group-masking checks; transcribe them into the model to avoid reinterpretation bugs.</li></ul></div>
+    <div class="card"><h3>Test plan skeleton</h3><ul>
+      <li>Reset values and register access rules (RAZ/WI by Security state, RES0/RES1, width, NSACR).</li>
+      <li>Single interrupt, every type × group × trigger × target, end to end.</li>
+      <li>Priority ladder: N pending, check strict order and BPR preemption; nested ack/EOI up to max APR depth.</li>
+      <li>Masking: PMR sweeps, group enable toggles mid-flight, RPR checks.</li>
+      <li>Routing: IROUTER sweeps, 1-of-N fairness and exclusion, SGI broadcast and RS.</li>
+      <li>LPI: every ITS command, table formats (flat/indirect), INV/SYNC ordering, queue wrap and stall.</li>
+      <li>Virtualization: LR life cycle, HW=1 linkage, maintenance interrupts, vPE schedule/deschedule storms, doorbells, VMOVP across ITSs.</li>
+      <li>Power: WAKER around every other test; wake on SPI/LPI/SGI.</li>
+      <li>Random stress: concurrent config writes + traffic, with the model as the oracle.</li>
+      <li>Linux/firmware boot (irq-gic-v3, TF-A) as the final system test.</li></ul></div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="bugs">
+  <div class="sec-head"><span class="num">13 · Verification mindset</span><h2>Bug hunt list</h2></div>
+  <p>Have three or four of these ready as "a bug I found / would target" stories. Each is a real class of escape.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Area</th><th>Scenario</th><th>Expected behaviour to check</th></tr></thead>
+    <tbody>
+      <tr><td>Lifecycle</td><td>Level SPI deasserts after ack, before EOI</td><td>State goes Active (not A&amp;P); no re-fire after deactivate.</td></tr>
+      <tr><td>Lifecycle</td><td>Edge arrives exactly as IAR is read</td><td>Ends Active &amp; Pending, fires once more after deactivate; never lost.</td></tr>
+      <tr><td>Masking</td><td>PMR raised while IRQ is asserted</td><td>IRQ drops; an IAR read in the window returns 1023 or the old INTID (both legal), never a masked one if the drop is visible.</td></tr>
+      <tr><td>Config race</td><td>ICENABLER write while the SPI is being forwarded</td><td>After RWP=0, no new signaling of that SPI; already-acked one still completes.</td></tr>
+      <tr><td>Priority</td><td>EOI with EOImode=1, then DIR out of order</td><td>DIR works in any order; EOI drops the highest active priority only.</td></tr>
+      <tr><td>Priority</td><td>EOI of an INTID that is not the highest active</td><td>UNPREDICTABLE in spec; DUT must not hang or corrupt other INTIDs (robustness).</td></tr>
+      <tr><td>Routing</td><td>1-of-N SPI, the chosen PE goes to sleep</td><td>Re-selected to another participating PE or wake request; never stuck.</td></tr>
+      <tr><td>ITS</td><td>MOVI while the LPI is pending, then MSI arrives</td><td>Exactly one pending instance, on the new RD after SYNC.</td></tr>
+      <tr><td>ITS</td><td>Config byte edited in memory without INV</td><td>Old or new value acceptable until INV/SYNC; must be new afterwards.</td></tr>
+      <tr><td>ITS</td><td>Command queue wraps; CWRITER = CREADR − 1 (full)</td><td>No overrun; correct wrap at CBASER.Size.</td></tr>
+      <tr><td>ITS</td><td>MAPD V=0 with mapped events pending</td><td>No translation afterwards; behaviour of existing pending state per spec, no stale cache hits.</td></tr>
+      <tr><td>LPI</td><td>EnableLPIs cleared, pending table written back, re-enabled</td><td>Pending state survives exactly; Dirty/RWP polled.</td></tr>
+      <tr><td>Virtual</td><td>LR with HW=1 and pINTID, VM EOIs</td><td>Physical INTID deactivated once; no double deactivate.</td></tr>
+      <tr><td>Virtual</td><td>vPE descheduled while vLPI arrives</td><td>Interrupt in VPT and/or doorbell; never dropped.</td></tr>
+      <tr><td>Security</td><td>NS write to a Secure Group register/field</td><td>RAZ/WI; no side effects; DS=1 behaves differently.</td></tr>
+      <tr><td>NMI</td><td>NMI pending with PMR=0 and ALLINT=0</td><td>Still signaled; IAR1 returns 1022 when SCTLR.NMI=1.</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 14 -->
+<section id="qa">
+  <div class="sec-head"><span class="num">14 · Interview</span><h2>Questions you should expect</h2></div>
+  <div class="qa-tools"><button type="button" id="openAll">Open all answers</button><button type="button" id="closeAll">Close all</button></div>
+  <div style="display:grid;gap:16px">
+  <details><summary>Walk me through what happens from a UART raising its line to the handler running.<span class="lvl">core</span></summary><div class="ans">
+    <p>The SPI line asserts; the Distributor marks it pending (level). If enabled, its group is enabled and IROUTER targets PE X, the Distributor forwards it to RD X. The RD picks it as HPPI if it beats other candidates and sends a Set to the CPU interface. The CPU interface checks group enable, PMR and running priority, then asserts IRQ or FIQ according to group and current Security state. The core takes the exception, reads <code>ICC_IAR1_EL1</code> (INTID returned, state becomes Active, running priority raised), services and clears the UART, writes <code>ICC_EOIR1_EL1</code> (priority drop + deactivate with EOImode=0).</p></div></details>
+  <details><summary>Why did GICv3 move the CPU interface to system registers?<span class="lvl">core</span></summary><div class="ans"><p>Lower latency than an MMIO round trip on the interconnect, natural per-PE banking, cleaner virtualization by redirecting EL1 accesses to ICV_ registers through HCR_EL2.IMO/FMO, and scalability past 8 cores with affinity routing.</p></div></details>
+  <details><summary>Difference between SPI, PPI, SGI and LPI, and who owns state for each?<span class="lvl">core</span></summary><div class="ans"><p>SGI 0–15 and PPI 16–31 (plus EPPI) are private to a PE; state in the Redistributor's SGI_base frame. SPI 32–1019 (plus ESPI) are shared; state in the Distributor and routed by IROUTER. LPIs (8192+) are message based, edge-like with no active state; config in a memory table, pending in a per-RD memory table cached in the RD.</p></div></details>
+  <details><summary>An interrupt fires as FIQ when you expected IRQ. What do you check?<span class="lvl">debug</span></summary><div class="ans"><p>Its group (IGROUPR/IGRPMODR) versus the PE's current Security state and EL. Group 0 is always FIQ; a Group 1 interrupt for the other Security state, or anything at EL3, is FIQ. Then check DS, ARE settings and whether SCR_EL3.FIQ/IRQ routing matches what firmware intended.</p></div></details>
+  <details><summary>Explain PMR, BPR and running priority with an example.<span class="lvl">core</span></summary><div class="ans"><p>PMR=0xF0: only priorities below 0xF0 can signal. BPR0=2 → group priority is bits [7:3]. Handling 0x40 sets running priority 0x40. A new 0x38 has group priority 0x38 &lt; 0x40, so it preempts. A new 0x44 (group priority 0x40) does not preempt, even though it passes PMR; it waits until the EOI drops the running priority.</p></div></details>
+  <details><summary>What is EOImode=1 for, and how does a hypervisor use it?<span class="lvl">deep</span></summary><div class="ans"><p>It splits priority drop (EOIR) from deactivation (DIR). The hypervisor acks a physical interrupt, drops priority so the host can take other interrupts, and leaves it Active. It writes an LR with HW=1 and the pINTID. When the guest EOIs the virtual interrupt, hardware deactivates the physical one, so no trap is needed.</p></div></details>
+  <details><summary>How does the ITS translate an MSI? What are its tables?<span class="lvl">core</span></summary><div class="ans"><p>The write to GITS_TRANSLATER supplies EventID (data) and DeviceID (sideband, for example from the SMMU or PCIe RID). Device table[DeviceID] → ITT; ITT[EventID] → INTID + ICID; Collection table[ICID] → target RD. The RD sets the LPI pending bit. Tables are allocated by software via GITS_BASERn and populated by commands (MAPD, MAPTI, MAPC).</p></div></details>
+  <details><summary>Software changed an LPI's priority in memory, but nothing happened. Why?<span class="lvl">debug</span></summary><div class="ans"><p>The RD caches LPI configuration. Software must issue INV (DeviceID, EventID) or INVALL (ICID) followed by SYNC, or write GICR_INVLPIR, before the change is guaranteed visible. In DV, the model should allow old or new values until the invalidation completes.</p></div></details>
+  <details><summary>How would you verify MOVI?<span class="lvl">dv</span></summary><div class="ans"><p>Directed: map an event to collection A, make it pending (INT), MOVI to collection B, SYNC, check pending only at RD B and exactly one acknowledge. Random: inject MSIs on the same event concurrently with MOVI at varying offsets, with B's PE asleep or with LPIs masked. Checker: conservation (no lost or duplicated interrupt per event across the window), final location after SYNC. Coverage: MOVI × {inactive, pending, cached, uncached} × {MSI before, during, after}.</p></div></details>
+  <details><summary>How do you build a scoreboard when the spec allows non-deterministic outcomes?<span class="lvl">dv</span></summary><div class="ans"><p>The model keeps a set of legal candidates and a window. For each IAR read, the returned INTID must be any interrupt that was the legal HPPI at some point between the last config change and the read, or 1023 if none was guaranteed. Pin checks use eventual assertions with a bounded timeout. Routing with IRM=1 checks membership in the participating set. This avoids both false fails and missed bugs.</p></div></details>
+  <details><summary>What is a maintenance interrupt and which conditions raise it?<span class="lvl">deep</span></summary><div class="ans"><p>A PPI (INTID 25 by convention) to the hypervisor, controlled by ICH_HCR_EL2 and reported in ICH_MISR_EL2: underflow (UIE, LRs nearly empty so refill), no pending (NPIE), LR entry not present on EOI (LRENPIE, counted in EOIcount), and group enable/disable transitions (VGrp0E/D, VGrp1E/D). They let the hypervisor manage more virtual interrupts than it has LRs.</p></div></details>
+  <details><summary>GICv4 vs v4.1: what problem does each solve?<span class="lvl">deep</span></summary><div class="ans"><p>v4.0 removes the hypervisor from vLPI delivery: the ITS writes the vPE's virtual pending table and the RD signals the resident vPE, or rings a doorbell if it is not resident. v4.1 adds direct vSGIs (so IPIs inside a VM need no trap), a per-vPE default doorbell and reorganized vPE tables that RDs can access directly.</p></div></details>
+  <details><summary>How do you safely power down a core's Redistributor?<span class="lvl">core</span></summary><div class="ans"><p>Disable or migrate interrupts targeting it (MOVALL for LPIs, retarget SPIs), set GICR_WAKER.ProcessorSleep, wait for ChildrenAsleep, then power off. Interrupts that arrive later generate a wake request. On power-up, clear ProcessorSleep and wait for ChildrenAsleep=0 before enabling groups.</p></div></details>
+  <details><summary>Where would you cut the design to verify it at block level?<span class="lvl">dv</span></summary><div class="ans"><p>At the GIC Stream Protocol between IRI and CPU interface: a stream BFM can act as a CPU interface to test Distributor + RDs + ITS at high throughput, and another can act as the IRI to test the CPU interface with real core sysreg sequences. The ITS can also be isolated behind its RD-facing interface. Protocol SVA on the stream catches handshake bugs early.</p></div></details>
+  <details><summary>What coverage would make you confident to sign off?<span class="lvl">dv</span></summary><div class="ans"><p>Functional: every state transition per type, the full IRQ/FIQ signaling matrix, priority/BPR/PMR crosses, every ITS command against every relevant table state, concurrency crosses (command × in-flight MSI, config write × forwarding), power-state × arrival, LR/MISR combinations, every legal configuration parameter. Plus code and toggle coverage, assertion coverage on stream and WAKER, zero unexplained scoreboard waivers and a clean Linux boot with interrupt stress.</p></div></details>
+  <details><summary>How does a 1-of-N SPI pick a target and what can go wrong?<span class="lvl">deep</span></summary><div class="ans"><p>The choice among participating PEs is IMPLEMENTATION DEFINED. Common bugs: picking a PE whose group is disabled or which is asleep, starving one PE, or two PEs both acknowledging the same SPI. The checker asserts exactly one Activate per pending instance and membership in the participating set.</p></div></details>
+  </div>
+</section>
+
+<!-- 15 -->
+<section id="pitch">
+  <div class="sec-head"><span class="num">15 · Interview</span><h2>The 60-second pitch</h2></div>
+  <div class="key" style="max-width:none"><p style="max-width:80ch">"GICv3 has four blocks. The Distributor owns shared SPIs. A Redistributor per core owns private SGIs and PPIs and the memory-backed LPIs. The ITS translates device MSIs into LPIs using Device, ITT and Collection tables driven by a command queue. The CPU interface is in system registers and applies group, PMR and running-priority checks before raising IRQ or FIQ, based on the interrupt's group and the core's Security state. Software acknowledges through IAR and ends with EOIR, optionally split from DIR. Virtualization adds list registers in v3 and direct vLPI and vSGI injection in v4. When I verify it, I model the set of outcomes the spec allows instead of one exact answer, check at architectural observation points, cut the design at the stream protocol for block-level throughput, and spend my stress effort on races: config versus traffic, ITS commands versus in-flight MSIs, and power transitions versus arrivals."</p></div>
+</section>
+
+<footer>Built from Arm IHI 0069H.b (GICv3.3 / GICv4.2, April 2024). Check exact field encodings in Chapter 12 before quoting bit positions in an interview.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  var all=function(){return document.querySelectorAll('#qa details')};
+  document.getElementById('openAll').addEventListener('click',function(){all().forEach(function(d){d.open=true})});
+  document.getElementById('closeAll').addEventListener('click',function(){all().forEach(function(d){d.open=false})});
+})();
+</script>
+
+</body>
+</html>
