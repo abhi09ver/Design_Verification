@@ -3,6 +3,10 @@
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
+## Aligner UVM course: one-stop interview folder
+
+**[aligner-uvm-course/](aligner-uvm-course/README.md)** covers Cristian Slav's UVM course on the Aligner DUT end to end: a [last-30-minutes cheatsheet](aligner-uvm-course/cheatsheets/LAST-30-MINUTES.md), [7 STAR stories](aligner-uvm-course/cheatsheets/STORIES.md), [244 interview Q&A](aligner-uvm-course/INTERVIEW-QA.md), chapter notes, the interactive study pages, and the full RTL + UVM project code.
+
 ## Challenges
 
 | # | Topic | Key concepts |
