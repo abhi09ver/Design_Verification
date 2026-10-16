@@ -1,4 +1,4 @@
-# Challenge 26: Cache Organization, Coherence and Memory Consistency — From Zero to Senior DV
+# Challenge 32: Cache Organization, Coherence and Memory Consistency — From Zero to Senior DV
 
 > One-stop page for caches and coherence interviews (CPU and GPU verification roles).
 > Companion material lives in [`cache-coherence/`](cache-coherence/): two interactive HTML guides, a one-page cheat sheet, runnable Python models and SystemVerilog checkers.

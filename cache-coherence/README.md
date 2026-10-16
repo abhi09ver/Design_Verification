@@ -4,7 +4,7 @@ Everything for cache organization, coherence and memory consistency interviews (
 
 | What | File | Use it for |
 |---|---|---|
-| Main notes (Challenge 26) | [`../26-cache-coherence-and-memory-consistency.md`](../26-cache-coherence-and-memory-consistency.md) | Full write-up: concepts, races, litmus tests, verification plan, follow-ups, pitch |
+| Main notes (Challenge 32) | [`../32-cache-coherence-and-memory-consistency.md`](../32-cache-coherence-and-memory-consistency.md) | Full write-up: concepts, races, litmus tests, verification plan, follow-ups, pitch |
 | Cheat sheet | [`CHEATSHEET.md`](CHEATSHEET.md) | 10-minute revision right before the interview |
 | Beginner guide (interactive) | [`html/cache-from-zero.html`](html/cache-from-zero.html) | 14 levels with analogies, clickable cache and MSI simulators, self-checks |
 | Senior field guide (interactive) | [`html/cache-coherence-field-guide.html`](html/cache-coherence-field-guide.html) | Infographics, MESI simulator, bug catalog, 25 interview Q&A |
@@ -61,7 +61,7 @@ d.processOptions(); d.parseAllSources(); d.reportCompilation(d.createCompilation
 ## Suggested study order
 
 1. `html/cache-from-zero.html` (Levels 1–14), running `cache_sim.py` alongside Levels 2–5.
-2. `26-cache-coherence-and-memory-consistency.md` sections 3–6.
+2. `32-cache-coherence-and-memory-consistency.md` sections 3–6.
 3. `mesi_model.py` with every `--bug`, then read `sv/` to see the same checkers in SystemVerilog.
 4. `litmus.py`, then section 5 of the notes.
 5. `html/cache-coherence-field-guide.html` Q&A out loud, then `CHEATSHEET.md` on interview day.

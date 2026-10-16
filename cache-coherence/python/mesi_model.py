@@ -2,7 +2,7 @@
 """
 mesi_model.py - MESI snooping protocol model + a miniature verification environment.
 
-What it shows (the verification mindset from Challenge 26):
+What it shows (the verification mindset from Challenge 32):
   * Protocol:   N private caches, atomic snooping bus, MESI (optionally MSI with --msi)
   * Stimulus:   constrained-random loads/stores/evictions on a SMALL hot address pool
                 (so cores collide and races happen)
@@ -24,7 +24,7 @@ Run:
 
 The bus is atomic (one transaction at a time), so there are no transient states.
 Real designs add transient states (IS_D, IM_AD, SM_AD, MI_A ...) - see the
-Challenge 26 notes for the races that appear once the bus is split-transaction.
+Challenge 32 notes for the races that appear once the bus is split-transaction.
 """
 from __future__ import annotations
 
