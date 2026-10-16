@@ -1,0 +1,19 @@
+--- rtl/alu_unit.sv	2026-10-15 23:41:13.585558488 +0000
++++ solutions/alu_unit.sv	2026-10-15 23:41:13.588450145 +0000
+@@ -36,6 +36,16 @@
+                 sra:    alu_out.result = $signed(rs_in.src1_value) >>> rs_in.src2_value[4:0];
+                 slt:    alu_out.result = ($signed(rs_in.src1_value) < $signed(rs_in.src2_value)) ? 32'd1 : 32'd0;
+                 sltu:   alu_out.result = (rs_in.src1_value < rs_in.src2_value) ? 32'd1 : 32'd0;
++                // FIX-3: the rest of OP-IMM was missing -> result_ready=0 -> RS freed,
++                //        ROB entry never completes -> deadlock.
++                andi:   alu_out.result = rs_in.src1_value & rs_in.immediate;
++                ori:    alu_out.result = rs_in.src1_value | rs_in.immediate;
++                xori:   alu_out.result = rs_in.src1_value ^ rs_in.immediate;
++                slti:   alu_out.result = ($signed(rs_in.src1_value) < $signed(rs_in.immediate)) ? 32'd1 : 32'd0;
++                sltiu:  alu_out.result = (rs_in.src1_value < rs_in.immediate) ? 32'd1 : 32'd0;
++                slli:   alu_out.result = rs_in.src1_value << rs_in.immediate[4:0];
++                srli:   alu_out.result = rs_in.src1_value >> rs_in.immediate[4:0];
++                srai:   alu_out.result = $signed(rs_in.src1_value) >>> rs_in.immediate[4:0];
+                 default: begin
+                     alu_out.result = 32'hDEADBEEF;
+                     alu_out.result_ready = 1'b0;

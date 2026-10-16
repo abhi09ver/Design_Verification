@@ -1,0 +1,29 @@
+--- rtl/fetch.sv	2026-10-15 23:41:13.584310012 +0000
++++ solutions/fetch.sv	2026-10-15 23:41:13.587225269 +0000
+@@ -64,6 +64,7 @@
+     logic program_stall_1;
+     logic program_stall_2;
+     logic init;
++    logic fetch_hold;   // FIX-8a
+   
+     // Program end reached / fetch stall
+     assign fetch_stall = stall_in || program_stall_2;
+@@ -92,7 +93,7 @@
+     end else if (!init && init_done_pulse) begin
+         init <= 1;
+         fetch_pc_mux_d <= fetch_pc_mux_d + (ISSUE_WIDTH * 4);
+-    end else if ((fetch_pc_mux_d < (NO_INSTR * 4)) && init) begin
++    end else if ((fetch_pc_mux_d < (NO_INSTR * 4)) && init && !fetch_hold) begin   // FIX-8a
+         fetch_pc_mux_d <= fetch_pc_mux;
+     end else if (init && (fetch_pc_mux_d >= (NO_INSTR * 4)))begin
+         program_stall_0 <= 1;
+@@ -121,7 +122,8 @@
+         .debug_pc(),
+         .debug_cycle_count(),
+         .init_done(),
+-        .init_done_pulse(init_done_pulse)
++        .init_done_pulse(init_done_pulse),
++        .fetch_hold(fetch_hold)
+     );
+ 
+     // Predecoder logic for each slot (now using fetch_reg_out)

@@ -1,0 +1,23 @@
+--- rtl/radix_4_multiplier.sv	2026-10-15 23:41:13.585771698 +0000
++++ solutions/radix_4_multiplier.sv	2026-10-15 23:41:13.588626324 +0000
+@@ -37,7 +37,10 @@
+     //--------------------------------------------------------------------------
+ 
+     // Temporary variables for booth encoding
+-    logic signed [WIDTH:0]      pp_values_temp   [0:GROUPS-1];
++    // FIX-13: Booth digit -2 needs -(2*M). For M = -2^31, 2*M = -2^32 fits in WIDTH+1 bits
++    //         but -(2*M) = +2^32 does NOT -> it wrapped back to -2^32 and mulh(-2^31,-2^31)
++    //         returned 0xC0000000 instead of 0x40000000.  Partial products need WIDTH+2 bits.
++    logic signed [WIDTH+1:0]    pp_values_temp   [0:GROUPS-1];
+     logic [2:0]                 booth_bits_temp  [0:GROUPS-1];
+ 
+     // Registered outputs
+@@ -74,7 +77,7 @@
+                     default:        pp_values_temp[g] = 0;
+                 endcase
+ 
+-                pp_stage1[g] <= $signed({{(PP_WIDTH - WIDTH - 1){pp_values_temp[g][WIDTH]}}, pp_values_temp[g]}) <<< (2*g);
++                pp_stage1[g] <= $signed({{(PP_WIDTH - WIDTH - 2){pp_values_temp[g][WIDTH+1]}}, pp_values_temp[g]}) <<< (2*g); // FIX-13
+             end
+         end
+     end
