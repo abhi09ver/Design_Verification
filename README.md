@@ -58,6 +58,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
 | 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
 | 33 | [MMU & SMMUv3 One-Stop Kit](33-mmu-smmu/README.md) | VA/PA, pages, multi-level walks, TLB/ASID/VMID, stage 1/2 nesting, StreamID→STE→CD, command/event queues, CMD_SYNC, stall vs terminate, ATS/PRI/PASID, RME/GPC, invalidation-aware scoreboard; Python model, SVA, UVM code, fresher + senior HTML guides |
+| 34 | [CoreSight Debug and Trace](34-coresight-debug-and-trace.md) | DAP (DP/AP), ID registers, ROM tables & discovery, topology detection, APB/ATB/event/channel/timestamp, authentication, trace formatter, CTI/CTM, power & reset, vplan, SVA, bug catalog. **Kit:** [`coresight/`](coresight/README.md) (beginner + senior HTML guides, Python golden models, SVA checkers, [cheat sheet](coresight/CHEATSHEET.md)) |
 
 ## CPU Lab (code for challenges 26–31)
 
