@@ -4,6 +4,7 @@ Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
 > **Before an interview:** start at **[`axi-interview-prep/`](axi-interview-prep/)**. It has 15 one-page AXI and DV cheat sheets (PDF, PNG, HTML), runnable AXI slave code with a self-checking testbench, an SVA checker, and the bug-and-fix story for the AXI4-Lite UVM project. The all-in-one PDF is [`AXI_DV_Interview_Cheatsheets_ALL.pdf`](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf).
+
 ## SV Course Sessions — solved exercises with runnable code
 
 **[sv-course-sessions/](sv-course-sessions/)**: worked solutions to the exercise slides from five SystemVerilog / UVM course sessions, each compiled and simulated. **Quick revision: [CHEATSHEET.md](sv-course-sessions/CHEATSHEET.md).**
