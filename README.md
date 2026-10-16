@@ -32,7 +32,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 23 | [SystemVerilog OOP for Verification](23-systemverilog-oop.md) | Handles vs. objects, shallow vs. deep copy, virtual vs. non-virtual dispatch, `$cast`, abstract & interface classes, `kind` field vs. subclasses, constraint inheritance, how UVM uses OOP |
 | 24 | [Early-Career Expectations & Portfolio Project](24-early-career-dv-expectations-and-portfolio.md) | Realistic expectations, simulator vendors, free tools, writing a bug report, IEEE 1685 = IP-XACT, step-by-step portfolio project that produces real interview stories |
 | 25 | [Debugging Persistent & Intermittent Failures](25-debugging-intermittent-and-persistent-failures.md) | Reproducibility, non-determinism sources, failure signatures, first divergence, record-and-replay, git bisect, discriminating experiments, deadlock wait-for chains, "passes interactively, fails in batch" |
-| 26 | [Arm GIC Interrupt Controller (GICv3/v4)](26-gic-interrupt-controller.md) · [study kit](26-gic/) | Distributor/Redistributor/CPU IF/ITS, INTID map, state machine, groups → IRQ/FIQ, PMR/BPR/preemption, EOImode, LPIs & ITS commands, list registers & GICv4, WAKER; beginner + senior HTML pages, Python ref model, SVA, UVM scoreboard |
+| 35 | [Arm GIC Interrupt Controller (GICv3/v4)](35-gic-interrupt-controller.md) · [study kit](35-gic/) | Distributor/Redistributor/CPU IF/ITS, INTID map, state machine, groups → IRQ/FIQ, PMR/BPR/preemption, EOImode, LPIs & ITS commands, list registers & GICv4, WAKER; beginner + senior HTML pages, Python ref model, SVA, UVM scoreboard |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 

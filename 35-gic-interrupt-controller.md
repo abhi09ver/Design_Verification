@@ -1,20 +1,20 @@
-# 26 · Arm GIC (Generic Interrupt Controller) — Cheat Sheet
+# 35 · Arm GIC (Generic Interrupt Controller) — Cheat Sheet
 
 One-stop revision sheet for GICv3 / GICv4 interviews (Senior CPU DV, e.g. NVIDIA / Arm / Qualcomm).
 Built from **Arm IHI 0069H.b** (GICv3.3 / GICv4.2, April 2024).
 
-**Companion material in [`26-gic/`](26-gic/):**
+**Companion material in [`35-gic/`](35-gic/):**
 
 | File | What it is |
 |---|---|
-| [`26-gic/pages/gic-from-zero.html`](26-gic/pages/gic-from-zero.html) | Beginner page: 14 levels with everyday stories, diagrams, quiz checks and a clickable "be the CPU" simulator |
-| [`26-gic/pages/gic-field-guide.html`](26-gic/pages/gic-field-guide.html) | Senior page: architecture diagrams, ITS/v4 detail, bug-hunt list, 16 interview Q&As, 60-second pitch |
-| [`26-gic/code/python/gic_ref_model.py`](26-gic/code/python/gic_ref_model.py) | Small readable GICv3 reference model (state machine, priority, routing, sleep, mini ITS) |
-| [`26-gic/code/python/test_gic_ref_model.py`](26-gic/code/python/test_gic_ref_model.py) | 21 unit tests, one per interview corner case |
-| [`26-gic/code/sv/gic_cpu_if_sva.sv`](26-gic/code/sv/gic_cpu_if_sva.sv) | SVA checker: masking, liveness, spurious IAR, WAKER handshake, ITS queue + covers |
-| [`26-gic/code/sv/gic_scoreboard_pkg.sv`](26-gic/code/sv/gic_scoreboard_pkg.sv) | UVM scoreboard that checks IAR against the **set** of legal answers |
+| [`35-gic/pages/gic-from-zero.html`](35-gic/pages/gic-from-zero.html) | Beginner page: 14 levels with everyday stories, diagrams, quiz checks and a clickable "be the CPU" simulator |
+| [`35-gic/pages/gic-field-guide.html`](35-gic/pages/gic-field-guide.html) | Senior page: architecture diagrams, ITS/v4 detail, bug-hunt list, 16 interview Q&As, 60-second pitch |
+| [`35-gic/code/python/gic_ref_model.py`](35-gic/code/python/gic_ref_model.py) | Small readable GICv3 reference model (state machine, priority, routing, sleep, mini ITS) |
+| [`35-gic/code/python/test_gic_ref_model.py`](35-gic/code/python/test_gic_ref_model.py) | 21 unit tests, one per interview corner case |
+| [`35-gic/code/sv/gic_cpu_if_sva.sv`](35-gic/code/sv/gic_cpu_if_sva.sv) | SVA checker: masking, liveness, spurious IAR, WAKER handshake, ITS queue + covers |
+| [`35-gic/code/sv/gic_scoreboard_pkg.sv`](35-gic/code/sv/gic_scoreboard_pkg.sv) | UVM scoreboard that checks IAR against the **set** of legal answers |
 
-Open the HTML pages in any browser (download the file, double-click). Run the model tests with `cd 26-gic/code/python && python3 -m unittest -v`.
+Open the HTML pages in any browser (download the file, double-click). Run the model tests with `cd 35-gic/code/python && python3 -m unittest -v`.
 
 ---
 
