@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bonus · Chipmunk Logic UART IP Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="09-error-reporting-integration.html">← Prev</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 16px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · BONUS · REAL IP</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Chipmunk Logic UART Controller</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Mapping cards 01–09 onto a real open-source IP — what changes, what to verify, what to ask.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">IP</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Architecture — one clock, one reset, no FIFO</h2>
+<div style="display: grid; grid-template-columns: 1fr 40px 1.3fr 40px 1fr; gap: 10px; align-items: center; font-size: 13px;">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>Control interface</b><div style="font-size: 12px; color: #4A4F5A;">baud select, parity, stop bits</div></div>
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>TX data in</b><div style="font-size: 12px; color: #4A4F5A;">8-bit, valid / ready</div></div>
+</div>
+<div style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="border: 2px solid #1D4ED8; background: #EEF2FF; border-radius: 8px; padding: 10px;"><b>Baud generator</b><div style="font-size: 12px; color: #4A4F5A;">enable <i>pulses</i> from sys clk — 1× for TX, 8× for RX. No divided clocks.</div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>UART TX</b><div style="font-size: 12px; color: #4A4F5A;">serialiser + parity</div></div>
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>UART RX</b><div style="font-size: 12px; color: #4A4F5A;">8× mid-bit sampler + checks</div></div>
+</div>
+<div style="border: 2px solid #9A3F07; background: #FFF4E5; border-radius: 8px; padding: 10px;"><b>CDC synchroniser on RX pin</b><div style="font-size: 12px; color: #9A3F07;">multi-flop — RX is async to sys clk</div></div>
+</div>
+<div style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 18px;">⇄</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>Serial pins</b><div style="font-size: 12px; color: #4A4F5A;">tx out, rx in — full duplex</div></div>
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 10px;"><b>RX data out + status</b><div style="font-size: 12px; color: #4A4F5A;">8-bit, valid / ready · error flags</div></div>
+</div>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Published feature set (v1.1)</h2>
+<div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 12px; font-size: 13px;">
+<div style="font-weight: 600;">Data width</div><div>8 bits only, LSB first</div>
+<div style="font-weight: 600;">Parity</div><div>none / odd / even — no mark or space</div>
+<div style="font-weight: 600;">Stop bits</div><div>1 or 2</div>
+<div style="font-weight: 600;">Oversampling</div><div><b>8×</b> (not 16×), sample at mid-bit</div>
+<div style="font-weight: 600;">Baud</div><div>configurable; typical 1200–115200</div>
+<div style="font-weight: 600;">Clock tolerance</div><div>design target ±5%</div>
+<div style="font-weight: 600;">Buffering</div><div>none inside — valid / ready for an external FIFO</div>
+<div style="font-weight: 600;">Errors</div><div>parity and framing flags; break and overrun not described</div>
+<div style="font-weight: 600;">Board test</div><div>Basys-3 ↔ Arduino loopback, 115200, odd parity, 1 stop</div>
+</div>
+<div style="font-size: 12px; color: #4A4F5A;">v1.2 (Feb 2024) adds unlisted "upgraded features"; its file list swaps reset_sync for areset_sync and grows baud_gen and top.</div>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Deep dive — is ±5% really safe at 8×?</h2>
+<div style="font-size: 13px;">The ±5.3% figure is 0.5 bit ÷ 9.5 bits — the limit with <i>perfect</i> edge detection. Real limits are tighter:</div>
+<div style="display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: #FFFFFF; border-radius: 8px; padding: 10px 12px;">
+<div>8× edge uncertainty</div><div>1/8 = 0.125 bit</div>
+<div>8N1, last sample 9.5 T</div><div>(0.5−0.125)/9.5 ≈ 3.9%</div>
+<div>8O1, last sample 10.5 T</div><div>0.375/10.5 ≈ 3.6%</div>
+<div>16× for comparison (8N1)</div><div>0.4375/9.5 ≈ 4.6%</div>
+</div>
+<div style="font-size: 13px;">Those are <b>combined</b> TX + RX budgets. So "±5%" only holds if the far end is near-perfect. A drift sweep (card 03) with parity on is the test that settles it — a strong talking point.</div>
+</section>
+
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">How each card changes for this IP</h2>
+<div style="display: grid; grid-template-columns: 170px minmax(0, 1fr); font-size: 13px; border-top: 1px solid #E2E2DC;">
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">01 Fundamentals</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Same frame; RX locks with 8 ticks/bit — confirm start at tick 4, sample every 8.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">02 Checker</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">No register bus: pin monitors + <b>valid/ready stream monitors</b> on both data ports feed the scoreboard.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">03 Baud</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">divisor = f_clk ÷ (8 × baud) for RX pulses; check TX pulse spacing and the pulse counter width vs lowest baud.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">04 Framing</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Check the status flag's timing: per-byte with data valid, or sticky until cleared?</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">05 Parity</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Only none / odd / even — drop mark/space bins; data width fixed at 8, so no width bug.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">06 Break</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Not a feature: expect 0x00 + framing error. Check RX doesn't emit a byte every frame time while held low.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">07 Overrun</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">No FIFO → becomes <b>backpressure</b>: a new byte completes while out-ready is low. Drop, overwrite or flag? Read the RTL.</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-weight: 600;">08 Idle / CDC</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Synchroniser flops must <b>reset to 1</b>; reset-to-0 makes a fake falling edge (false start) at reset release.</div>
+<div style="padding: 6px 4px; font-weight: 600;">09 Reporting</div><div style="padding: 6px 4px;">Status flags instead of LSR: map each checker ID to a flag; cover flag × parity mode × stop bits.</div>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Valid / ready rules — SVA</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; white-space: pre;">// once raised, valid holds and data is stable
+a_hold: assert property (@(posedge clk)
+  disable iff (!rst_n)
+  (tx_valid &amp;&amp; !tx_ready) |=&gt;
+    (tx_valid &amp;&amp; $stable(tx_data)));
+
+// a handshake starts exactly one frame
+a_start: assert property (@(posedge clk)
+  disable iff (!rst_n)
+  (tx_valid &amp;&amp; tx_ready) |-&gt; ##[1:$] $fell(tx));
+
+// TX line idles high out of reset
+a_idle: assert property (@(posedge clk)
+  !rst_n |-&gt; tx === 1'b1);</pre>
+<div style="font-size: 12px; color: #B9C0CC;">Also cover: back-to-back handshakes, ready low for many frames, valid toggling with no handshake.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Open questions to settle from the RTL</h2>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px;">
+<li>RX output ready low when a byte completes — drop, overwrite or flag?</li>
+<li>Framing / parity flags: pulse with data valid, or sticky?</li>
+<li>Number of sync stages on RX, and their reset value.</li>
+<li>Is the start re-checked at mid-bit (false-start rejection)?</li>
+<li>With 2 stop bits, does RX check both?</li>
+<li>Can config change mid-frame — and what happens?</li>
+<li>Baud counter width → lowest reachable baud at a given f_clk.</li>
+<li>What does the synthesisable TB check, and what does it skip?</li>
+</ol>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A on this design</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. Why baud enable pulses rather than a divided clock?</div><div style="color: #C9CCD3;">Everything stays in one clock domain: no generated clocks, no extra skew or CDC, simple STA and FPGA-friendly.</div></div>
+<div><div style="font-weight: 600;">Q. Why does RX need a synchroniser but TX doesn't?</div><div style="color: #C9CCD3;">RX comes from a foreign clock and can change near our clock edge → metastability. TX is driven from our own flops.</div></div>
+<div><div style="font-weight: 600;">Q. 8× vs 16× oversampling?</div><div style="color: #C9CCD3;">8× halves the sample-pulse rate (higher max baud, less toggling) but doubles edge uncertainty, shrinking drift tolerance.</div></div>
+<div><div style="font-weight: 600;">Q. No FIFO — how do you test throughput?</div><div style="color: #C9CCD3;">Randomise ready on both ports, run continuous traffic, and check no byte is lost or duplicated under backpressure.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: chipmunklogic.com "Design of UART Controller" page · RTL not read (archives encrypted) · tolerance figures computed</div>
+<div>Pairs with cards 01–09</div>
+</footer>
+</div></div>
+</body>
+</html>

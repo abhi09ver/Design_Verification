@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Cache Coherence Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: datasheet-style single column, sticky chapter strip, figure-heavy sections; MOESI states carry fixed semantic colors throughout */
+:root{
+  --bg:#f3f5f7; --paper:#ffffff; --ink:#14202b; --muted:#5a6876; --rule:#d5dde4; --soft:#e9eef2;
+  --accent:#0d6e7a; --accent-soft:#d8eef0;
+  --M:#c2410c; --O:#b7791f; --E:#7c3aed; --S:#2563eb; --I:#7b8794;
+  --ok:#15803d; --bad:#b91c1c;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e151c; --paper:#151f28; --ink:#e3eaf0; --muted:#94a3b1; --rule:#2a3845; --soft:#1c2834;
+  --accent:#4fc3cf; --accent-soft:#163339;
+  --M:#fb7a4a; --O:#f0b44c; --E:#a78bfa; --S:#6ea0ff; --I:#8996a3; --ok:#4ade80; --bad:#f87171; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e151c; --paper:#151f28; --ink:#e3eaf0; --muted:#94a3b1; --rule:#2a3845; --soft:#1c2834;
+  --accent:#4fc3cf; --accent-soft:#163339;
+  --M:#fb7a4a; --O:#f0b44c; --E:#a78bfa; --S:#6ea0ff; --I:#8996a3; --ok:#4ade80; --bad:#f87171; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(22px,3vw,28px);font-weight:800}
+h3{font-size:17px;font-weight:700;margin-top:6px}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+
+header.top{display:grid;gap:14px;padding-bottom:22px;border-bottom:2px solid var(--ink)}
+header.top .lede{font-size:17px;color:var(--muted);max-width:70ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.tag{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border:1px solid var(--rule);border-radius:3px;background:var(--paper)}
+
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule);
+  margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px));overflow-x:auto;white-space:nowrap}
+nav.toc .in{max-width:1040px;margin:0 auto;display:flex;gap:4px}
+nav.toc a{font-family:var(--f-mono);font-size:12.5px;text-decoration:none;color:var(--muted);padding:5px 9px;border-radius:3px}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--soft);color:var(--ink);outline:none}
+nav.toc b{color:var(--accent);font-weight:600;margin-right:4px}
+
+section{padding-top:44px;display:grid;gap:18px;scroll-margin-top:52px}
+.sechead{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.grid2>*,.grid3>*{min-width:0}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;display:grid;gap:8px;align-content:start}
+.panel ul{margin:0;padding-left:18px}
+.panel li{margin:3px 0}
+figure{margin:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px;display:grid;gap:8px}
+figure .svgbox{overflow-x:auto}
+figcaption{font-size:13px;color:var(--muted)}
+svg text{font-family:var(--f-mono)}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 6px 6px 0}
+.callout strong{font-family:var(--f-display)}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 11px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+tr:last-child td{border-bottom:none}
+.st{display:inline-block;min-width:22px;text-align:center;font-family:var(--f-mono);font-weight:600;font-size:12.5px;color:#fff;border-radius:3px;padding:1px 5px}
+.st.M{background:var(--M)}.st.O{background:var(--O)}.st.E{background:var(--E)}.st.S{background:var(--S)}.st.I{background:var(--I)}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+pre{margin:0;font-family:var(--f-mono);font-size:12.5px;background:var(--soft);border-radius:4px;padding:10px 12px;overflow-x:auto;line-height:1.5}
+
+/* simulator */
+.sim{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:grid;gap:14px}
+.cores{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.core{border:1px solid var(--rule);border-radius:6px;padding:10px;display:grid;gap:8px;min-width:0}
+.core .row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.core .bigst{font-family:var(--f-display);font-size:30px;font-weight:800;line-height:1}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font-family:var(--f-mono);font-size:12.5px;border:1px solid var(--rule);background:var(--soft);color:var(--ink);padding:6px 10px;border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.primary{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.log{font-family:var(--f-mono);font-size:12.5px;background:var(--soft);border-radius:4px;padding:10px;max-height:190px;overflow-y:auto;display:grid;gap:3px}
+.inv{display:flex;flex-wrap:wrap;gap:8px;font-family:var(--f-mono);font-size:12.5px}
+.inv span{padding:3px 8px;border-radius:3px;border:1px solid var(--rule)}
+
+details{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:0 16px}
+details+details{margin-top:8px}
+summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;display:flex;gap:10px}
+summary::before{content:"+";font-family:var(--f-mono);color:var(--accent);font-weight:700}
+details[open] summary::before{content:"–"}
+details>div{padding:0 0 14px 22px;display:grid;gap:8px}
+.lvl{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;background:var(--soft);color:var(--muted);align-self:center;white-space:nowrap}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.flash{animation:fl .5s ease}@keyframes fl{from{background:var(--accent-soft)}to{background:transparent}}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Senior CPU / GPU Verification · Interview Prep</div>
+  <h1>Cache Coherence Field Guide</h1>
+  <p class="lede">Cache organization, coherence protocols, memory consistency and the verification mindset, condensed from <em>A Primer on Memory Consistency and Cache Coherence</em> (2nd ed., Nagarajan, Sorin, Hill, Wood) and framed the way interview loops at NVIDIA, Apple, AMD, Intel and Arm probe it.</p>
+  <div class="meta"><span class="tag">8 chapters</span><span class="tag">live MESI simulator</span><span class="tag">litmus tests</span><span class="tag">bug catalog</span><span class="tag">25 interview Q&amp;A</span></div>
+</header>
+
+<nav class="toc" aria-label="Chapters"><div class="in">
+  <a href="#org"><b>1</b>Organization</a><a href="#coh"><b>2</b>Coherence basics</a><a href="#proto"><b>3</b>MOESI &amp; transients</a>
+  <a href="#snoop"><b>4</b>Snoop vs directory</a><a href="#cons"><b>5</b>Consistency</a><a href="#gpu"><b>6</b>GPU &amp; heterogeneous</a>
+  <a href="#verif"><b>7</b>Verification</a><a href="#qa"><b>8</b>Interview Q&amp;A</a>
+</div></nav>
+
+<!-- ============ 1 ORGANIZATION ============ -->
+<section id="org">
+  <div class="sechead"><div class="eyebrow">Chapter 1 · Architecture</div><h2>Cache organization</h2>
+  <p class="muted">Everything coherence does happens per <em>block</em> (line). Know how a line is located, filled, replaced and written back before talking protocols.</p></div>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 760 250" width="100%" style="min-width:600px" role="img" aria-label="Address split into tag, index and offset feeding a 4-way set associative lookup">
+      <style>.b{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}.t{fill:var(--ink);font-size:12px}.s{fill:var(--muted);font-size:11px}.ac{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}.ln{stroke:var(--muted);stroke-width:1.2;fill:none}</style>
+      <text x="10" y="20" class="s">PHYSICAL ADDRESS (48b example, 32 KiB, 8-way, 64 B line → 64 sets)</text>
+      <rect x="10" y="30" width="330" height="34" class="b" style="fill:var(--soft)"/><text x="175" y="52" class="t" text-anchor="middle">TAG  [47:12]  36 b</text>
+      <rect x="340" y="30" width="110" height="34" class="ac"/><text x="395" y="52" class="t" text-anchor="middle">INDEX [11:6]</text>
+      <rect x="450" y="30" width="100" height="34" class="b"/><text x="500" y="52" class="t" text-anchor="middle">OFFSET [5:0]</text>
+      <path d="M395 64 V100" class="ln"/><path d="M175 64 V82 H630 V100" class="ln" stroke-dasharray="4 3"/>
+      <text x="10" y="118" class="s">SET n (one row of the arrays)</text>
+      <g>
+        <rect x="10" y="126" width="140" height="56" class="b"/><text x="20" y="146" class="t">way0  V D St</text><text x="20" y="168" class="s">tag | 64B data</text>
+        <rect x="160" y="126" width="140" height="56" class="b"/><text x="170" y="146" class="t">way1  V D St</text><text x="170" y="168" class="s">tag | 64B data</text>
+        <rect x="310" y="126" width="140" height="56" class="b"/><text x="320" y="146" class="t">…</text><text x="320" y="168" class="s">8 ways compared in parallel</text>
+        <rect x="460" y="126" width="140" height="56" class="b"/><text x="470" y="146" class="t">way7  V D St</text><text x="470" y="168" class="s">+ LRU/PLRU bits</text>
+      </g>
+      <rect x="615" y="100" width="135" height="82" class="ac"/><text x="682" y="125" class="t" text-anchor="middle">8× tag compare</text><text x="682" y="147" class="s" text-anchor="middle">hit = match &amp; St≠I</text><text x="682" y="167" class="s" text-anchor="middle">way-mux → data</text>
+      <path d="M600 154 H615" class="ln"/>
+      <text x="10" y="212" class="s">St = coherence state (MOESI) lives beside the tag. V/D are often folded into it: I = invalid, M = dirty.</text>
+      <text x="10" y="232" class="s">VIPT L1: index bits must fit inside the page offset (here [11:6] ⊂ [11:0]) to avoid synonyms.</text>
+    </svg></div>
+    <figcaption>Sets = size ÷ (ways × line). Index bits = log2(sets). Interviewers love asking you to derive these numbers live.</figcaption>
+  </figure>
+
+  <div class="grid3">
+    <div class="panel"><h3>Placement</h3><ul>
+      <li><b>Direct-mapped</b>: 1 way, fast, conflict misses.</li>
+      <li><b>N-way set-assoc</b>: the norm (L1 8–12 way, LLC 12–16+).</li>
+      <li><b>Fully assoc</b>: TLBs, victim caches, small buffers.</li>
+      <li>3 C's: compulsory, capacity, conflict (+ coherence misses in MP).</li></ul></div>
+    <div class="panel"><h3>Write policies</h3><ul>
+      <li><b>Write-back</b> + write-allocate: CPU L1/L2 default; needs dirty state → M/O.</li>
+      <li><b>Write-through</b> + no-allocate: simple, used in many GPU L1s; coherence is easier since memory side is always current.</li>
+      <li>Store buffer / write-combining buffer sits in front and is a consistency concern.</li></ul></div>
+    <div class="panel"><h3>Replacement</h3><ul>
+      <li>True LRU (cost ∝ ways²), tree-PLRU, RRIP/SRRIP for LLC scan resistance.</li>
+      <li>Victim of state M/O → writeback (PutM/PutO); S/E → silent or PutS (protocol choice).</li>
+      <li>Replacement races with incoming snoops are a top bug source.</li></ul></div>
+    <div class="panel"><h3>Hierarchy &amp; inclusion</h3><ul>
+      <li><b>Inclusive</b> LLC: LLC ⊇ L1/L2 → LLC tags act as a snoop filter; eviction needs <em>back-invalidation</em>.</li>
+      <li><b>Exclusive</b>: no duplication, L2 victims fill LLC.</li>
+      <li><b>NINE</b>: neither, needs a separate snoop filter / directory.</li></ul></div>
+    <div class="panel"><h3>Miss handling</h3><ul>
+      <li><b>MSHR</b>s track outstanding misses; secondary misses to same line merge.</li>
+      <li>Non-blocking caches = transient states per MSHR entry.</li>
+      <li>Fill buffer, writeback buffer, eviction buffer: each holds data that must still answer snoops.</li></ul></div>
+    <div class="panel"><h3>Addressing quirks</h3><ul>
+      <li><b>PIPT</b> simplest; <b>VIPT</b> common L1; <b>VIVT</b> needs synonym/homonym handling.</li>
+      <li>Banking, way prediction, sectoring (coherence per sector vs per line).</li>
+      <li>I-cache, TLB, DMA must also be coherent (self-modifying code, shootdowns).</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ 2 COHERENCE BASICS ============ -->
+<section id="coh">
+  <div class="sechead"><div class="eyebrow">Chapter 2 · Specification</div><h2>Coherence basics: the two invariants</h2>
+  <p class="muted">Coherence makes private caches functionally invisible. It is per-location; consistency is about all locations together.</p></div>
+
+  <div class="grid2">
+    <div class="panel" style="border-top:3px solid var(--accent)"><div class="eyebrow">Invariant 1</div><h3>SWMR: single writer, multiple readers</h3>
+      <p>For any block at any instant, either exactly one core may write (and read) it, or zero or more cores may only read it. Never both.</p></div>
+    <div class="panel" style="border-top:3px solid var(--accent)"><div class="eyebrow">Invariant 2</div><h3>Data-value invariant</h3>
+      <p>The value at the start of an epoch equals the value at the end of the last read-write epoch. SWMR alone is not enough: permissions can be right and the data still stale.</p></div>
+  </div>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 760 120" width="100%" style="min-width:560px" role="img" aria-label="Lifetime of a block divided into epochs">
+      <style>.lbl{fill:var(--ink);font-size:12px}.sub{fill:var(--muted);font-size:11px}</style>
+      <rect x="10" y="20" width="180" height="46" style="fill:var(--S);opacity:.18;stroke:var(--S)"/><text x="100" y="40" class="lbl" text-anchor="middle">Read-only</text><text x="100" y="57" class="sub" text-anchor="middle">C2, C5 (S)</text>
+      <rect x="190" y="20" width="160" height="46" style="fill:var(--M);opacity:.18;stroke:var(--M)"/><text x="270" y="40" class="lbl" text-anchor="middle">Read-write</text><text x="270" y="57" class="sub" text-anchor="middle">C3 (M)</text>
+      <rect x="350" y="20" width="220" height="46" style="fill:var(--S);opacity:.18;stroke:var(--S)"/><text x="460" y="40" class="lbl" text-anchor="middle">Read-only</text><text x="460" y="57" class="sub" text-anchor="middle">C1, C2, C3 (S)</text>
+      <rect x="570" y="20" width="180" height="46" style="fill:var(--M);opacity:.18;stroke:var(--M)"/><text x="660" y="40" class="lbl" text-anchor="middle">Read-write</text><text x="660" y="57" class="sub" text-anchor="middle">C1 (M)</text>
+      <path d="M10 82 H750" style="stroke:var(--muted);stroke-width:1.2"/><path d="M742 77 L750 82 L742 87" style="fill:none;stroke:var(--muted)"/>
+      <text x="10" y="102" class="sub">time →   every read in an epoch must see the last write of the previous read-write epoch</text>
+    </svg></div>
+    <figcaption>Turn this picture directly into a checker: a global monitor asserting SWMR on every cycle and a golden-memory model asserting the data-value invariant on every load.</figcaption>
+  </figure>
+
+  <div class="grid3">
+    <div class="panel"><h3>Granularity</h3><p>Enforced per cache block (64 B on CPUs; GPUs often 128 B line, 32 B sector). Two cores writing different bytes of one line still ping-pong: <b>false sharing</b>.</p></div>
+    <div class="panel"><h3>Two interface styles</h3><p><b>Consistency-agnostic</b>: write is globally visible before it returns; coherence looks like atomic memory (CPUs). <b>Consistency-directed</b>: writes propagate lazily but in an order the model allows (GPUs, Ch. 6 here).</p></div>
+    <div class="panel"><h3>Other definitions</h3><p>Write serialization (all cores see writes to one address in the same order) + write propagation (every write eventually visible). The first is safety, the second is liveness. Interviewers accept either if you name both halves.</p></div>
+  </div>
+</section>
+
+<!-- ============ 3 PROTOCOL ============ -->
+<section id="proto">
+  <div class="sechead"><div class="eyebrow">Chapter 3 · Design</div><h2>MOESI states, transactions and transient states</h2>
+  <p class="muted">Each state encodes four properties: validity, dirtiness, exclusivity, ownership (who must respond with data).</p></div>
+
+  <div class="tblwrap"><table>
+    <thead><tr><th>State</th><th>Valid</th><th>Dirty</th><th>Exclusive</th><th>Owner</th><th>Can read</th><th>Can write</th><th>Why it exists</th></tr></thead>
+    <tbody>
+      <tr><td><span class="st M">M</span> Modified</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td>Only valid copy, memory stale</td></tr>
+      <tr><td><span class="st O">O</span> Owned</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td>Share dirty data without writing back to memory</td></tr>
+      <tr><td><span class="st E">E</span> Exclusive</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td>✓*</td><td class="yes">✓</td><td>silent → M</td><td>Read-then-write private data without a 2nd bus transaction</td></tr>
+      <tr><td><span class="st S">S</span> Shared</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td><td>Read-only copy, maybe others too</td></tr>
+      <tr><td><span class="st I">I</span> Invalid</td><td class="no">✗</td><td>–</td><td>–</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td>No permission</td></tr>
+    </tbody></table></div>
+  <p class="muted" style="font-size:13px">* Whether E is an owner is a protocol choice (some designs let memory respond, others the E cache). Variants: MESIF (Intel, F = designated forwarder among sharers), MOESI (AMD), CHI’s UC/UD/SC/SD/I naming (Unique/Shared × Clean/Dirty).</p>
+
+  <div class="grid2">
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 420 330" width="100%" style="min-width:380px" role="img" aria-label="MESI stable state diagram">
+      <style>.n{stroke-width:2}.nt{fill:#fff;font-family:Archivo,sans-serif;font-weight:800;font-size:22px}.e{fill:none;stroke:var(--muted);stroke-width:1.3}.el{fill:var(--ink);font-size:10.5px}.ell{fill:var(--muted);font-size:10px}</style>
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>
+      <circle cx="80" cy="70" r="30" class="n" style="fill:var(--M);stroke:var(--M)"/><text x="80" y="78" class="nt" text-anchor="middle">M</text>
+      <circle cx="340" cy="70" r="30" class="n" style="fill:var(--E);stroke:var(--E)"/><text x="340" y="78" class="nt" text-anchor="middle">E</text>
+      <circle cx="80" cy="260" r="30" class="n" style="fill:var(--S);stroke:var(--S)"/><text x="80" y="268" class="nt" text-anchor="middle">S</text>
+      <circle cx="340" cy="260" r="30" class="n" style="fill:var(--I);stroke:var(--I)"/><text x="340" y="268" class="nt" text-anchor="middle">I</text>
+      <!-- I->E -->
+      <path d="M340 230 V102" class="e" marker-end="url(#ah)"/><text x="348" y="170" class="el">Load / GetS</text><text x="348" y="183" class="ell">no sharers</text>
+      <!-- E->M -->
+      <path d="M310 64 H112" class="e" marker-end="url(#ah)"/><text x="160" y="58" class="el">Store (silent)</text>
+      <!-- I->S -->
+      <path d="M310 252 H112" class="e" marker-end="url(#ah)"/><text x="150" y="246" class="el">Load / GetS, sharers exist</text>
+      <!-- S->M -->
+      <path d="M72 230 V102" class="e" marker-end="url(#ah)"/><text x="8" y="170" class="el">Store</text><text x="8" y="183" class="ell">Upgr/GetM</text>
+      <!-- I->M -->
+      <path d="M318 238 L104 92" class="e" marker-end="url(#ah)"/><text x="190" y="140" class="el" transform="rotate(34 190 140)">Store / GetM</text>
+      <!-- M->S -->
+      <path d="M92 100 V230" class="e" marker-end="url(#ah)" stroke-dasharray="4 3"/><text x="98" y="150" class="ell">Other GetS</text><text x="98" y="162" class="ell">(supply data)</text>
+      <!-- E->S -->
+      <path d="M322 94 L108 244" class="e" marker-end="url(#ah)" stroke-dasharray="4 3"/><text x="232" y="196" class="ell" transform="rotate(-35 232 196)">Other GetS</text>
+      <!-- ->I -->
+      <path d="M112 274 H310" class="e" marker-end="url(#ah)" stroke-dasharray="4 3"/><text x="150" y="292" class="ell">Other GetM / evict</text>
+      <path d="M360 100 Q 400 165 362 232" class="e" marker-end="url(#ah)" stroke-dasharray="4 3"/><text x="372" y="140" class="ell">Other</text><text x="372" y="152" class="ell">GetM</text>
+      <text x="10" y="322" class="ell">solid = own request   dashed = observed (snoop / forward) or eviction. M→I on other GetM also exists.</text>
+    </svg></div>
+    <figcaption>Stable-state MESI. This is the whiteboard drawing; the real protocol is the transient states on the right.</figcaption>
+  </figure>
+
+  <div class="panel">
+    <div class="eyebrow">Where the bugs live</div>
+    <h3>Transient states</h3>
+    <p>Real transitions are not atomic. A miss in I sits in <code>IS<sup>D</sup></code> (waiting for data) or <code>IM<sup>AD</sup></code> (waiting for acks and data). Naming: <code>XY<sup>Z</sup></code> = going from X to Y, waiting on Z.</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Transient</th><th>Meaning</th><th>Classic race</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">IS<sup>D</sup></td><td>Sent GetS, awaiting data</td><td>Inv arrives before data → must still use data once, then go I (IS<sup>D</sup>I)</td></tr>
+        <tr><td class="mono">IM<sup>AD</sup></td><td>Sent GetM, need data + N acks</td><td>Acks arrive before data; ack count can go negative</td></tr>
+        <tr><td class="mono">SM<sup>AD</sup></td><td>Upgrade from S</td><td>Another GetM wins first → own copy invalidated → becomes IM<sup>AD</sup>, needs data now</td></tr>
+        <tr><td class="mono">MI<sup>A</sup></td><td>Evicting dirty, PutM sent</td><td>Fwd-GetS/GetM arrives → must still supply data from WB buffer</td></tr>
+        <tr><td class="mono">SI<sup>A</sup> / II<sup>A</sup></td><td>Put in flight, got invalidated</td><td>Directory must accept a stale Put from a non-owner and ack it</td></tr>
+      </tbody></table></div>
+    <p class="muted" style="font-size:13px">Protocol spec = table of (state × event) → (action, next state). Blank cells are “impossible”; empty-cell hits in sim are protocol bugs. Stall cells (“z”) must be proven deadlock-free.</p>
+  </div>
+  </div>
+
+  <div class="sim" id="sim" aria-label="MESI snooping simulator">
+    <div style="display:grid;gap:4px"><div class="eyebrow">Try it · MESI snooping on one line A</div>
+    <p class="muted">Click loads, stores and evictions. Watch bus transactions, data movement and the invariant checks a verification monitor would run.</p></div>
+    <div class="cores" id="cores"></div>
+    <div class="row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+      <div class="inv" id="inv"></div>
+      <div class="btns"><button id="mem" disabled>Memory A = 0</button><button id="reset" type="button">Reset</button></div>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ 4 SNOOP VS DIRECTORY ============ -->
+<section id="snoop">
+  <div class="sechead"><div class="eyebrow">Chapter 4 · Design trade-offs</div><h2>Snooping vs directory</h2>
+  <p class="muted">Both implement the same invariants. They differ in where ordering comes from.</p></div>
+
+  <div class="grid2">
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 380 230" width="100%" style="min-width:340px" role="img" aria-label="Snooping bus broadcast">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}.tx{fill:var(--ink);font-size:12px}.sx{fill:var(--muted);font-size:10.5px}.ar{stroke:var(--accent);stroke-width:2;fill:none}</style>
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--accent)"/></marker></defs>
+      <text x="10" y="18" class="sx">SNOOPING: broadcast on a totally ordered medium</text>
+      <rect x="20" y="34" width="70" height="40" class="bx"/><text x="55" y="58" class="tx" text-anchor="middle">C0 $</text>
+      <rect x="110" y="34" width="70" height="40" class="bx"/><text x="145" y="58" class="tx" text-anchor="middle">C1 $</text>
+      <rect x="200" y="34" width="70" height="40" class="bx"/><text x="235" y="58" class="tx" text-anchor="middle">C2 $</text>
+      <rect x="290" y="34" width="70" height="40" class="bx"/><text x="325" y="58" class="tx" text-anchor="middle">LLC/Mem</text>
+      <rect x="10" y="110" width="360" height="16" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="190" y="122" class="tx" text-anchor="middle">ordered bus / ring</text>
+      <path d="M55 74 V108" class="ar" marker-end="url(#a2)"/><text x="62" y="96" class="sx">GetM</text>
+      <path d="M145 108 V76" class="ar" marker-end="url(#a2)"/><path d="M235 108 V76" class="ar" marker-end="url(#a2)"/><path d="M325 108 V76" class="ar" marker-end="url(#a2)"/>
+      <text x="10" y="152" class="sx">+ every controller sees every request in the same order</text>
+      <text x="10" y="170" class="sx">+ 2-hop misses, simple, low latency at small N</text>
+      <text x="10" y="188" class="sx">– bandwidth/power O(N) per miss; scales poorly</text>
+      <text x="10" y="206" class="sx">Real ones: split-transaction, non-atomic → transient states</text>
+      <text x="10" y="224" class="sx">Snoop filters cut the broadcast cost</text>
+    </svg></div>
+  </figure>
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 380 230" width="100%" style="min-width:340px" role="img" aria-label="Directory three-hop miss">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}.tx{fill:var(--ink);font-size:12px}.sx{fill:var(--muted);font-size:10.5px}.ar2{stroke:var(--M);stroke-width:2;fill:none}</style>
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--M)"/></marker></defs>
+      <text x="10" y="18" class="sx">DIRECTORY: home node serializes per address</text>
+      <rect x="20" y="40" width="90" height="42" class="bx"/><text x="65" y="65" class="tx" text-anchor="middle">Requestor</text>
+      <rect x="145" y="120" width="100" height="50" class="bx" style="fill:var(--accent-soft)"/><text x="195" y="141" class="tx" text-anchor="middle">Home / Dir</text><text x="195" y="158" class="sx" text-anchor="middle">state, owner, sharers</text>
+      <rect x="270" y="40" width="90" height="42" class="bx"/><text x="315" y="65" class="tx" text-anchor="middle">Owner (M)</text>
+      <path d="M80 82 L160 120" class="ar2" marker-end="url(#a3)"/><text x="78" y="110" class="tx">①GetS</text>
+      <path d="M230 120 L300 84" class="ar2" marker-end="url(#a3)"/><text x="262" y="114" class="tx">②Fwd</text>
+      <path d="M270 58 H112" class="ar2" marker-end="url(#a3)"/><text x="150" y="52" class="tx">③Data (direct)</text>
+      <text x="10" y="192" class="sx">+ point-to-point, scales to many cores/sockets</text>
+      <text x="10" y="208" class="sx">– 3-hop misses, directory storage, many more races</text>
+      <text x="10" y="224" class="sx">Dir formats: full bit-vector, coarse, limited pointer</text>
+    </svg></div>
+  </figure>
+  </div>
+
+  <div class="grid3">
+    <div class="panel"><h3>Deadlock avoidance</h3><p>Separate <b>virtual networks</b> per message class (Request → Forward → Response). A response must never wait behind a request. Classic interview: “why ≥3 VNs for a directory protocol?”</p></div>
+    <div class="panel"><h3>Ordering assumptions</h3><p>Point-to-point ordered networks let the directory skip some acks. Unordered networks (meshes with adaptive routing) need extra handshakes, e.g. Put-Ack before reuse, Unblock after completion.</p></div>
+    <div class="panel"><h3>Directory organization</h3><p>Directory cache backed by DRAM; <b>inclusive</b> directory (sparse/snoop filter) whose eviction forces back-invalidation of cached copies; or null directory (broadcast, e.g. HT Assist variants).</p></div>
+    <div class="panel"><h3>Blocking vs non-stalling</h3><p>A blocking home NACKs or queues new requests until the in-flight one unblocks. Non-stalling designs add more transient states at the directory: more performance, much more verification surface.</p></div>
+    <div class="panel"><h3>Silent vs explicit evictions</h3><p>Silent S evictions keep traffic low but leave stale sharer bits → spurious invalidations (correct but wasteful). Explicit PutS keeps the directory exact at the cost of messages and new races.</p></div>
+    <div class="panel"><h3>Real systems</h3><p>SGI Origin (directory), AMD HyperTransport + HT Assist, Intel QPI/UPI (MESIF), Arm AMBA CHI (home node, snoop filter, DMT/DCT direct transfers), NVLink-C2C for CPU–GPU coherence.</p></div>
+  </div>
+
+  <div class="callout"><strong>Liveness, not just safety.</strong> Deadlock (cyclic waits on resources or VCs), livelock (requests keep bouncing, e.g. repeated NACK/retry), and starvation (one core never wins the line, e.g. under lock contention). Verification needs forward-progress checks, not just data checks.</div>
+</section>
+
+<!-- ============ 5 CONSISTENCY ============ -->
+<section id="cons">
+  <div class="sechead"><div class="eyebrow">Chapter 5 · Architecture spec</div><h2>Memory consistency: SC, TSO, relaxed</h2>
+  <p class="muted">The consistency model is the architectural contract. Coherence is one ingredient; the pipeline (store buffer, OoO loads, forwarding) is the other.</p></div>
+
+  <div class="callout"><strong>The single most important distinction.</strong> Coherence orders writes to <em>one</em> address. Consistency orders loads and stores across <em>all</em> addresses. A perfectly coherent system can still violate SC because of the core’s store buffer.</div>
+
+  <div class="tblwrap"><table>
+    <thead><tr><th>Order kept? (earlier → later)</th><th>SC</th><th>TSO / x86</th><th>XC / Arm / RISC-V WMO / Power</th></tr></thead>
+    <tbody>
+      <tr><td>Load → Load</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗ unless fence / acquire / dependency</td></tr>
+      <tr><td>Load → Store</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗ unless fence / dependency</td></tr>
+      <tr><td>Store → Store</td><td class="yes">✓</td><td class="yes">✓ (FIFO store buffer)</td><td class="no">✗ unless fence / release</td></tr>
+      <tr><td>Store → Load</td><td class="yes">✓</td><td class="no">✗ (store buffer)</td><td class="no">✗</td></tr>
+      <tr><td>Own store visible to own load early</td><td>—</td><td class="yes">✓ forwarding from SB</td><td class="yes">✓</td></tr>
+      <tr><td>Write atomicity (multi-copy atomic)</td><td class="yes">✓</td><td class="yes">✓</td><td>Arm v8 / RVWMO: ✓ ·  Power: ✗</td></tr>
+      <tr><td>Fence</td><td>not needed</td><td>MFENCE / locked RMW</td><td>DMB, DSB, LDAR/STLR, fence rw,rw, sync/lwsync</td></tr>
+    </tbody></table></div>
+
+  <div class="grid2">
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 380 240" width="100%" style="min-width:340px" role="img" aria-label="TSO store buffer model">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}.tx{fill:var(--ink);font-size:12px}.sx{fill:var(--muted);font-size:10.5px}.sb{fill:var(--accent-soft);stroke:var(--accent)}.l{stroke:var(--muted);stroke-width:1.3;fill:none}</style>
+      <text x="10" y="16" class="sx">TSO operational model</text>
+      <rect x="30" y="28" width="120" height="34" class="bx"/><text x="90" y="50" class="tx" text-anchor="middle">Core 0</text>
+      <rect x="230" y="28" width="120" height="34" class="bx"/><text x="290" y="50" class="tx" text-anchor="middle">Core 1</text>
+      <rect x="40" y="82" width="100" height="62" class="sb"/><text x="90" y="100" class="sx" text-anchor="middle">FIFO store buffer</text><text x="90" y="118" class="tx" text-anchor="middle">x = 1</text>
+      <rect x="240" y="82" width="100" height="62" class="sb"/><text x="290" y="100" class="sx" text-anchor="middle">FIFO store buffer</text><text x="290" y="118" class="tx" text-anchor="middle">y = 1</text>
+      <path d="M90 62 V82 M290 62 V82" class="l"/>
+      <path d="M90 144 V176 M290 144 V176" class="l"/>
+      <path d="M20 45 Q 10 120 60 186" class="l" stroke-dasharray="4 3"/><text x="2" y="230" class="sx">loads bypass SB → read memory directly</text>
+      <rect x="20" y="176" width="340" height="30" class="bx" style="fill:var(--soft)"/><text x="190" y="196" class="tx" text-anchor="middle">single coherent memory (switch)</text>
+    </svg></div>
+    <figcaption>Store→Load relaxation comes entirely from the store buffer. That is why x86 needs MFENCE for Dekker.</figcaption>
+  </figure>
+  <div class="panel">
+    <div class="eyebrow">Litmus tests to know cold</div>
+    <div class="tblwrap" style="border:none"><table>
+      <thead><tr><th>Test</th><th>Shape</th><th>Forbidden outcome</th><th>SC</th><th>TSO</th><th>Weak</th></tr></thead>
+      <tbody>
+        <tr><td><b>SB</b> (Dekker)</td><td class="mono">x=1;r1=y ‖ y=1;r2=x</td><td class="mono">r1=r2=0</td><td class="no">✗</td><td class="yes">allowed</td><td class="yes">allowed</td></tr>
+        <tr><td><b>MP</b></td><td class="mono">d=1;f=1 ‖ r1=f;r2=d</td><td class="mono">r1=1,r2=0</td><td class="no">✗</td><td class="no">✗</td><td class="yes">allowed</td></tr>
+        <tr><td><b>LB</b></td><td class="mono">r1=x;y=1 ‖ r2=y;x=1</td><td class="mono">r1=r2=1</td><td class="no">✗</td><td class="no">✗</td><td class="yes">allowed*</td></tr>
+        <tr><td><b>IRIW</b></td><td class="mono">x=1 ‖ y=1 ‖ x,y ‖ y,x</td><td class="mono">readers disagree</td><td class="no">✗</td><td class="no">✗</td><td>Power only</td></tr>
+        <tr><td><b>CoRR</b></td><td class="mono">x=1 ‖ r1=x;r2=x</td><td class="mono">r1=1,r2=0</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗ always</td></tr>
+      </tbody></table></div>
+    <p class="muted" style="font-size:13px">* rarely observed in hardware. CoRR (read-read coherence) is forbidden by every model: a load must never see an older value than an earlier same-address load. A great bug to mention: OoO loads to the same address not squashed on invalidation.</p>
+  </div>
+  </div>
+
+  <div class="grid3">
+    <div class="panel"><h3>How OoO cores keep SC/TSO</h3><p>Loads execute speculatively out of order. The load queue snoops incoming invalidations and evictions; a hit on a speculatively performed, uncommitted load squashes and replays it (MIPS R10000 style). Alternative: value replay at commit.</p></div>
+    <div class="panel"><h3>Atomics (RMW)</h3><p>Obtain the line in M, then do load+store locally while deferring incoming snoops for that line. No bus lock needed. Under TSO an RMW also drains the store buffer, acting as a full fence.</p></div>
+    <div class="panel"><h3>SC for DRF</h3><p>If software is data-race-free (all conflicting accesses ordered by synchronization), weak hardware looks SC. C++/Java models are built on this; acquire/release map to LDAR/STLR, fences.</p></div>
+    <div class="panel"><h3>Release consistency</h3><p><b>Acquire</b>: later accesses can’t move above it. <b>Release</b>: earlier accesses can’t move below it. One-way fences; cheaper than full fences and the basis of GPU scoped models.</p></div>
+    <div class="panel"><h3>Prefetch is harmless</h3><p>Non-binding prefetches and coherence request order don’t affect consistency. The model constrains when loads/stores <em>perform</em>, not the order of GetS/GetM. (Primer quiz Q1 and Q2: both false.)</p></div>
+    <div class="panel"><h3>Axiomatic view</h3><p>Relations: <code>po</code> program order, <code>rf</code> reads-from, <code>co</code> coherence order, <code>fr</code> from-reads. SC = acyclic(po ∪ rf ∪ co ∪ fr). Weaker models drop parts of <code>po</code> (ppo) and add fences.</p></div>
+  </div>
+</section>
+
+<!-- ============ 6 GPU ============ -->
+<section id="gpu">
+  <div class="sechead"><div class="eyebrow">Chapter 6 · Heterogeneous</div><h2>GPU and accelerator coherence</h2>
+  <p class="muted">Primer Ch. 10. Highly relevant at NVIDIA: GPUs often enforce consistency directly in the coherence mechanism instead of keeping SWMR.</p></div>
+  <div class="grid2">
+    <div class="panel"><h3>Why GPUs skipped classic coherence</h3><ul>
+      <li>Thousands of threads, throughput-oriented, little fine-grained sharing in graphics.</li>
+      <li>Invalidation traffic and directory state for huge L1 counts is costly.</li>
+      <li>Typical design: write-through (or write-back at L2) L1s, L2 is the point of coherence.</li></ul></div>
+    <div class="panel"><h3>Consistency-directed coherence</h3><ul>
+      <li><b>Self-invalidation</b>: on an acquire, invalidate (or selectively invalidate) local L1 lines.</li>
+      <li><b>Self-downgrade / flush</b>: on a release, drain write-through buffers to the shared L2.</li>
+      <li>Temporal coherence: leases/timestamps let copies expire without invalidation messages.</li>
+      <li>Still delivers SC for DRF, not SWMR in real time.</li></ul></div>
+    <div class="panel"><h3>Scoped synchronization</h3><ul>
+      <li>Scopes like CTA/block, GPU/device, system. A release at block scope only needs to reach the SM’s L1; system scope must reach CPU-visible memory.</li>
+      <li>PTX memory model: <code>.cta / .gpu / .sys</code> scopes with <code>.acquire/.release/.relaxed</code>.</li>
+      <li>Bug class: scope mismatch (producer releases at CTA scope, consumer on another SM).</li></ul></div>
+    <div class="panel"><h3>CPU + accelerator</h3><ul>
+      <li>Heterogeneous consistency: each device may have its own model; the combined system must define cross-device ordering.</li>
+      <li>Hardware-coherent links (NVLink-C2C, CXL.cache, CCIX, CHI) let accelerators cache host memory.</li>
+      <li>Verification: cross-protocol bridges, translating MOESI ⇄ simpler device states, and DMA/IO coherence.</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ 7 VERIFICATION ============ -->
+<section id="verif">
+  <div class="sechead"><div class="eyebrow">Chapter 7 · Verification mindset</div><h2>How to verify a cache and coherence subsystem</h2>
+  <p class="muted">Primer Ch. 11 plus industry practice. Seniors are judged on what they check, how they stress, and how they know they are done.</p></div>
+
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 760 300" width="100%" style="min-width:640px" role="img" aria-label="Coherence verification environment">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}.dut{fill:var(--soft);stroke:var(--ink);stroke-width:1.5}.ck{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.3}.tx{fill:var(--ink);font-size:12px}.sx{fill:var(--muted);font-size:10.5px}.l{stroke:var(--muted);stroke-width:1.2;fill:none}</style>
+      <rect x="160" y="70" width="380" height="150" class="dut"/><text x="350" y="90" class="tx" text-anchor="middle">DUT: L1/L2 controllers · interconnect · home/dir · LLC</text>
+      <rect x="180" y="104" width="80" height="34" class="bx"/><text x="220" y="125" class="tx" text-anchor="middle">L1 C0</text>
+      <rect x="270" y="104" width="80" height="34" class="bx"/><text x="310" y="125" class="tx" text-anchor="middle">L1 C1</text>
+      <rect x="360" y="104" width="80" height="34" class="bx"/><text x="400" y="125" class="tx" text-anchor="middle">L1 Cn</text>
+      <rect x="450" y="104" width="76" height="34" class="bx"/><text x="488" y="125" class="tx" text-anchor="middle">DMA/IO</text>
+      <rect x="180" y="160" width="346" height="44" class="bx"/><text x="353" y="186" class="tx" text-anchor="middle">NoC / VCs  →  Home + Directory  →  LLC / Mem model</text>
+      <rect x="10" y="80" width="130" height="130" class="ck"/><text x="75" y="100" class="tx" text-anchor="middle">STIMULUS</text>
+      <text x="20" y="120" class="sx">core agents / BFMs</text><text x="20" y="136" class="sx">small hot addr pool</text><text x="20" y="152" class="sx">litmus + random</text><text x="20" y="168" class="sx">evict pressure</text><text x="20" y="184" class="sx">delays, backpressure</text><text x="20" y="200" class="sx">error/retry injection</text>
+      <path d="M140 145 H160" class="l"/>
+      <rect x="560" y="20" width="190" height="62" class="ck"/><text x="655" y="40" class="tx" text-anchor="middle">SWMR + state monitor</text><text x="570" y="58" class="sx">global view of all copies</text><text x="570" y="72" class="sx">asserted every cycle</text>
+      <rect x="560" y="92" width="190" height="62" class="ck"/><text x="655" y="112" class="tx" text-anchor="middle">Data-value scoreboard</text><text x="570" y="130" class="sx">golden mem, per-addr write order</text><text x="570" y="144" class="sx">legal-value window per load</text>
+      <rect x="560" y="164" width="190" height="62" class="ck"/><text x="655" y="184" class="tx" text-anchor="middle">Consistency checker</text><text x="570" y="202" class="sx">build po/rf/co/fr graph</text><text x="570" y="216" class="sx">cycle → MCM violation</text>
+      <rect x="560" y="236" width="190" height="56" class="ck"/><text x="655" y="256" class="tx" text-anchor="middle">Liveness watchdogs</text><text x="570" y="274" class="sx">txn timeout, MSHR age, VC credit</text>
+      <path d="M540 50 H560 M540 123 H560 M540 195 H560 M540 264 H560 M540 50 V264" class="l"/>
+      <rect x="160" y="236" width="380" height="56" class="ck"/><text x="350" y="256" class="tx" text-anchor="middle">COVERAGE</text><text x="350" y="276" class="sx" text-anchor="middle">state × event table · transient × incoming msg · race pairs · VC full · ack counts</text>
+      <text x="160" y="40" class="sx">Formal alongside: model-check protocol (Murphi/TLA+), SVA on controller tables, deadlock proofs</text>
+    </svg></div>
+    <figcaption>A complete answer names all four checker types and says why each is needed: SWMR catches permission bugs, the scoreboard catches stale data, the graph checker catches pipeline ordering bugs coherence monitors can’t see, watchdogs catch hangs.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="panel"><h3>Stimulus strategy</h3><ul>
+      <li><b>Shrink the address space</b>: 2–8 hot lines, sometimes mapping to the same set, to force collisions and evictions.</li>
+      <li><b>Shrink the cache</b> (config knob) so replacement races happen constantly.</li>
+      <li>False-sharing patterns: different bytes, same line, many writers.</li>
+      <li>Random + directed races: GetM vs PutM, upgrade vs invalidate, two upgrades in S.</li>
+      <li>Litmus suites (diy/litmus7 generated) run thousands of iterations with random skew.</li>
+      <li>Randomize NoC latency, credits, arbitration, retry/NACK and ECC error injection.</li>
+      <li>Locks, barriers, atomics and fence-heavy kernels as real-software stress.</li></ul></div>
+    <div class="panel"><h3>Checkers and how they work</h3><ul>
+      <li><b>SWMR monitor</b>: track every copy’s state from interface observations; at most one M/E, M excludes S.</li>
+      <li><b>Scoreboard</b>: per address, serialize stores in coherence order; each load must return a value in its legal window (not older than the last value the same core saw: CoRR).</li>
+      <li><b>MCM checker</b>: collect observed rf/co per test, check for cycles against the axiomatic model (TSOtool-style).</li>
+      <li><b>Protocol assertions</b>: ack counter never negative at quiescence, directory sharer set ⊇ actual sharers, owner field consistent.</li>
+      <li><b>End-of-test</b>: drain, then compare all cache contents and memory to golden.</li></ul></div>
+    <div class="panel"><h3>Coverage: how you know you are done</h3><ul>
+      <li>Every (stable + transient state) × (incoming event) cell hit, including “stall” cells.</li>
+      <li>Every message type on every VC; VC-full and credit-zero conditions.</li>
+      <li>Race crosses: request type at requester × concurrent forward/inv type.</li>
+      <li>Ack count orderings: acks before data, data before acks, 0 acks.</li>
+      <li>Litmus outcomes: every allowed outcome observed at least once; no forbidden one ever.</li>
+      <li>Replacement × in-flight snoop for each dirty state.</li></ul></div>
+    <div class="panel"><h3>Formal &amp; methodology</h3><ul>
+      <li>Model-check the protocol at the spec level (Murphi, TLA+) with 2–3 caches, 1–2 addresses: finds deadlocks and SWMR violations early.</li>
+      <li>Formal on RTL: SVA for local controller tables, FIFO/credit correctness, livelock-freedom bounded proofs.</li>
+      <li>Axiomatic specs (herd/cat) as the reference; operational models for scoreboards.</li>
+      <li>PipeCheck/CCICheck style: verify the core pipeline + coherence together against the MCM.</li>
+      <li>Emulation/silicon: long-running litmus and lock torture tests, self-checking.</li></ul></div>
+  </div>
+
+  <div class="sechead" style="border:none;padding-top:6px"><h3>Bug catalog: the races that ship to silicon</h3></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>#</th><th>Scenario</th><th>Symptom</th><th>Caught by</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Dirty eviction (PutM) crosses an incoming Fwd-GetS/GetM</td><td>Requestor gets stale memory data, or hang</td><td>Scoreboard, transient coverage MI<sup>A</sup> × Fwd</td></tr>
+      <tr><td>2</td><td>Upgrade from S loses race to another GetM</td><td>Writes to stale data (assumed it still had data)</td><td>Scoreboard, SM<sup>AD</sup>→IM<sup>AD</sup> coverage</td></tr>
+      <tr><td>3</td><td>Invalidate arrives while in IS<sup>D</sup>; line kept valid after fill</td><td>SWMR violation, later stale read</td><td>SWMR monitor</td></tr>
+      <tr><td>4</td><td>Inv-acks counted before data arrives, counter wraps</td><td>Premature M, two writers</td><td>SWMR, ack-count assertion</td></tr>
+      <tr><td>5</td><td>Speculative load not squashed on snoop hit in load queue</td><td>MP / CoRR violation, coherence looks fine</td><td>MCM graph checker, litmus</td></tr>
+      <tr><td>6</td><td>Store buffer forwarding from another SMT thread’s store</td><td>TSO violation (Primer quiz Q4)</td><td>Litmus with SMT, MCM checker</td></tr>
+      <tr><td>7</td><td>RMW: snoop serviced between load and store half</td><td>Lost increment, broken lock</td><td>Atomic counter self-check</td></tr>
+      <tr><td>8</td><td>Inclusive LLC eviction, back-invalidate misses a WB buffer entry</td><td>Stale data resurrected</td><td>Scoreboard, inclusion assertion</td></tr>
+      <tr><td>9</td><td>Responses share a VC/queue with requests</td><td>Deadlock under load</td><td>Watchdog, formal deadlock proof</td></tr>
+      <tr><td>10</td><td>NACK/retry without fairness</td><td>Livelock or starvation of one core</td><td>Forward-progress watchdog, per-core latency histograms</td></tr>
+      <tr><td>11</td><td>Stale PutS/PutM from non-owner mishandled at directory</td><td>Directory corrupts owner/sharers</td><td>Dir-vs-actual consistency assertion</td></tr>
+      <tr><td>12</td><td>DMA write not invalidating cached copies / I-cache</td><td>Device or self-modifying code reads stale</td><td>IO coherence tests, scoreboard incl. IO agents</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- ============ 8 QA ============ -->
+<section id="qa">
+  <div class="sechead"><div class="eyebrow">Chapter 8 · Interview</div><h2>Interview questions with model answers</h2>
+  <p class="muted">Answer shape that works at senior level: definition → mechanism → corner case → how you would verify it.</p></div>
+
+  <div>
+  <details><summary>Coherence vs consistency, in one minute. <span class="lvl">core</span></summary><div>
+    <p>Coherence: per address, single-writer/multiple-reader plus the data-value invariant; makes caches invisible. Consistency: architectural rule on the order of loads and stores across all addresses as seen by all threads. Coherence is a means; the core pipeline (store buffer, OoO loads) plus coherence together implement the consistency model. Example: x86 is perfectly coherent yet allows SB r1=r2=0.</p></div></details>
+  <details><summary>Compute sets, index and tag bits for a 1 MiB, 16-way, 64 B line cache with 48-bit PA. <span class="lvl">core</span></summary><div>
+    <p>Lines = 2<sup>20</sup>/64 = 16384. Sets = 16384/16 = 1024 → 10 index bits [15:6]. Offset 6 bits [5:0]. Tag = 48−16 = 32 bits [47:16]. Tag store per line also holds state bits (3 for MOESI) and replacement bits.</p></div></details>
+  <details><summary>Why add E? Why add O? What does each cost? <span class="lvl">design</span></summary><div>
+    <p>E: a read miss with no other sharers can later write silently, saving the upgrade transaction (huge for private data). Cost: the system must know no sharers exist (wired-OR shared line or directory), and memory may be stale relative to E→M silently, so the E holder must answer forwards. O: lets a dirty line be shared without writing back to memory first; the O holder supplies data. Cost: extra state, owner tracking, more races on O eviction.</p></div></details>
+  <details><summary>What are transient states and why are they where the bugs are? <span class="lvl">design</span></summary><div>
+    <p>Real transactions are not atomic: between request and completion the controller sits in IS<sup>D</sup>, IM<sup>AD</sup>, SM<sup>AD</sup>, MI<sup>A</sup> etc., and any other message can arrive. Each (transient × incoming message) cell needs a defined action: stall, handle, or impossible. Coverage must hit all reachable cells; formal model checking proves no unexpected cell is reachable.</p></div></details>
+  <details><summary>Walk through S→M upgrade racing with another core’s GetM. <span class="lvl">race</span></summary><div>
+    <p>C0 in S issues Upgrade, goes SM<sup>AD</sup>. C1’s GetM is ordered first; C0 receives Inv, acks it, and must drop to IM<sup>AD</sup>, because it no longer has valid data. When C0’s request is serviced it needs data, not just acks. Bug if C0 keeps its old data and writes into it. Verification: directed race test + coverage of SM<sup>AD</sup>×Inv; scoreboard catches the lost update.</p></div></details>
+  <details><summary>Dirty eviction races with a forwarded request. What happens? <span class="lvl">race</span></summary><div>
+    <p>C0 in M evicts, sends PutM, enters MI<sup>A</sup>, keeping data in a writeback buffer. Directory meanwhile forwards C1’s GetS/GetM to C0 as owner. C0 must supply data from the WB buffer and transition to SI<sup>A</sup>/II<sup>A</sup>. The directory later sees a PutM from a non-owner and must ack it without updating memory with stale data. Missing either half = stale data or hang.</p></div></details>
+  <details><summary>Why does a directory protocol need multiple virtual networks? <span class="lvl">design</span></summary><div>
+    <p>To break message-dependency cycles. A request may generate forwards, which generate responses. If all share one queue, a full queue of requests can block the responses needed to retire them → deadlock. Separate VNs for request, forward, response (and sometimes writeback) with responses always sinkable guarantee progress.</p></div></details>
+  <details><summary>Snooping vs directory: when do you pick which? <span class="lvl">design</span></summary><div>
+    <p>Snooping: small core counts, low latency 2-hop, needs a totally ordered broadcast medium, bandwidth grows with N. Directory: scales, point-to-point, 3-hop misses, storage overhead and more races. Modern chips are hybrids: snoop filters / inclusive directories at the LLC, directory between sockets, direct cache transfer to save hops.</p></div></details>
+  <details><summary>How does an OoO core guarantee TSO while executing loads out of order? <span class="lvl">MCM</span></summary><div>
+    <p>Loads issue speculatively. The load queue records performed-but-uncommitted loads. Any invalidation or eviction of a line matching such a load triggers a squash and re-execution from that load. Stores retire into a FIFO store buffer and drain in order; loads forward from it for the same thread only. Verification: MP and CoRR litmus tests with injected snoop timing, MCM graph checker.</p></div></details>
+  <details><summary>Store buffering litmus (SB): why allowed on x86, how do you forbid it? <span class="lvl">MCM</span></summary><div>
+    <p>Each core’s store sits in its store buffer while its later load reads memory, so both loads see 0. Forbid with MFENCE or a locked RMW between store and load, which drains the store buffer before the load performs.</p></div></details>
+  <details><summary>How is an atomic RMW made atomic without locking the bus? <span class="lvl">MCM</span></summary><div>
+    <p>Get the line in M, then perform load and store locally while deferring any incoming snoop for that line until the store completes (can’t deadlock: the store is guaranteed to finish). Aggressive versions speculate the load early and check the line wasn’t lost before the store. Under TSO it also drains the store buffer.</p></div></details>
+  <details><summary>What is write atomicity and why does IRIW matter? <span class="lvl">MCM</span></summary><div>
+    <p>Multi-copy atomic: a store becomes visible to all other cores at the same time. IRIW: two writers to x and y, two readers reading in opposite order; if readers disagree on order, writes weren’t atomic. Allowed on Power (stores can reach some cores early through shared store buffers/caches), forbidden on x86, Arm v8, RISC-V.</p></div></details>
+  <details><summary>Design the checkers for a coherence verification environment. <span class="lvl">verif</span></summary><div>
+    <p>(1) SWMR/state monitor with a global view of every cache’s state. (2) Data scoreboard: golden memory with per-address coherence order and a legal-value window per load. (3) Consistency checker building po/rf/co/fr from observed values and detecting cycles. (4) Protocol assertions: directory state ⊇ actual sharers, ack counts, owner uniqueness. (5) Liveness: per-transaction timeouts, MSHR age, VC credit monitors. (6) End-of-test flush and compare.</p></div></details>
+  <details><summary>Your random test passes 10,000 seeds. Why might coverage still be poor? <span class="lvl">verif</span></summary><div>
+    <p>Random addresses rarely collide, so races never happen. Fix: tiny hot address pools, addresses aliased to one set, shrink caches, bias toward same-line multi-writer patterns, randomize interconnect delay to widen race windows, and drive coverage of transient×event cells and race crosses. Pass rate without race coverage proves little.</p></div></details>
+  <details><summary>How do you detect livelock and starvation in simulation? <span class="lvl">verif</span></summary><div>
+    <p>Per-request age counters with thresholds, per-core forward-progress counters (retired memory ops per window), NACK/retry counters per address, latency histograms per requestor under contention (lock torture). Formally, bounded liveness or fairness properties on arbiters.</p></div></details>
+  <details><summary>A load returned a stale value in a 32-core sim. How do you debug? <span class="lvl">debug</span></summary><div>
+    <p>Pull the scoreboard’s history for that address: coherence order of writes and which write this load’s value matches. Find the cache that supplied data and its state at that time. Walk the protocol log for the line: requests, forwards, invalidates, acks, evictions around the window. Usually you find a transient state that handled an unexpected message (upgrade race, eviction crossing a forward, missed squash). Then reduce to a directed test and add coverage for that cell.</p></div></details>
+  <details><summary>What is false sharing and how would you measure it? <span class="lvl">perf</span></summary><div>
+    <p>Different variables in one line, written by different cores → line ping-pongs though there’s no true sharing. Measure coherence misses (HITM / snoop-hit-modified counters), invalidations per line, and line-level address heatmaps. Fixes: padding/alignment, sector-level coherence, or protocol optimizations.</p></div></details>
+  <details><summary>Inclusive vs exclusive vs NINE LLC: verification impact? <span class="lvl">design</span></summary><div>
+    <p>Inclusive: LLC eviction must back-invalidate inner copies (including in-flight fills and WB buffers); assert inclusion invariant at all times. Exclusive: data moves between levels on every L2 eviction; track unique copy. NINE: need an explicit snoop filter; check filter ⊇ actual contents and filter-eviction back-invalidation.</p></div></details>
+  <details><summary>VIPT L1: what problem appears if index bits exceed page offset? <span class="lvl">core</span></summary><div>
+    <p>Synonyms: two virtual addresses mapping to one physical line can land in different sets, creating two copies the coherence protocol (which works on physical tags) doesn’t know are aliases. Fix: keep cache size/ways ≤ page size, page coloring, or alias detection on fill. Test with deliberate aliased mappings.</p></div></details>
+  <details><summary>How is GPU coherence different from CPU coherence? <span class="lvl">GPU</span></summary><div>
+    <p>GPU L1s are often write-through and not kept coherent by invalidations. Coherence is consistency-directed: acquires self-invalidate L1, releases flush pending writes to L2 (point of coherence), at the scope requested (CTA, GPU, system). Gives SC for DRF with scoped synchronization. Verification focus: scope semantics, fence/acquire/release lowering, atomics at L2, CPU–GPU coherence over the link.</p></div></details>
+  <details><summary>What is a scoped memory model and a typical scope bug? <span class="lvl">GPU</span></summary><div>
+    <p>Synchronization operations carry a scope saying which threads they must order with. A release at block scope need not push data past the SM’s L1. Bug: producer releases at CTA scope, consumer on another SM acquires at GPU scope, sees stale data. Hardware must implement each scope correctly; tests need cross-SM producer/consumer at every scope combination.</p></div></details>
+  <details><summary>Where does formal beat simulation for coherence? <span class="lvl">verif</span></summary><div>
+    <p>Protocol-level model checking with 2–3 caches and 1–2 addresses explores all interleavings exhaustively: catches deadlocks and SWMR violations from rare message orderings simulation may never hit. On RTL, formal proves controller tables, credit/FIFO correctness and bounded liveness. Simulation still needed for full-system scale, performance, and pipeline+memory interactions.</p></div></details>
+  <details><summary>What is a litmus test and how do you use one in DV? <span class="lvl">verif</span></summary><div>
+    <p>A tiny multi-threaded program with a specified forbidden/allowed final state. In DV: generate many (diy), run each thousands of times with randomized start skew, cache pre-states and interconnect delay; histogram outcomes. Fail if a forbidden outcome appears; flag coverage holes if allowed outcomes never appear (stimulus too weak to expose relaxations).</p></div></details>
+  <details><summary>Silent vs explicit eviction of S lines: trade-off? <span class="lvl">design</span></summary><div>
+    <p>Silent: fewer messages, but the directory keeps stale sharer bits → unnecessary invalidations, and an inclusive directory can fill with dead entries. Explicit PutS: exact tracking at the cost of traffic and new races (PutS crossing an Inv). Verification must cover both the Inv-to-non-sharer path and the PutS-vs-Inv race.</p></div></details>
+  <details><summary>Primer quiz: “GPUs don’t support hardware coherence, so they can’t enforce a memory model.” <span class="lvl">GPU</span></summary><div>
+    <p>False. They enforce the consistency model through consistency-directed coherence: self-invalidation on acquire and write-back/flush on release, which is enough for SC-for-DRF and scoped models.</p></div></details>
+  <details><summary>What would you put in a cache/coherence verification plan? <span class="lvl">senior</span></summary><div>
+    <p>Spec sources (ISA MCM, protocol tables, interconnect spec). Features list: every request/response type, states, transient states, replacement, inclusion, atomics, fences, DMA/IO, ECC/poison, power states (flush on power-down). Checkers (four types above). Stimulus plan (directed races, constrained random with hot addresses, litmus, software torture). Coverage model with closure criteria. Formal scope. Reuse from unit to cluster to SoC, and emulation/silicon correlation plan.</p></div></details>
+  </div>
+</section>
+
+<footer>
+  Source framework: V. Nagarajan, D. J. Sorin, M. D. Hill, D. A. Wood, <em>A Primer on Memory Consistency and Cache Coherence</em>, 2nd ed., Morgan &amp; Claypool, 2020 (<a href="https://pages.cs.wisc.edu/~markhill/papers/primer2020_2nd_edition.pdf" target="_blank" rel="noopener">PDF</a>). Chapter mapping: 1 ← background, 2 ← Ch. 2, 3 ← Ch. 6–7, 4 ← Ch. 7–9, 5 ← Ch. 3–5, 6 ← Ch. 10, 7 ← Ch. 11 and industry practice. Content here is a summary in original words.
+</footer>
+</div>
+
+<script>
+(function(){
+  const N=3; let st, val, mem, ver, lastSeen;
+  const coresEl=document.getElementById('cores'), logEl=document.getElementById('log'), invEl=document.getElementById('inv'), memEl=document.getElementById('mem');
+  function reset(){ st=Array(N).fill('I'); val=Array(N).fill(null); mem=0; ver=0; lastSeen=Array(N).fill(-1); logEl.innerHTML=''; log('Reset: all caches I, memory A = 0'); render(); }
+  function log(m,cls){ const d=document.createElement('div'); d.textContent=m; if(cls) d.style.color='var(--'+cls+')'; logEl.prepend(d); }
+  function others(i){ return [...Array(N).keys()].filter(j=>j!==i); }
+  function load(i){
+    if(st[i]!=='I'){ log(`C${i} Load A → hit in ${st[i]}, value ${val[i]}`); check(i,val[i]); return; }
+    const o=others(i), owner=o.find(j=>st[j]==='M'), sharers=o.filter(j=>st[j]!=='I');
+    if(owner!==undefined){ mem=val[owner]; st[owner]='S'; log(`C${i} BusRd A · C${owner} snoops in M → flushes ${mem}, M→S`); }
+    else if(sharers.length){ sharers.forEach(j=>{ if(st[j]==='E'){ st[j]='S'; log(`C${j} snoops BusRd in E → S`);} }); log(`C${i} BusRd A · shared line asserted`); }
+    else log(`C${i} BusRd A · no sharers`);
+    st[i]= sharers.length? 'S':'E'; val[i]= owner!==undefined? mem : (sharers.length? val[sharers[0]] : mem);
+    log(`C${i} I→${st[i]}, value ${val[i]}`); check(i,val[i]);
+  }
+  function store(i){
+    const nv=ver+1, o=others(i);
+    if(st[i]==='M'){ log(`C${i} Store A=${nv} → hit in M, no bus traffic`); }
+    else if(st[i]==='E'){ log(`C${i} Store A=${nv} → silent E→M`); }
+    else{
+      const kind= st[i]==='S'? 'BusUpgr':'BusRdX';
+      o.forEach(j=>{ if(st[j]==='M'){ mem=val[j]; log(`C${j} snoops ${kind} in M → flushes ${mem}, M→I`);} else if(st[j]!=='I') log(`C${j} snoops ${kind} in ${st[j]} → I`); st[j]='I'; val[j]=null; });
+      log(`C${i} ${kind} A · ${st[i]}→M`);
+    }
+    ver=nv; st[i]='M'; val[i]=nv; lastSeen[i]=nv; render(true);
+  }
+  function evict(i){
+    if(st[i]==='I'){ log(`C${i} Evict A → already I`); return; }
+    if(st[i]==='M'){ mem=val[i]; log(`C${i} Evict A in M → writeback (PutM) ${mem}, M→I`); }
+    else log(`C${i} Evict A in ${st[i]} → silent, ${st[i]}→I`);
+    st[i]='I'; val[i]=null; render(true);
+  }
+  function check(i,v){ if(v<lastSeen[i]) log(`CoRR violation: C${i} saw ${v} after ${lastSeen[i]}`,'bad'); if(v!==ver) log(`Stale read: C${i} got ${v}, latest is ${ver}`,'bad'); lastSeen[i]=Math.max(lastSeen[i],v); render(true); }
+  function render(flash){
+    coresEl.innerHTML='';
+    for(let i=0;i<N;i++){
+      const c=document.createElement('div'); c.className='core'+(flash?' flash':'');
+      c.innerHTML=`<div class="row"><span class="eyebrow">Core ${i}</span><span class="mono muted">A = ${val[i]===null?'—':val[i]}</span></div>
+        <div class="bigst" style="color:var(--${st[i]})">${st[i]}</div>
+        <div class="btns"><button type="button" id="ld${i}">Load</button><button type="button" id="st${i}" class="primary">Store</button><button type="button" id="ev${i}">Evict</button></div>`;
+      coresEl.appendChild(c);
+      c.querySelector('#ld'+i).onclick=()=>load(i); c.querySelector('#st'+i).onclick=()=>store(i); c.querySelector('#ev'+i).onclick=()=>evict(i);
+    }
+    const nM=st.filter(s=>s==='M'||s==='E').length, nS=st.filter(s=>s==='S').length;
+    const swmr= nM===0 || (nM===1 && nS===0);
+    const dv= st.every((s,i)=> s==='I' || val[i]===ver) && (st.includes('M') || mem===ver);
+    invEl.innerHTML=`<span style="color:var(--${swmr?'ok':'bad'})">SWMR ${swmr?'✓':'✗'}</span><span style="color:var(--${dv?'ok':'bad'})">Data-value ${dv?'✓':'✗'}</span><span class="muted">latest write = ${ver}</span>`;
+    memEl.textContent=`Memory A = ${mem}${st.includes('M')?' (stale)':''}`;
+  }
+  document.getElementById('reset').onclick=reset; reset();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,50 @@
+UVM_INFO @ 0: reporter [UVM/RELNOTES] 
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  This implementation of the UVM Library deviates from the 1800.2-2020
+  standard.  See the DEVIATIONS.md file contained in the release
+  for more details.
+
+----------------------------------------------------------------
+Accellera:1800.2:UVM:2020.3.1
+
+All copyright owners for this kit are listed in NOTICE.txt
+All Rights Reserved Worldwide
+----------------------------------------------------------------
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+UVM_WARNING @ 0: reporter [NO_DPI_USED] We are thinking of removing support for UVM_NO_DPI.  Please try this test without it and evaluate the impact
+UVM_INFO @ 0: reporter [RNTST] Running test layered_test...
+UVM_INFO @ 0: reporter [UVM/COMP/NAMECHECK] This implementation of the component name checks requires DPI to be enabled
+UVM_WARNING @ 0: reporter [NO_VISIT_CHECK] Because UVM_REGEX_NO_DPI is defined, no uvm component name constraints will be checked
+UVM_INFO @ 0: uvm_test_top.env.ahb.drv [AHB_DRV] AHB WR haddr=00000ff8 HBURST=SINGLE beats=1 (NONSEQ + 0 SEQ)
+UVM_INFO @ 10: uvm_test_top.env.ahb.drv [AHB_DRV] AHB WR haddr=00000ffc HBURST=SINGLE beats=1 (NONSEQ + 0 SEQ)
+UVM_INFO @ 20: uvm_test_top.env.ahb.drv [AHB_DRV] AHB WR haddr=00001000 HBURST=INCR16 beats=16 (NONSEQ + 15 SEQ)
+UVM_INFO @ 30: uvm_test_top.env.ahb.drv [AHB_DRV] AHB WR haddr=00001040 HBURST=SINGLE beats=1 (NONSEQ + 0 SEQ)
+UVM_INFO @ 40: uvm_test_top.env.ahb.drv [AHB_DRV] AHB WR haddr=00001044 HBURST=SINGLE beats=1 (NONSEQ + 0 SEQ)
+UVM_INFO @ 50: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_WRITE addr=00000ff8 words=20
+UVM_INFO @ 50: uvm_test_top.env.ahb.drv [AHB_DRV] AHB RD haddr=e64fde24 HBURST=INCR4 beats=4 (NONSEQ + 3 SEQ)
+UVM_INFO @ 60: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_READ addr=e64fde24 words=4
+UVM_INFO @ 60: uvm_test_top.env.ahb.drv [AHB_DRV] AHB RD haddr=9e2e74a0 HBURST=INCR16 beats=16 (NONSEQ + 15 SEQ)
+UVM_INFO @ 70: uvm_test_top.env.ahb.drv [AHB_DRV] AHB RD haddr=9e2e74e0 HBURST=INCR4 beats=4 (NONSEQ + 3 SEQ)
+UVM_INFO @ 80: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_READ addr=9e2e74a0 words=20
+UVM_INFO @ 130: uvm_test_top [TEST] PASS: 44 words through PROTO_AHB layer
+UVM_INFO @ 130: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   15
+UVM_WARNING :    2
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[AHB_DRV]     8
+[BUS_SEQ]     3
+[NO_DPI_USED]     1
+[NO_VISIT_CHECK]     1
+[RNTST]     1
+[TEST]     1
+[UVM/COMP/NAMECHECK]     1
+[UVM/RELNOTES]     1
+

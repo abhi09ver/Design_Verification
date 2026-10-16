@@ -1,0 +1,12 @@
+1 sort      : '{'h1, 'h2, 'h2, 'h4, 'h7, 'h7, 'h9}
+2 rsort     : '{'h9, 'h7, 'h7, 'h4, 'h2, 'h2, 'h1}
+3 reverse   : '{'h1, 'h7, 'h2, 'h4, 'h9, 'h2, 'h7}
+4 min       : 1
+5 max       : 9
+6 sum       : 32
+6 sum (wide): 32
+7 odd only  : '{'h7, 'h9, 'h7, 'h1}
+8 first >5  : index 0 (value 7)
+9a dups     : '{'h2, 'h7}
+9b dup      : 2 appears 2 times
+9b dup      : 7 appears 2 times
