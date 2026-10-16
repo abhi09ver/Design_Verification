@@ -1,0 +1,31 @@
+--- rtl/design.sv	2026-10-15 23:41:13.585623947 +0000
++++ solutions/design.sv	2026-10-15 23:41:13.588511934 +0000
+@@ -177,6 +177,8 @@
+     
+     // MMU interface signals (vectorized for superscalar commit)
+     logic [$clog2(no_ROB)-1:0] mmu_rob_head [ISSUE_WIDTH-1:0];
++    logic [ISSUE_WIDTH-1:0]    retire_valid_w;                       // FIX-12b
++    logic [$clog2(no_ROB)-1:0] retire_rob_id_w [ISSUE_WIDTH-1:0];    // FIX-12b
+     logic [ISSUE_WIDTH-1:0] store_commit_valid_wire;
+     logic [$clog2(no_ROB)-1:0] store_commit_rob_index_wire [ISSUE_WIDTH-1:0];
+ 
+@@ -334,7 +336,9 @@
+         .rob_out(rob_out),
+         
+         // Memory Management Unit interface
+-        .mmu_rob_head(mmu_rob_head)
++        .mmu_rob_head(mmu_rob_head),
++        .retire_valid_o(retire_valid_w),
++        .retire_rob_id_o(retire_rob_id_w)
+     );
+     
+     // ----------------------------------------------------------------------------
+@@ -389,6 +393,8 @@
+         .rst(rst),
+         .lsb_entries(mem_rs_out_internal),
+         .rob_head(mmu_rob_head),
++        .retire_valid(retire_valid_w),
++        .retire_rob_id(retire_rob_id_w),
+         .flush(flush),
+         .stall(completion_buffer_almost_full),
+         .load_cdb_result(load_cdb_result_mem),

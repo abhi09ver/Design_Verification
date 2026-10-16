@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>The VALID-READY Handshake, In Depth</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.bad{background:#B91C1C}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.err{background:#FDECEC;border:1px solid #F1B5B5;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#6B1111}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 6px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;min-height:28px;box-sizing:border-box}
+.hi{background:#0F766E;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.xf{background:#C2410C;color:#FFFFFF}
+.dt{background:#D7EEEA;color:#0B4A44}
+.no{background:#B91C1C;color:#FFFFFF}
+.wv{display:grid;grid-template-columns:96px repeat(6,minmax(0,1fr));gap:4px;align-items:center}
+.sig{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16202B}
+.cyc{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5B6670;text-align:center}
+.box{border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="03-write-read-transfers.html">← AXI Write & Read Transfers, Cycle by Cycle</a><a href="../../README.md">Index</a><a href="05-burst-length-size-type.html">Bursts: Length, Size & Type →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 4</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">The VALID–READY Handshake, In Depth</h1>
+    <div style="font-size: 17px; color: #C9D2D8">One mechanism, used identically on all five channels. Get this right and most AXI questions answer themselves.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 320px">
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip hi" style="width: 34px">1</span><span style="font-size: 14px; color: #C9D2D8">HIGH</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip xf" style="width: 34px">⇄</span><span style="font-size: 14px; color: #C9D2D8">handshake edge</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip no" style="width: 34px">✗</span><span style="font-size: 14px; color: #C9D2D8">protocol violation</span></div>
+  </div>
+</div>
+
+<!-- ROW 1: concept + rules -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">1</span>The idea in one picture</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: 12px; align-items: center">
+      <div class="box" style="background: #16202B; color: #FFFFFF; min-height: 150px">
+        <div style="font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 24px">SOURCE</div>
+        <div style="font-size: 13px; color: #C9D2D8">"I have data"</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 4px"><div style="flex: 1; height: 3px; background: #0F766E"></div><span style="color: #0F766E">▶</span></div>
+        <div class="lbl" style="text-align: center; color: #0F766E">VALID</div>
+        <div style="display: flex; align-items: center; gap: 4px"><div style="flex: 1; height: 3px; background: #0F766E"></div><span style="color: #0F766E">▶</span></div>
+        <div class="lbl" style="text-align: center; color: #0F766E">DATA / CTRL</div>
+        <div style="display: flex; align-items: center; gap: 4px"><span style="color: #C2410C">◀</span><div style="flex: 1; height: 3px; background: #C2410C"></div></div>
+        <div class="lbl" style="text-align: center; color: #C2410C">READY</div>
+      </div>
+      <div class="box" style="background: #16202B; color: #FFFFFF; min-height: 150px">
+        <div style="font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 24px">DESTINATION</div>
+        <div style="font-size: 13px; color: #C9D2D8">"I can take it"</div>
+      </div>
+    </div>
+    <div class="key" style="font-size: 16px"><b>Transfer = VALID &amp;&amp; READY at a rising ACLK edge.</b> Nothing else moves data.</div>
+    <table class="t">
+      <tr><th>Channel</th><th>Source (VALID)</th><th>Destination (READY)</th></tr>
+      <tr><td>AW, W, AR</td><td>Master</td><td>Slave</td></tr>
+      <tr><td>B, R</td><td>Slave</td><td>Master</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>The five rules</h2>
+    <table class="t">
+      <tr><th style="width: 34px">#</th><th>Rule</th><th>Why</th></tr>
+      <tr><td><b>R1</b></td><td>Source <b>must not wait for READY</b> before asserting VALID.</td><td>If both sides wait for each other → deadlock.</td></tr>
+      <tr><td><b>R2</b></td><td>Once VALID is HIGH it <b>stays HIGH until the handshake</b>.</td><td>Destination may sample any later cycle; data can't vanish.</td></tr>
+      <tr><td><b>R3</b></td><td>While VALID is HIGH and not yet accepted, <b>payload stays stable</b>.</td><td>Destination must get exactly what was offered.</td></tr>
+      <tr><td><b>R4</b></td><td>Destination <b>may wait for VALID</b> before asserting READY.</td><td>Lets slaves be simple and save power.</td></tr>
+      <tr><td><b>R5</b></td><td>READY <b>may be asserted early</b> and <b>may be de-asserted</b> before VALID arrives.</td><td>READY is only a "can accept now" hint until VALID shows up.</td></tr>
+    </table>
+    <div class="tip"><b>Asymmetry to remember:</b> VALID is a <i>commitment</i> (can't take it back). READY is an <i>offer</i> (can withdraw it while VALID is low).</div>
+  </div>
+</div>
+
+<!-- ROW 2: three legal cases -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">3</span>The three legal cases</h2>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Case A · VALID before READY</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">DATA</div><span class="chip lo">–</span><span class="chip dt">D</span><span class="chip dt">D</span><span class="chip dt">D</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      </div>
+      <div class="p">Source waits with D held stable (R2, R3). Typical when the slave is busy.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Case B · READY before VALID</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">DATA</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">D</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      </div>
+      <div class="p">Destination is idle and waiting. Transfer happens the first cycle VALID rises — zero wait.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Case C · Both in the same cycle</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">DATA</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">D</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      </div>
+      <div class="p">Both assert together → transfer in that same cycle. One beat per cycle is the max rate.</div>
+    </div>
+  </div>
+  <div class="key"><b>Back-to-back streaming:</b> keep VALID and READY both HIGH and change DATA every cycle → one transfer per clock (100% throughput). Every cycle with VALID &amp;&amp; !READY or READY &amp;&amp; !VALID is a bubble.</div>
+</div>
+
+<!-- ROW 3: illegal cases -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num bad">✗</span>Illegal cases — the ones interviewers draw on the board</h2>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Violation 1 · VALID drops early (breaks R2)</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip no">0 ✗</span><span class="chip hi">1</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      </div>
+      <div class="err">Source "took back" its offer at T3 without a handshake.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Violation 2 · Data changes while stalled (breaks R3)</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+        <div class="sig">DATA</div><span class="chip lo">–</span><span class="chip dt">D0</span><span class="chip no">D1 ✗</span><span class="chip dt">D1</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      </div>
+      <div class="err">D0 was offered but D1 got accepted — D0 silently lost.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Violation 3 · Source waits for READY (breaks R1)</div>
+      <div class="wv">
+        <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div>
+        <div class="sig">VALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip no">0 …</span>
+        <div class="sig">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip no">0 …</span>
+      </div>
+      <div class="err">Source waits for READY, slave waits for VALID (allowed by R4) → <b>deadlock forever</b>.</div>
+    </div>
+  </div>
+  <div class="tip"><b>Not a violation:</b> READY going HIGH then LOW while VALID is LOW (R5). Also legal: VALID HIGH for many cycles with READY LOW — that's just back-pressure.</div>
+</div>
+
+<!-- ROW 4: dependencies + timing -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>Cross-channel dependencies</h2>
+    <div class="lbl">Read</div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <span class="chip hi" style="padding: 6px 10px">ARVALID</span><span class="p">+</span><span class="chip hi" style="padding: 6px 10px">ARREADY</span><span class="p">must both happen before</span><span class="chip xf" style="padding: 6px 10px">RVALID</span>
+    </div>
+    <div class="p">ARREADY itself may be asserted before or after ARVALID.</div>
+    <div class="lbl">Write (AXI4)</div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <span class="chip hi" style="padding: 6px 10px">AW handshake</span><span class="p">+</span><span class="chip hi" style="padding: 6px 10px">W handshake with WLAST</span><span class="p">must both happen before</span><span class="chip xf" style="padding: 6px 10px">BVALID</span>
+    </div>
+    <ul class="ul">
+      <li>Slave may wait for AWVALID, WVALID or both before raising AWREADY.</li>
+      <li>Slave may wait for AWVALID, WVALID or both before raising WREADY.</li>
+      <li>Master must <b>not</b> wait for AWREADY before WVALID, nor for WREADY before AWVALID.</li>
+      <li>AXI3 was looser: BVALID only had to follow WLAST, not AW.</li>
+    </ul>
+    <div class="key"><b>Mental model:</b> a slave can always say "I'll wait for you". A master can never say "you go first".</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Timing &amp; implementation notes</h2>
+    <ul class="ul">
+      <li>Everything is sampled on the <b>rising edge</b> of ACLK.</li>
+      <li><b>No combinational path</b> from inputs to outputs on an interface — e.g. READY must not be a pure function of VALID through logic in the same cycle at the interface boundary.</li>
+      <li>READY travels <b>backward</b>; long READY paths hurt timing → insert a <b>register slice</b>.</li>
+      <li>A full-throughput register slice needs a <b>2-entry skid buffer</b>: when READY is registered, one extra beat may arrive after downstream stalls, so it must be stored.</li>
+      <li>During reset, all VALIDs LOW; first VALID only after ARESETn HIGH.</li>
+      <li>Good practice: masters keep <span class="m">BREADY</span> / <span class="m">RREADY</span> HIGH unless they truly can't accept.</li>
+    </ul>
+    <div class="tip"><b>Throughput math:</b> efficiency = handshakes ÷ cycles. 4 beats over 6 cycles = 67%; 2 bubbles came from back-pressure or idle VALID.</div>
+  </div>
+</div>
+
+<!-- ROW 5: SVA + QA -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>Handshake assertions (SVA)</h2>
+    <div class="lbl">R2 — VALID held until READY</div>
+    <pre class="code">property p_valid_hold;
+  @(posedge ACLK) disable iff (!ARESETn)
+  AWVALID &amp;&amp; !AWREADY |=&gt; AWVALID;
+endproperty</pre>
+    <div class="lbl">R3 — payload stable while stalled</div>
+    <pre class="code">property p_payload_stable;
+  @(posedge ACLK) disable iff (!ARESETn)
+  AWVALID &amp;&amp; !AWREADY |=&gt;
+    $stable({AWADDR, AWLEN, AWSIZE, AWBURST, AWID});
+endproperty</pre>
+    <div class="lbl">Reset &amp; X checks</div>
+    <pre class="code">a_rst_low : assert property (@(posedge ACLK) !ARESETn |-&gt; !AWVALID);
+a_no_x    : assert property (@(posedge ACLK) disable iff (!ARESETn)
+                             !$isunknown(AWVALID));</pre>
+    <div class="p">Copy the same set for W, AR (master side) and B, R (slave side). Add a liveness/timeout check: VALID must eventually see READY within N cycles.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Handshake interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Crisp answer</th></tr>
+      <tr><td>When exactly does a transfer happen?</td><td>Rising edge where VALID and READY are both HIGH.</td></tr>
+      <tr><td>Can VALID depend on READY?</td><td>No — that's the deadlock rule (R1).</td></tr>
+      <tr><td>Can READY depend on VALID?</td><td>Yes — destination may wait for VALID.</td></tr>
+      <tr><td>Can READY drop without a transfer?</td><td>Yes, if VALID was LOW.</td></tr>
+      <tr><td>Can VALID drop without a transfer?</td><td>No — protocol violation.</td></tr>
+      <tr><td>Max throughput of one channel?</td><td>One transfer per clock (VALID &amp; READY both held HIGH).</td></tr>
+      <tr><td>Why a skid buffer in a register slice?</td><td>Registered READY lags by a cycle; the in-flight beat needs a slot.</td></tr>
+      <tr><td>How do you test the handshake in a TB?</td><td>Randomize VALID/READY delays incl. 0; cover cases A/B/C; SVA for hold/stable/reset.</td></tr>
+      <tr><td>Bug: slave waits for WVALID before AWREADY, master waits for AWREADY before WVALID?</td><td>Deadlock; the master is the one breaking the rule.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

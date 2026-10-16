@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CoreSight from Zero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one friendly reading column of numbered lessons inside "Chip City"; every analogy is paired with its real engineering word. Interface colours match the senior Field Guide. */
+:root{
+  --bg:#F2F5F9; --surface:#FFFFFF; --sunk:#E7ECF3; --ink:#1B2433; --muted:#5A6476; --line:#D3DBE6;
+  --accent:#1F7A74; --sun:#F2B632; --sun-t:#FFF3D1;
+  --apb:#2457A6; --atb:#C06A0A; --evt:#B02D68; --auth:#6447B0; --ts:#2B7A4B; --bad:#C0392B;
+  --f-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161E; --surface:#18202B; --sunk:#202A37; --ink:#E4EAF2; --muted:#9AA5B6; --line:#2C3746;
+  --accent:#4FC0B6; --sun:#F2C255; --sun-t:#3A3220;
+  --apb:#83AAF2; --atb:#F2A64C; --evt:#EE7BAE; --auth:#AE98F0; --ts:#6CCB92; --bad:#F07A6C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161E; --surface:#18202B; --sunk:#202A37; --ink:#E4EAF2; --muted:#9AA5B6; --line:#2C3746;
+  --accent:#4FC0B6; --sun:#F2C255; --sun-t:#3A3220;
+  --apb:#83AAF2; --atb:#F2A64C; --evt:#EE7BAE; --auth:#AE98F0; --ts:#6CCB92; --bad:#F07A6C; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.65;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:900px;margin:0 auto;padding-block:20px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav.levels{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav.levels a{white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:14px;color:var(--muted);text-decoration:none;padding:5px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+nav.levels a:hover,nav.levels a:focus-visible{color:var(--ink);border-color:var(--accent);outline:none}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(40px,8vw,68px);line-height:1;margin:26px 0 10px;text-wrap:balance}
+h1 span{color:var(--accent)}
+.lede{font-size:19px;max-width:62ch}
+.how{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.pill{font-family:var(--f-mono);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;display:inline-block}
+.p-story{background:var(--sun-t);color:var(--ink);border:1.5px solid var(--sun)}
+.p-real{background:color-mix(in srgb,var(--apb) 14%,var(--surface));color:var(--apb)}
+.p-rem{background:var(--accent);color:var(--surface)}
+.p-chk{background:var(--sunk);color:var(--muted)}
+.levelhead{margin:64px 0 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-top:3px solid var(--ink);padding-top:14px;scroll-margin-top:60px}
+.levelhead .lv{font-family:var(--f-mono);font-weight:700;font-size:13px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.levelhead h2{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4.5vw,40px);margin:0;line-height:1.1}
+.levelhead p{flex-basis:100%;margin:2px 0 0;color:var(--muted)}
+article.lesson{margin-top:34px;scroll-margin-top:60px}
+article.lesson h3{font-family:var(--f-display);font-weight:600;font-size:clamp(22px,3.4vw,28px);margin:0 0 10px;line-height:1.2;display:flex;gap:12px;align-items:baseline;text-wrap:balance}
+article.lesson h3 .n{flex:none;font-family:var(--f-mono);font-size:13px;font-weight:700;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--bg);transform:translateY(-3px)}
+p{margin:0 0 12px;max-width:68ch}
+.story{background:var(--sun-t);border:1.5px solid var(--sun);border-radius:16px;padding:14px 18px;margin:10px 0}
+.story p:last-child{margin-bottom:0}
+.real{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0;overflow-x:auto}
+.real table{border-collapse:collapse;width:100%;font-size:15px;min-width:420px}
+.real td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.real tr:last-child td{border-bottom:0}
+.real td:first-child{color:var(--muted);width:42%}
+.real td:nth-child(2){width:24px;color:var(--muted)}
+.term{font-family:var(--f-mono);font-size:.86em;font-weight:700;color:var(--apb);background:color-mix(in srgb,var(--apb) 10%,var(--surface));padding:1px 6px;border-radius:5px;white-space:nowrap}
+.remember{display:flex;gap:12px;align-items:flex-start;margin:12px 0;font-weight:700;font-size:16.5px}
+.remember .pill{margin-top:3px;flex:none}
+details.chk{margin:10px 0;border:1.5px dashed var(--line);border-radius:12px;padding:10px 14px;background:var(--surface)}
+details.chk summary{cursor:pointer;font-weight:700;list-style:none}
+details.chk summary::-webkit-details-marker{display:none}
+details.chk summary::before{content:"?";display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sunk);font-family:var(--f-mono);font-size:12px;margin-right:10px;color:var(--muted)}
+details.chk[open] summary::before{content:"!";background:var(--accent);color:var(--surface)}
+details.chk div{margin-top:8px;font-size:16px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+.fig.scroll{overflow-x:auto}
+.fig figcaption{font-size:13.5px;color:var(--muted);margin-top:6px}
+svg text{font-family:var(--f-body)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.box h4{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0 0 6px}
+.box p{font-size:15.5px}
+.box ul{margin:0;padding-left:20px;font-size:15.5px}
+/* widgets */
+.play{background:var(--surface);border:2px solid var(--ink);border-radius:16px;padding:16px;margin:14px 0;box-shadow:4px 4px 0 var(--ink)}
+.play .ph{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline;margin-bottom:10px}
+.play .ph strong{font-family:var(--f-display);font-weight:600;font-size:19px}
+.play .ph span{font-size:13.5px;color:var(--muted)}
+button{font-family:var(--f-display);font-weight:600;font-size:15px;padding:8px 16px;border-radius:999px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+button.alt{background:var(--surface);color:var(--ink)}
+button:focus-visible,summary:focus-visible,.key:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.opts button:disabled{opacity:1;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.msg{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--sunk);font-size:15.5px;min-height:46px}
+/* ROM walk */
+.romlist{display:grid;gap:6px;font-family:var(--f-mono);font-size:13.5px}
+.romlist div{display:grid;grid-template-columns:64px 120px minmax(0,1fr);gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);align-items:center}
+.romlist div.cur{border-color:var(--apb);background:color-mix(in srgb,var(--apb) 10%,var(--surface))}
+.romlist div.done{opacity:.9}
+.romlist .found{font-family:var(--f-body);font-size:14.5px}
+/* belt */
+.belt{display:grid;grid-template-columns:110px minmax(0,1fr) 120px;gap:10px;align-items:center}
+.station{border:2px solid var(--ink);border-radius:12px;padding:10px 8px;text-align:center;font-family:var(--f-display);font-weight:600;font-size:15px;background:var(--bg)}
+.station small{display:block;font-family:var(--f-body);font-weight:400;font-size:12px;color:var(--muted)}
+.track{height:64px;border-top:3px solid var(--atb);border-bottom:3px solid var(--atb);display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 8px;overflow:hidden;background:repeating-linear-gradient(90deg,transparent 0 22px,color-mix(in srgb,var(--atb) 12%,transparent) 22px 24px)}
+.pkg{flex:none;width:44px;height:40px;border-radius:7px;border:2px solid var(--ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--ink)}
+.pkg.w0{background:color-mix(in srgb,var(--atb) 35%,var(--surface))}
+.pkg.w1{background:color-mix(in srgb,var(--apb) 30%,var(--surface))}
+.pkg.w2{background:color-mix(in srgb,var(--evt) 28%,var(--surface))}
+.shelf{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;min-height:20px}
+.shelf i{width:12px;height:12px;border-radius:3px;border:1px solid var(--ink)}
+.sig{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:var(--f-mono);font-size:13px}
+.sig b{padding:2px 8px;border-radius:6px}
+.hi{background:var(--accent);color:var(--surface)}
+.lo{background:var(--sunk);color:var(--muted)}
+/* freeze */
+.workers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.worker{border:2px solid var(--ink);border-radius:12px;padding:10px;text-align:center;background:var(--bg)}
+.worker .nm{font-family:var(--f-display);font-weight:600}
+.worker .ct{font-family:var(--f-mono);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.worker .st{font-size:12.5px;color:var(--muted)}
+.worker.stop{border-color:var(--evt);background:color-mix(in srgb,var(--evt) 12%,var(--surface))}
+.worker.stop .st{color:var(--evt);font-weight:700}
+.tog{display:inline-flex;align-items:center;gap:8px;font-weight:700;cursor:pointer;font-size:15.5px}
+.tog input{width:20px;height:20px;accent-color:var(--accent)}
+/* keys */
+.keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.key{border:2px solid var(--line);border-radius:12px;padding:10px 8px;background:var(--bg);cursor:pointer;text-align:center;font-family:var(--f-body);color:var(--ink);font-size:14px;font-weight:400}
+.key b{display:block;font-family:var(--f-display);font-size:16px;font-weight:600}
+.key code{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.key[aria-pressed="true"]{border-color:var(--auth);background:color-mix(in srgb,var(--auth) 16%,var(--surface))}
+.key[aria-pressed="true"] code{color:var(--auth)}
+.doors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.door{border-radius:12px;padding:10px 12px;border:2px solid var(--line);font-size:15px}
+.door b{font-family:var(--f-display);font-weight:600}
+.door.open{border-color:var(--ts);background:color-mix(in srgb,var(--ts) 14%,var(--surface))}
+.door .s{float:right;font-family:var(--f-mono);font-size:12px;font-weight:700}
+.door.open .s{color:var(--ts)}
+.door.shut .s{color:var(--muted)}
+/* sticker strip */
+.strip{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 12px}
+.strip span{width:30px;height:30px;border-radius:6px;border:1.5px solid var(--ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:10px;font-weight:700;color:var(--ink)}
+.s0{background:color-mix(in srgb,var(--atb) 35%,var(--surface))}
+.s1{background:color-mix(in srgb,var(--apb) 30%,var(--surface))}
+.s2{background:color-mix(in srgb,var(--evt) 28%,var(--surface))}
+.strip span.tag{width:auto;padding:0 6px;background:var(--sun);border-style:dashed}
+/* steps */
+ol.walk{list-style:none;padding:0;margin:12px 0;display:grid;gap:10px;counter-reset:w}
+ol.walk li{counter-increment:w;display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start}
+ol.walk li::before{content:counter(w);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:13px;border:2px solid var(--accent);color:var(--accent)}
+ol.walk li span{font-size:16px}
+.tbl{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto;margin:12px 0}
+.tbl table{border-collapse:collapse;width:100%;font-size:15px;min-width:600px}
+.tbl th,.tbl td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font-family:var(--f-mono);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--sunk)}
+/* quiz */
+.q{margin:14px 0;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.q p{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:6px}
+.opts button{text-align:left;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);font-family:var(--f-body);font-weight:400;font-size:15.5px;border-radius:10px;padding:8px 12px}
+.opts button.right{border-color:var(--ts);background:color-mix(in srgb,var(--ts) 15%,var(--surface))}
+.opts button.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.q .why{margin-top:8px;font-size:15px;color:var(--muted)}
+.score{font-family:var(--f-display);font-weight:600;font-size:20px}
+.next{margin-top:40px;padding:18px 20px;border-radius:16px;background:var(--ink);color:var(--bg)}
+.next a{color:var(--sun);font-weight:700}
+.next p{margin:0}
+footer{margin-top:40px;font-size:13.5px;color:var(--muted)}
+@media (max-width:640px){
+  body{font-size:16.5px}
+  .two{grid-template-columns:minmax(0,1fr)}
+  .workers,.keys{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .doors{grid-template-columns:minmax(0,1fr)}
+  .belt{grid-template-columns:minmax(0,1fr)}
+  .romlist div{grid-template-columns:52px minmax(0,1fr)}
+  .romlist .found{grid-column:1/-1}
+}
+</style>
+
+<div class="wrap">
+<nav class="levels" aria-label="Levels">
+  <a href="#lv1">1 · Basics</a>
+  <a href="#lv2">2 · Getting in</a>
+  <a href="#lv3">3 · Watching</a>
+  <a href="#lv4">4 · Teamwork &amp; safety</a>
+  <a href="#lv5">5 · Be the tester</a>
+  <a href="#words">Word list</a>
+  <a href="#quiz">Quiz</a>
+</nav>
+
+<header>
+  <h1>CoreSight <span>from Zero</span></h1>
+  <p class="lede">A chip is a tiny city where billions of things happen every second. CoreSight is the set of doors, maps, cameras and walkie-talkies that lets an engineer look inside that city. You need no background. We start with "what is a chip" and finish ready to test real hardware.</p>
+  <div class="how">
+    <span class="pill p-story">Story</span><span style="font-size:14.5px;color:var(--muted)">the easy picture</span>
+    <span class="pill p-real">Real words</span><span style="font-size:14.5px;color:var(--muted)">what engineers actually say</span>
+    <span class="pill p-rem">Remember</span><span style="font-size:14.5px;color:var(--muted)">one line to keep</span>
+  </div>
+
+  <figure class="fig scroll">
+  <svg viewBox="0 0 900 430" width="100%" style="min-width:680px" role="img" aria-label="Map of Chip City: engineer outside, front door, receptionist, building map, wall clock, guard with keys, walkie-talkie tower, three worker rooms with cameras, conveyor belt, recorder room and window">
+    <style>
+      .c-room{fill:var(--surface);stroke:var(--ink);stroke-width:1.8}
+      .c-dim{fill:var(--sunk);stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4}
+      .c-t{fill:var(--ink);font-size:14px;font-weight:700}
+      .c-s{fill:var(--muted);font-size:12px}
+      .c-r{font-family:var(--f-mono);font-size:11px;font-weight:700}
+    </style>
+    <defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--atb)"/></marker></defs>
+    <!-- engineer -->
+    <circle cx="55" cy="170" r="16" style="fill:var(--sun-t);stroke:var(--ink);stroke-width:1.8"/>
+    <path d="M30 222 Q55 192 80 222 Z" style="fill:var(--sun-t);stroke:var(--ink);stroke-width:1.8"/>
+    <text class="c-t" x="55" y="246" text-anchor="middle">You</text>
+    <text class="c-s" x="55" y="262" text-anchor="middle">+ laptop + probe</text>
+    <path d="M85 205 H150" style="stroke:var(--ink);stroke-width:2;fill:none"/>
+    <!-- building -->
+    <rect x="150" y="16" width="736" height="400" rx="20" style="fill:none;stroke:var(--ink);stroke-width:2.5"/>
+    <text class="c-s" x="168" y="38" font-weight="700">CHIP CITY (the chip)</text>
+    <rect x="144" y="180" width="14" height="52" rx="3" style="fill:var(--sun);stroke:var(--ink);stroke-width:1.5"/>
+    <text class="c-s" x="168" y="270">Front door</text>
+    <text class="c-r" x="168" y="285" style="fill:var(--apb)">debug port</text>
+    <rect class="c-room" x="172" y="178" width="118" height="58" rx="10"/>
+    <text class="c-t" x="231" y="203" text-anchor="middle">Receptionist</text>
+    <text class="c-r" x="231" y="222" text-anchor="middle" style="fill:var(--apb)">DP</text>
+    <!-- hallways -->
+    <path d="M290 196 H312 V90 H330" style="stroke:var(--apb);stroke-width:3;fill:none"/>
+    <path d="M312 150 H862" style="stroke:var(--apb);stroke-width:3;fill:none"/>
+    <text class="c-s" x="700" y="144">hallway + phone line</text>
+    <text class="c-r" x="700" y="170" style="fill:var(--apb)">AP + APB</text>
+    <!-- top row -->
+    <rect class="c-room" x="330" y="56" width="128" height="68" rx="10"/>
+    <text class="c-t" x="394" y="84" text-anchor="middle">Building map</text>
+    <text class="c-r" x="394" y="104" text-anchor="middle" style="fill:var(--apb)">ROM table</text>
+    <rect class="c-room" x="474" y="56" width="118" height="68" rx="10" style="stroke:var(--ts)"/>
+    <text class="c-t" x="533" y="84" text-anchor="middle">Wall clock</text>
+    <text class="c-r" x="533" y="104" text-anchor="middle" style="fill:var(--ts)">timestamp</text>
+    <rect class="c-room" x="608" y="56" width="124" height="68" rx="10" style="stroke:var(--auth)"/>
+    <text class="c-t" x="670" y="84" text-anchor="middle">Guard + keys</text>
+    <text class="c-r" x="670" y="104" text-anchor="middle" style="fill:var(--auth)">authentication</text>
+    <rect class="c-room" x="748" y="56" width="124" height="68" rx="10" style="stroke:var(--evt)"/>
+    <text class="c-t" x="810" y="84" text-anchor="middle">Walkie-talkies</text>
+    <text class="c-r" x="810" y="104" text-anchor="middle" style="fill:var(--evt)">CTI + CTM</text>
+    <!-- worker rooms -->
+    <rect class="c-room" x="330" y="178" width="160" height="92" rx="12"/>
+    <text class="c-t" x="410" y="204" text-anchor="middle">Worker 0</text>
+    <text class="c-r" x="410" y="222" text-anchor="middle" style="fill:var(--apb)">CPU core</text>
+    <rect x="372" y="236" width="76" height="24" rx="6" style="fill:var(--surface);stroke:var(--atb);stroke-width:1.8"/>
+    <text class="c-r" x="410" y="252" text-anchor="middle" style="fill:var(--atb)">camera ETM</text>
+    <rect class="c-room" x="510" y="178" width="160" height="92" rx="12"/>
+    <text class="c-t" x="590" y="204" text-anchor="middle">Worker 1</text>
+    <text class="c-r" x="590" y="222" text-anchor="middle" style="fill:var(--apb)">CPU core</text>
+    <rect x="552" y="236" width="76" height="24" rx="6" style="fill:var(--surface);stroke:var(--atb);stroke-width:1.8"/>
+    <text class="c-r" x="590" y="252" text-anchor="middle" style="fill:var(--atb)">camera ETM</text>
+    <rect class="c-dim" x="690" y="178" width="172" height="92" rx="12"/>
+    <text class="c-t" x="776" y="204" text-anchor="middle" style="fill:var(--muted)">Worker 2</text>
+    <text class="c-s" x="776" y="224" text-anchor="middle">lights off</text>
+    <text class="c-r" x="776" y="244" text-anchor="middle" style="fill:var(--muted)">powered down</text>
+    <!-- belt -->
+    <path d="M410 270 V330" style="stroke:var(--atb);stroke-width:3;fill:none"/>
+    <path d="M590 270 V330" style="stroke:var(--atb);stroke-width:3;fill:none"/>
+    <path d="M330 340 H700" style="stroke:var(--atb);stroke-width:5;fill:none" marker-end="url(#m1)"/>
+    <rect x="360" y="326" width="22" height="18" rx="3" style="fill:var(--surface);stroke:var(--atb);stroke-width:1.5"/>
+    <rect x="450" y="326" width="22" height="18" rx="3" style="fill:var(--surface);stroke:var(--atb);stroke-width:1.5"/>
+    <rect x="620" y="326" width="22" height="18" rx="3" style="fill:var(--surface);stroke:var(--atb);stroke-width:1.5"/>
+    <text class="c-s" x="340" y="372">conveyor belt for recordings</text>
+    <text class="c-r" x="340" y="388" style="fill:var(--atb)">ATB · funnel merges lanes</text>
+    <rect class="c-room" x="710" y="296" width="158" height="46" rx="10" style="stroke:var(--atb)"/>
+    <text class="c-t" x="789" y="316" text-anchor="middle">Recorder room</text>
+    <text class="c-r" x="789" y="333" text-anchor="middle" style="fill:var(--atb)">ETB / ETR</text>
+    <rect class="c-room" x="710" y="352" width="158" height="46" rx="10" style="stroke:var(--atb)"/>
+    <text class="c-t" x="789" y="372" text-anchor="middle">Window outside</text>
+    <text class="c-r" x="789" y="389" text-anchor="middle" style="fill:var(--atb)">TPIU</text>
+  </svg>
+  <figcaption>The whole course in one picture. Each lesson zooms into one part of this city.</figcaption>
+  </figure>
+</header>
+
+<!-- LEVEL 1 -->
+<div class="levelhead" id="lv1"><span class="lv">Level 1</span><h2>The basics</h2><p>What a chip is, what a bug is, and the two superpowers engineers use to find bugs.</p></div>
+
+<article class="lesson" id="l1">
+  <h3><span class="n">1</span>A chip is a tiny city of workers</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Imagine a city on a fingernail. Inside, a few very fast <b>workers</b> follow a <b>recipe book</b> one line at a time: "take this number, add that number, put the answer in box 7". They do this billions of times every second. There are also <b>storage rooms</b> full of numbered boxes.</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Worker</td><td>=</td><td><span class="term">CPU core</span> or <span class="term">PE</span> (processing element)</td></tr>
+    <tr><td>Recipe book</td><td>=</td><td><span class="term">program</span>, made of <span class="term">instructions</span></td></tr>
+    <tr><td>Numbered boxes</td><td>=</td><td><span class="term">memory</span> (addresses) and <span class="term">registers</span></td></tr>
+    <tr><td>The whole city</td><td>=</td><td><span class="term">SoC</span> (system on chip)</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>A chip = many workers following instructions, very fast.</span></div>
+</article>
+
+<article class="lesson" id="l2">
+  <h3><span class="n">2</span>Why bugs inside a chip are hard to find</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>One day a worker puts the wrong answer in a box, or stops working completely. You want to know why. But the city is sealed inside plastic, it is far too small to see, and a billion things happen before you can blink. You cannot just walk in and look.</p></div>
+  <div class="two">
+    <div class="box"><h4>Problem 1: sealed box</h4><p>You cannot open a finished chip and look at its wires.</p></div>
+    <div class="box"><h4>Problem 2: too fast</h4><p>By the time you look, billions of steps have passed. The clue is gone.</p></div>
+  </div>
+  <p>So chip designers <b>build special helper hardware into the chip</b> just for looking inside. ARM's name for this helper hardware is <span class="term">CoreSight</span>. It sits next to the workers but does not do the real work itself.</p>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>CoreSight = helper hardware built into the chip so engineers can see inside.</span></div>
+</article>
+
+<article class="lesson" id="l3">
+  <h3><span class="n">3</span>Two superpowers: pause, or watch</h3>
+  <div class="two">
+    <div class="box" style="border-top:4px solid var(--apb)"><h4>Pause and poke</h4><p>Shout "freeze!" to a worker. Now walk in, read its boxes, even change them, then say "carry on".</p><p style="margin:0"><span class="term">debug</span> · this is <span class="term">invasive</span> because it changes what happens.</p></div>
+    <div class="box" style="border-top:4px solid var(--atb)"><h4>Watch and record</h4><p>Put a camera in each room. Workers never stop. Later, you replay the video to see exactly what they did.</p><p style="margin:0"><span class="term">trace</span> · this is <span class="term">non-invasive</span> because it only watches.</p></div>
+  </div>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>A doctor can operate on you (pause and poke) or take an X-ray (just look). Some bugs disappear the moment you stop the worker, like a shy animal that hides when you open the door. For those, you need the camera.</p></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Debug = stop and look. Trace = record without stopping. Watching must never change the result.</span></div>
+  <details class="chk"><summary>Check yourself: a bug only happens when the chip runs at full speed. Which superpower do you use?</summary>
+    <div>Trace. Stopping the worker changes the timing, so the bug may hide. Recording lets it run normally and you replay later.</div></details>
+</article>
+
+<!-- LEVEL 2 -->
+<div class="levelhead" id="lv2"><span class="lv">Level 2</span><h2>Getting inside</h2><p>How you get in, how you find every room, and how you talk to each one.</p></div>
+
+<article class="lesson" id="l4">
+  <h3><span class="n">4</span>The front door, the receptionist and the hallways</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>You plug a small box (a <b>probe</b>) into a few pins on the chip: that is the <b>front door</b>. Behind it sits a <b>receptionist</b> who understands your knock. The receptionist sends you down one of several <b>hallways</b>: one to the debug rooms, one to the storage rooms, one to old-style rooms.</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Probe + pins</td><td>=</td><td>debug probe on <span class="term">JTAG</span> (4–5 wires) or <span class="term">SWD</span> (2 wires)</td></tr>
+    <tr><td>Receptionist</td><td>=</td><td><span class="term">DP</span>, the Debug Port</td></tr>
+    <tr><td>Hallway to debug rooms</td><td>=</td><td><span class="term">APB-AP</span>, an Access Port onto the debug bus</td></tr>
+    <tr><td>Hallway to storage</td><td>=</td><td><span class="term">AXI-AP</span> / <span class="term">AHB-AP</span>, onto system memory</td></tr>
+    <tr><td>Hallway to old rooms</td><td>=</td><td><span class="term">JTAG-AP</span>, for older JTAG-only parts</td></tr>
+    <tr><td>Receptionist + hallways together</td><td>=</td><td><span class="term">DAP</span>, the Debug Access Port</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Probe → DP → AP → the room you want.</span></div>
+</article>
+
+<article class="lesson" id="l5">
+  <h3><span class="n">5</span>Every room wears the same name badge</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Rooms are built by different companies, so how do you know what a room is? Rule of the city: every debug room has a <b>name badge in the same spot</b>, at the very back of the room. The badge starts with a <b>secret handshake pattern</b> so you know it is a real badge, then says <b>what kind of room</b> it is, <b>who built it</b>, its <b>model number</b>, and its <b>version</b>.</p></div>
+  <figure class="fig">
+    <svg viewBox="0 0 640 150" width="100%" role="img" aria-label="A name badge with four parts: handshake pattern, kind of room, builder, model and version">
+      <rect x="10" y="10" width="620" height="130" rx="14" style="fill:var(--sun-t);stroke:var(--ink);stroke-width:2"/>
+      <rect x="290" y="0" width="60" height="18" rx="5" style="fill:var(--surface);stroke:var(--ink);stroke-width:2"/>
+      <text x="30" y="44" style="fill:var(--ink);font-size:15px;font-weight:700">NAME BADGE · lives at the back of every 4KB room</text>
+      <g style="font-size:13px">
+        <rect x="30" y="62" width="135" height="58" rx="8" style="fill:var(--surface);stroke:var(--line)"/><text x="42" y="84" style="fill:var(--ink);font-weight:700">Handshake</text><text x="42" y="104" style="fill:var(--muted);font-family:var(--f-mono);font-size:11px">0D · 05 · B1</text>
+        <rect x="177" y="62" width="135" height="58" rx="8" style="fill:var(--surface);stroke:var(--line)"/><text x="189" y="84" style="fill:var(--ink);font-weight:700">Kind of room</text><text x="189" y="104" style="fill:var(--muted);font-family:var(--f-mono);font-size:11px">CLASS: map / part</text>
+        <rect x="324" y="62" width="135" height="58" rx="8" style="fill:var(--surface);stroke:var(--line)"/><text x="336" y="84" style="fill:var(--ink);font-weight:700">Who built it</text><text x="336" y="104" style="fill:var(--muted);font-family:var(--f-mono);font-size:11px">JEP106 code</text>
+        <rect x="471" y="62" width="140" height="58" rx="8" style="fill:var(--surface);stroke:var(--line)"/><text x="483" y="84" style="fill:var(--ink);font-weight:700">Model + version</text><text x="483" y="104" style="fill:var(--muted);font-family:var(--f-mono);font-size:11px">PART · REVISION</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>One room</td><td>=</td><td>one <span class="term">CoreSight component</span>, a 4KB block of registers</td></tr>
+    <tr><td>Name badge</td><td>=</td><td><span class="term">CIDR0–3</span> (component ID) and <span class="term">PIDR0–7</span> (peripheral ID), at offsets <span class="term">0xFD0–0xFFC</span></td></tr>
+    <tr><td>Kind of room</td><td>=</td><td><span class="term">CLASS</span>: 0x1 = ROM table, 0x9 = CoreSight component</td></tr>
+    <tr><td>Who built it</td><td>=</td><td><span class="term">JEP106</span> manufacturer code (ARM's is 0x3B)</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Same badge, same place, in every room. That is why one debugger tool works on every chip.</span></div>
+</article>
+
+<article class="lesson" id="l6">
+  <h3><span class="n">6</span>The building map</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>At the start, you only know where the <b>building map</b> hangs. Each line on the map says "walk N steps from here and you will find a room". You read lines one by one. A line can even point to <b>another map</b> on another floor. A line that is completely <b>blank (zero)</b> means the list is over.</p></div>
+  <div class="play" id="romplay">
+    <div class="ph"><strong>Try it: read the map</strong><span>Map hangs at address 0x8000_0000. Each step = 4KB (0x1000).</span></div>
+    <div class="romlist" id="romlist"></div>
+    <div class="btns"><button type="button" id="romNext">Read next line</button><button type="button" class="alt" id="romReset">Start again</button></div>
+    <div class="msg" id="romMsg" aria-live="polite">Press "Read next line" to start exploring.</div>
+  </div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Building map</td><td>=</td><td><span class="term">ROM table</span></td></tr>
+    <tr><td>One line</td><td>=</td><td><span class="term">ROMENTRY</span></td></tr>
+    <tr><td>Room address</td><td>=</td><td>map address + (<span class="term">OFFSET</span> × 4KB). Offset can be negative (walk backwards).</td></tr>
+    <tr><td>Map on another floor</td><td>=</td><td>ROM table <span class="term">hierarchy</span></td></tr>
+    <tr><td>Where the first map hangs</td><td>=</td><td><span class="term">BASE</span> register in the AP</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>From one starting address, a debugger can find every part of the chip by itself.</span></div>
+  <details class="chk"><summary>Check yourself: why is it a mistake for two maps to point to the same room?</summary>
+    <div>The debugger would count the room twice and might set it up twice. The rule says every room appears exactly once, and maps must never point back in a circle.</div></details>
+</article>
+
+<article class="lesson" id="l7">
+  <h3><span class="n">7</span>Talking to a room: mailboxes</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Every room has rows of <b>numbered mailboxes</b>. To give an order, you put a note in a mailbox ("camera: start recording"). To ask a question, you open a mailbox and read the note inside ("are you recording? yes"). You reach the mailboxes over a simple <b>phone line</b> that runs down the hallway.</p>
+    <p>Some rooms have a <b>padlock</b> on the mailboxes, so a confused worker cannot press buttons by accident. The password is a funny number: <b>C5ACCE55</b> (read it as "SACCESS").</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Mailbox</td><td>=</td><td><span class="term">register</span> (32 bits)</td></tr>
+    <tr><td>Put a note / read a note</td><td>=</td><td><span class="term">write</span> / <span class="term">read</span></td></tr>
+    <tr><td>Phone line</td><td>=</td><td><span class="term">APB</span> bus (the Debug APB)</td></tr>
+    <tr><td>Padlock</td><td>=</td><td><span class="term">software lock</span>: write <span class="term">0xC5ACCE55</span> to <span class="term">LAR</span></td></tr>
+    <tr><td>Empty mailbox nobody uses</td><td>=</td><td><span class="term">RAZ/WI</span>: reads as zero, writes ignored</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Engineers control CoreSight by reading and writing registers over APB.</span></div>
+</article>
+
+<!-- LEVEL 3 -->
+<div class="levelhead" id="lv3"><span class="lv">Level 3</span><h2>Watching: the trace system</h2><p>Cameras, the conveyor belt, merging lanes and the recorder room.</p></div>
+
+<article class="lesson" id="l8">
+  <h3><span class="n">8</span>Cameras</h3>
+  <div class="two">
+    <div class="box"><h4>Camera on a worker</h4><p>Writes down which recipe lines the worker ran, in a very short code so it fits.</p><p style="margin:0"><span class="term">ETM</span> Embedded Trace Macrocell</p></div>
+    <div class="box"><h4>Worker's diary</h4><p>Software can write its own short notes: "starting task 5", "error 42".</p><p style="margin:0"><span class="term">STM</span> System Trace Macrocell</p></div>
+  </div>
+  <p>Each recording is chopped into small boxes called <span class="term">packets</span>. Anything that makes packets is a <span class="term">trace source</span>.</p>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Trace sources (ETM, STM) turn activity into packets.</span></div>
+</article>
+
+<article class="lesson" id="l9">
+  <h3><span class="n">9</span>The conveyor belt</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Packets ride a <b>conveyor belt</b>. The sender holds up a box and says <b>"I have a box!"</b>. The receiver says <b>"I'm ready!"</b>. Only when both are true does the box move. If the receiver is busy, the sender <b>waits and keeps holding the same box</b>. Nothing is dropped. Every box has a <b>name tag</b> saying which camera made it.</p></div>
+  <div class="play">
+    <div class="ph"><strong>Try it: the belt</strong><span>Turn "Receiver ready" off and watch boxes pile up instead of falling off.</span></div>
+    <div class="belt">
+      <div class="station">Camera<small>sender</small></div>
+      <div class="track" id="track" aria-label="Boxes waiting on the belt"></div>
+      <div class="station">Recorder<small id="recCount">0 stored</small><div class="shelf" id="shelf"></div></div>
+    </div>
+    <div class="sig" aria-live="polite"><span>VALID <b id="sV" class="lo">0</b></span><span>READY <b id="sR" class="hi">1</b></span><span>box moves <b id="sM" class="lo">no</b></span></div>
+    <div class="btns">
+      <label class="tog"><input type="checkbox" id="readyT" checked> Receiver ready</label>
+      <button type="button" id="beltRun">Pause</button>
+      <button type="button" class="alt" id="beltStep">One step</button>
+    </div>
+    <div class="msg" id="beltMsg">Box moves only when VALID = 1 and READY = 1 together.</div>
+  </div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Conveyor belt</td><td>=</td><td><span class="term">ATB</span>, the AMBA Trace Bus</td></tr>
+    <tr><td>"I have a box!"</td><td>=</td><td><span class="term">ATVALID</span> = 1</td></tr>
+    <tr><td>"I'm ready!"</td><td>=</td><td><span class="term">ATREADY</span> = 1</td></tr>
+    <tr><td>Waiting without dropping</td><td>=</td><td><span class="term">back-pressure</span> / stall</td></tr>
+    <tr><td>Name tag</td><td>=</td><td><span class="term">ATID</span>, the trace source ID (0x01 to 0x6F)</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>VALID and READY both high = transfer. Every box carries an ID.</span></div>
+</article>
+
+<article class="lesson" id="l10">
+  <h3><span class="n">10</span>Merging lanes, copying, and the recorder room</h3>
+  <div class="two">
+    <div class="box"><h4>Lane merger</h4><p>Many belts join into one, taking turns fairly. <span class="term">funnel</span></p></div>
+    <div class="box"><h4>Photocopier</h4><p>One belt splits into two identical copies. <span class="term">replicator</span></p></div>
+    <div class="box"><h4>Small shelf inside</h4><p>A little on-chip memory that keeps the latest recording. <span class="term">ETB</span> / <span class="term">ETF</span></p></div>
+    <div class="box"><h4>Big warehouse</h4><p>Saves recordings into the chip's main memory (DRAM). <span class="term">ETR</span></p></div>
+  </div>
+  <p>There is also a <b>window to outside</b>: pins that stream the recording to a capture box on your desk. That is the <span class="term">TPIU</span>. Shelves, warehouses and windows are all <span class="term">trace sinks</span>.</p>
+
+  <h3 style="font-size:20px;margin-top:24px">Stickers: why the formatter exists</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Inside the chip each box has its own name tag. But the window to outside only passes the boxes, not the tags. So before the window, a helper puts a <b>sticker into the stream</b> each time the camera changes: "the next boxes are from camera 1". The person outside reads the stickers and sorts the boxes back into separate videos.</p></div>
+  <p style="font-size:15px;margin:4px 0">Mixed boxes, tags lost:</p>
+  <div class="strip" aria-label="Mixed boxes without tags"><span class="s0">a</span><span class="s0">b</span><span class="s1">p</span><span class="s1">q</span><span class="s1">r</span><span class="s0">c</span><span class="s2">x</span><span class="s2">y</span><span class="s0">d</span></div>
+  <p style="font-size:15px;margin:4px 0">With stickers in the stream:</p>
+  <div class="strip" aria-label="Boxes with ID stickers"><span class="tag">ID 1</span><span class="s0">a</span><span class="s0">b</span><span class="tag">ID 2</span><span class="s1">p</span><span class="s1">q</span><span class="s1">r</span><span class="tag">ID 1</span><span class="s0">c</span><span class="tag">ID 3</span><span class="s2">x</span><span class="s2">y</span><span class="tag">ID 1</span><span class="s0">d</span></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Sticker helper</td><td>=</td><td><span class="term">trace formatter</span></td></tr>
+    <tr><td>Packing</td><td>=</td><td>packed into <span class="term">16-byte frames</span>, costs about 6% extra space</td></tr>
+    <tr><td>"Start of a frame" marker</td><td>=</td><td><span class="term">frame sync</span> pattern <span class="term">0x7FFFFFFF</span></td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Source → belt (ATB) → funnel → sink. The formatter keeps the IDs when tags are lost.</span></div>
+  <details class="chk"><summary>Check yourself: if only one camera is recording, do you need stickers?</summary>
+    <div>No. With one source there is nothing to sort, so the formatter can be switched off (called <b>bypass</b> mode) to save that 6%.</div></details>
+</article>
+
+<article class="lesson" id="l11">
+  <h3><span class="n">11</span>One wall clock for everyone</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>You have videos from four cameras. To know what happened <b>at the same moment</b>, each camera stamps the time from <b>one big wall clock</b> that everyone can see. If the clock shows <b>0</b>, it means "clock not working", so do not trust that time.</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Wall clock</td><td>=</td><td><span class="term">timestamp</span>, a 64-bit counter shared by all trace sources</td></tr>
+    <tr><td>Clock shows 0</td><td>=</td><td>timestamp <span class="term">UNKNOWN</span> (source off or just reset)</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Same clock everywhere lets you line up recordings from different workers.</span></div>
+</article>
+
+<!-- LEVEL 4 -->
+<div class="levelhead" id="lv4"><span class="lv">Level 4</span><h2>Teamwork and safety</h2><p>Freezing everyone together, locks and keys, and rooms with the lights off.</p></div>
+
+<article class="lesson" id="l12">
+  <h3><span class="n">12</span>Walkie-talkies: freeze everyone at once</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Worker 0 hits a problem and stops. But workers 1, 2 and 3 share the same boxes and keep running. By the time you look, they have changed everything. Fix: every room gets a <b>walkie-talkie</b>. When worker 0 stops, its walkie-talkie shouts on <b>channel 0</b>, and every other walkie-talkie tuned to channel 0 tells its worker to freeze too.</p></div>
+  <div class="play">
+    <div class="ph"><strong>Try it: freeze game</strong><span>Each number is how many recipe lines a worker has run.</span></div>
+    <div class="workers" id="workers"></div>
+    <div class="btns">
+      <label class="tog"><input type="checkbox" id="walkie" checked> Walkie-talkies on</label>
+      <button type="button" id="bp">Worker 0 hits a problem</button>
+      <button type="button" class="alt" id="frReset">Restart all</button>
+    </div>
+    <div class="msg" id="frMsg" aria-live="polite">Workers are running. Press the red-flag button.</div>
+  </div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Walkie-talkie in each room</td><td>=</td><td><span class="term">CTI</span>, Cross Trigger Interface</td></tr>
+    <tr><td>Radio tower joining them</td><td>=</td><td><span class="term">CTM</span>, Cross Trigger Matrix</td></tr>
+    <tr><td>Radio channel</td><td>=</td><td><span class="term">channel</span> (at least 4 recommended)</td></tr>
+    <tr><td>Signal into / out of a CTI</td><td>=</td><td><span class="term">trigger in</span> / <span class="term">trigger out</span></td></tr>
+    <tr><td>Steps others run before freezing</td><td>=</td><td><span class="term">skid</span></td></tr></table></div>
+  <p>The same walkie-talkies can also tell the recorder "stop recording now", so you capture exactly the moments around the problem.</p>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>CTI + CTM pass short "event" messages between parts, like halt everyone or stop trace.</span></div>
+</article>
+
+<article class="lesson" id="l13">
+  <h3><span class="n">13</span>Locks and keys: who is allowed in</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>A phone you buy in a shop must not let strangers peek at secrets like passwords. So a <b>guard</b> holds keys. The <b>pause key</b> lets you freeze and poke. The <b>watch key</b> lets you record. The city also has a <b>secret wing</b> with its own two keys. Two simple rules: a pause key also lets you watch, and secret keys only work if you also hold the normal key.</p></div>
+  <div class="play">
+    <div class="ph"><strong>Try it: hand keys to the guard</strong><span>Tap a key to give it or take it back.</span></div>
+    <div class="keys" id="keys"></div>
+    <div class="doors" id="doors"></div>
+    <div class="msg" id="keyMsg" aria-live="polite"></div>
+  </div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Keys</td><td>=</td><td><span class="term">authentication signals</span></td></tr>
+    <tr><td>Pause / watch key</td><td>=</td><td><span class="term">DBGEN</span> / <span class="term">NIDEN</span></td></tr>
+    <tr><td>Secret pause / watch key</td><td>=</td><td><span class="term">SPIDEN</span> / <span class="term">SPNIDEN</span> (Secure world)</td></tr>
+    <tr><td>Notice board showing which keys work</td><td>=</td><td><span class="term">AUTHSTATUS</span> register</td></tr>
+    <tr><td>Shop phone: keys melted away</td><td>=</td><td>signals tied low or blown <span class="term">fuses</span></td></tr></table></div>
+  <p>Even with no keys, you can still <b>read the name badges</b>. The guard blocks what rooms <i>do</i>, not their badges.</p>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Keys decide what debug is allowed. Secure needs the normal key too.</span></div>
+</article>
+
+<article class="lesson" id="l14">
+  <h3><span class="n">14</span>Rooms with the lights off</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>To save electricity, the city turns off lights in rooms nobody uses. Walking into a dark room is a problem. Rules: the <b>reception desk is never dark</b>, so you can always knock. Before entering a room, <b>ask reception to switch its lights on</b> and wait for "done". And if you do knock on a dark room by mistake, it must answer <b>"sorry, dark!"</b> (an error), never stay silent, or you would wait forever.</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Lights off</td><td>=</td><td><span class="term">powered down</span> power domain</td></tr>
+    <tr><td>Reception always lit</td><td>=</td><td><span class="term">always-on domain</span></td></tr>
+    <tr><td>"Lights on, please" / "done"</td><td>=</td><td><span class="term">power-up request</span> / <span class="term">acknowledge</span></td></tr>
+    <tr><td>Room's light-switch number on the map</td><td>=</td><td><span class="term">POWERID</span> in the ROM entry</td></tr>
+    <tr><td>"Sorry, dark!"</td><td>=</td><td><span class="term">PSLVERR</span> error response on APB</td></tr>
+    <tr><td>Waiting forever</td><td>=</td><td>bus <span class="term">hang</span>, a classic bug</td></tr></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Power up before you access. A sleeping part must reply with an error, never hang.</span></div>
+</article>
+
+<article class="lesson" id="l15">
+  <h3><span class="n">15</span>Put it all together: catching a real bug</h3>
+  <p>Your phone app freezes once a day. Here is how an engineer uses everything you learned.</p>
+  <ol class="walk">
+    <li><span>Plug the <b>probe</b> into the front door. The <b>DP</b> answers. (Lesson 4)</span></li>
+    <li><span>Ask for <b>power-up</b> so no room is dark. (Lesson 14)</span></li>
+    <li><span>Read the <b>ROM table</b> and every <b>name badge</b>. Now the tool knows all rooms. (Lessons 5, 6)</span></li>
+    <li><span>Check <b>AUTHSTATUS</b>: are we allowed to watch and pause? (Lesson 13)</span></li>
+    <li><span>Write <b>registers</b> to give each <b>ETM</b> its own ID and turn on <b>timestamps</b>. (Lessons 7, 8, 11)</span></li>
+    <li><span>Set up the <b>funnel</b> and the <b>ETR</b> warehouse so recordings are kept in memory. (Lesson 10)</span></li>
+    <li><span>Program the <b>CTIs</b>: when any worker stops, freeze all and stop recording. (Lesson 12)</span></li>
+    <li><span>Run until the freeze happens. Read the recording, sort by <b>ID</b>, line up by <b>time</b>, and see which worker did what just before. Bug found.</span></li>
+  </ol>
+</article>
+
+<!-- LEVEL 5 -->
+<div class="levelhead" id="lv5"><span class="lv">Level 5</span><h2>Be the tester</h2><p>What a verification engineer does, and your first tests for everything above.</p></div>
+
+<article class="lesson" id="l16">
+  <h3><span class="n">16</span>What is verification?</h3>
+  <div class="story"><span class="pill p-story">Story</span>
+    <p>Before a chip is built (it costs crores and months), its design exists only as code. A <b>verification engineer</b> builds a <b>pretend world</b> around that code, plays with it in every strange way possible, and checks every answer against a <b>teacher's answer key</b>. Your job is to be the <b>naughty kid</b>: press buttons in the wrong order, at the worst time, and prove nothing breaks.</p></div>
+  <div class="real"><span class="pill p-real">Real words</span><table>
+    <tr><td>Design as code</td><td>=</td><td><span class="term">RTL</span> (Verilog / SystemVerilog)</td></tr>
+    <tr><td>Pretend world</td><td>=</td><td><span class="term">testbench</span>, often built with <span class="term">UVM</span></td></tr>
+    <tr><td>Pressing buttons</td><td>=</td><td><span class="term">stimulus</span>, often <span class="term">random</span> with rules (constrained random)</td></tr>
+    <tr><td>Teacher's answer key</td><td>=</td><td><span class="term">reference model</span> + <span class="term">scoreboard</span></td></tr>
+    <tr><td>"This must always be true" rule</td><td>=</td><td><span class="term">assertion</span> (SVA)</td></tr>
+    <tr><td>Checklist of things you tried</td><td>=</td><td><span class="term">coverage</span></td></tr></table></div>
+
+  <h3 style="font-size:20px;margin-top:24px">Your first tests</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Lesson</th><th>Naughty-kid test</th><th>What must happen</th></tr></thead>
+    <tbody>
+      <tr><td>5 · Name badge</td><td>Read every badge in every room</td><td>Handshake pattern correct, model and version match the design list</td></tr>
+      <tr><td>6 · Map</td><td>Walk the whole map like a debugger</td><td>Every room found exactly once, no loops, ends at a zero line</td></tr>
+      <tr><td>7 · Mailboxes</td><td>Write to empty or read-only mailboxes</td><td>Nothing changes, reads give zero</td></tr>
+      <tr><td>9 · Belt</td><td>Hold READY low for a long time, randomly</td><td>No box lost, no box changed while waiting</td></tr>
+      <tr><td>10 · Stickers</td><td>Switch cameras every single box</td><td>Decoded videos exactly match what each camera sent</td></tr>
+      <tr><td>12 · Walkie-talkies</td><td>Two workers shout in the same instant</td><td>Everyone freezes; skid stays small; nobody re-freezes after restart</td></tr>
+      <tr><td>13 · Keys</td><td>Try all 16 key combinations, then remove a key mid-recording</td><td>Only allowed doors open; secret wing never recorded without its key</td></tr>
+      <tr><td>14 · Lights</td><td>Turn a room's lights off while reading its mailbox</td><td>An error comes back. Never a hang.</td></tr>
+      <tr><td>3 · Golden rule</td><td>Run the same program with cameras off, then on</td><td>Exactly the same final answers. Watching changed nothing.</td></tr>
+    </tbody></table></div>
+  <div class="remember"><span class="pill p-rem">Remember</span><span>Good testers ask "what is the worst moment to do this?" and then do it.</span></div>
+</article>
+
+<!-- WORDS -->
+<div class="levelhead" id="words"><span class="lv">Word list</span><h2>Every word in one place</h2></div>
+<div class="tbl"><table>
+  <thead><tr><th>Word</th><th>Kid meaning</th><th>Engineer meaning</th></tr></thead>
+  <tbody>
+    <tr><td><span class="term">CoreSight</span></td><td>Helpers for seeing inside the city</td><td>ARM's debug and trace architecture</td></tr>
+    <tr><td><span class="term">Debug</span> / <span class="term">invasive</span></td><td>Pause and poke</td><td>Halt, read and change state</td></tr>
+    <tr><td><span class="term">Trace</span> / <span class="term">non-invasive</span></td><td>Watch and record</td><td>Stream of what happened, no effect on behaviour</td></tr>
+    <tr><td><span class="term">JTAG / SWD</span></td><td>Front door pins</td><td>Physical debug interfaces</td></tr>
+    <tr><td><span class="term">DP / AP / DAP</span></td><td>Receptionist / hallway / both</td><td>Debug Port / Access Port / Debug Access Port</td></tr>
+    <tr><td><span class="term">CIDR / PIDR</span></td><td>Name badge</td><td>Component and peripheral ID registers</td></tr>
+    <tr><td><span class="term">ROM table</span></td><td>Building map</td><td>List of component offsets for discovery</td></tr>
+    <tr><td><span class="term">APB</span></td><td>Phone line to mailboxes</td><td>Bus used to program components</td></tr>
+    <tr><td><span class="term">Register</span></td><td>Mailbox</td><td>32-bit control or status location</td></tr>
+    <tr><td><span class="term">ETM / STM</span></td><td>Camera / diary</td><td>Instruction trace / software trace source</td></tr>
+    <tr><td><span class="term">ATB, ATVALID, ATREADY, ATID</span></td><td>Belt, "have box", "ready", name tag</td><td>Trace bus and its handshake and source ID</td></tr>
+    <tr><td><span class="term">Funnel / replicator</span></td><td>Lane merger / photocopier</td><td>Many-to-one / one-to-two trace links</td></tr>
+    <tr><td><span class="term">ETB / ETF / ETR / TPIU</span></td><td>Shelf / shelf / warehouse / window</td><td>Trace sinks: on-chip buffer, DRAM, trace port</td></tr>
+    <tr><td><span class="term">Formatter</span></td><td>Sticker helper</td><td>Puts source IDs into 16-byte frames</td></tr>
+    <tr><td><span class="term">Timestamp</span></td><td>Wall clock</td><td>Shared 64-bit time value</td></tr>
+    <tr><td><span class="term">CTI / CTM / channel</span></td><td>Walkie-talkie / tower / radio channel</td><td>Cross-trigger interface, matrix and channel</td></tr>
+    <tr><td><span class="term">DBGEN, NIDEN, SPIDEN, SPNIDEN</span></td><td>Keys</td><td>Authentication enable signals</td></tr>
+    <tr><td><span class="term">Power domain / PSLVERR</span></td><td>Room lights / "sorry, dark!"</td><td>Power region / APB error response</td></tr>
+    <tr><td><span class="term">Testbench, scoreboard, assertion, coverage</span></td><td>Pretend world, answer key, rule, checklist</td><td>Verification building blocks</td></tr>
+  </tbody></table></div>
+
+<!-- QUIZ -->
+<div class="levelhead" id="quiz"><span class="lv">Quiz</span><h2>Ten quick questions</h2><p>Tap an answer. You get the reason right away.</p></div>
+<div id="quizbox"></div>
+<p class="score" id="score" aria-live="polite">Score: 0 / 10</p>
+
+<div class="next">
+  <p>Finished? You now know every idea in CoreSight at a simple level. Next, open the <a href="coresight-field-guide.html">CoreSight Field Guide</a> for the real register details, the spec rules and interview questions.</p>
+</div>
+<footer>Based on ARM IHI 0029E, CoreSight Architecture Specification v3.0. Analogies simplify the real behaviour; the Field Guide has the exact rules.</footer>
+</div>
+
+<script>
+(function(){
+  /* ---------- ROM walk ---------- */
+  const BASE=0x80000000;
+  const entries=[
+    {v:'0x00001003',off:1,name:'Worker 0 debug room',cls:'CoreSight part (CLASS 0x9)',kind:'part'},
+    {v:'0x00002003',off:2,name:'Camera for worker 0 (ETM)',cls:'CoreSight part (CLASS 0x9)',kind:'part'},
+    {v:'0x00003003',off:3,name:'Walkie-talkie for worker 0 (CTI)',cls:'CoreSight part (CLASS 0x9)',kind:'part'},
+    {v:'0x00000002',off:null,name:'Empty line: room not built in this chip',cls:'not present, keep reading',kind:'skip'},
+    {v:'0x00010003',off:16,name:'Another map (trace floor ROM table)',cls:'ROM table (CLASS 0x1 or 0x9)',kind:'map'},
+    {v:'0x00000000',off:null,name:'All zero: end of the map',cls:'stop',kind:'end'}];
+  let ri=-1;
+  const rl=document.getElementById('romlist'), rm=document.getElementById('romMsg'), rn=document.getElementById('romNext');
+  function hex(n){return '0x'+n.toString(16).toUpperCase().padStart(8,'0').replace(/(....)(....)$/,'$1_$2');}
+  function renderRom(){
+    rl.innerHTML=entries.map((e,i)=>{
+      const shown=i<=ri, cls=i===ri?'cur':(i<ri?'done':'');
+      return '<div class="'+cls+'"><span>line '+i+'</span><span>'+(shown?e.v:'········')+'</span><span class="found">'+(shown?e.name:'?')+'</span></div>';
+    }).join('');
+    rn.disabled=ri>=entries.length-1;
+  }
+  rn.addEventListener('click',()=>{ ri++; renderRom(); const e=entries[ri];
+    if(e.kind==='part'||e.kind==='map'){ const addr=BASE+e.off*0x1000;
+      rm.innerHTML='Walk '+e.off+' step'+(e.off>1?'s':'')+' of 4KB from the map → room at <b>'+hex(addr)+'</b>. Its badge says: <b>'+e.cls+'</b>.'+(e.kind==='map'?' This is another map, so a real debugger would now read that one too.':''); }
+    else if(e.kind==='skip'){ rm.innerHTML='This line says "not present". Skip it, but <b>keep reading</b>: it is not the end.'; }
+    else { rm.innerHTML='A line of all zeros means <b>the list is over</b>. You found 4 rooms and 1 more map. Well done.'; }
+  });
+  document.getElementById('romReset').addEventListener('click',()=>{ ri=-1; renderRom(); rm.textContent='Press "Read next line" to start exploring.'; });
+  renderRom();
+
+  /* ---------- Belt ---------- */
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let queue=[], stored=[], seq=0, running=!reduce, timer=null;
+  const track=document.getElementById('track'), shelf=document.getElementById('shelf');
+  function beltTick(){
+    const ready=document.getElementById('readyT').checked;
+    if(queue.length<7 && Math.random()<0.75){ const w=seq%3; queue.push({w,id:w+1}); seq++; }
+    const valid=queue.length>0, move=valid&&ready;
+    if(move){ stored.push(queue.shift()); if(stored.length>60) stored.shift(); }
+    document.getElementById('sV').textContent=valid?1:0; document.getElementById('sV').className=valid?'hi':'lo';
+    document.getElementById('sR').textContent=ready?1:0; document.getElementById('sR').className=ready?'hi':'lo';
+    document.getElementById('sM').textContent=move?'yes':'no'; document.getElementById('sM').className=move?'hi':'lo';
+    renderBelt(ready);
+  }
+  function renderBelt(ready){
+    track.innerHTML=queue.slice().reverse().map(p=>'<div class="pkg w'+p.w+'">ID '+p.id+'</div>').join('');
+    shelf.innerHTML=stored.slice(-24).map(p=>'<i class="s'+p.w+'"></i>').join('');
+    document.getElementById('recCount').textContent=seq-queue.length+' stored';
+    document.getElementById('beltMsg').innerHTML= ready
+      ? 'Receiver is ready, so boxes move as soon as the sender has one.'
+      : (queue.length>=7?'Belt is full. The camera must <b>wait</b> (in real chips, it may mark that some recording was skipped). No box fell off.':'Receiver says "wait". The sender keeps holding the <b>same</b> box. Boxes pile up, none are lost.');
+  }
+  function setRun(r){ running=r; document.getElementById('beltRun').textContent=r?'Pause':'Play'; clearInterval(timer); if(r) timer=setInterval(beltTick,700); }
+  document.getElementById('beltRun').addEventListener('click',()=>setRun(!running));
+  document.getElementById('beltStep').addEventListener('click',()=>{ setRun(false); beltTick(); });
+  document.getElementById('readyT').addEventListener('change',()=>renderBelt(document.getElementById('readyT').checked));
+  for(let i=0;i<3;i++) beltTick();
+  setRun(running);
+
+  /* ---------- Freeze game ---------- */
+  const W=4; let cnt=[0,0,0,0], stop=[false,false,false,false], skid=[0,0,0,0], hit=false, frTimer=null, sinceHit=0;
+  const wk=document.getElementById('workers');
+  wk.innerHTML=[0,1,2,3].map(i=>'<div class="worker" id="w'+i+'"><div class="nm">Worker '+i+'</div><div class="ct" id="wc'+i+'">0</div><div class="st" id="ws'+i+'">running</div></div>').join('');
+  function renderW(){ for(let i=0;i<W;i++){ document.getElementById('wc'+i).textContent=cnt[i]; const el=document.getElementById('w'+i); el.className='worker'+(stop[i]?' stop':''); document.getElementById('ws'+i).textContent=stop[i]?(i===0?'stopped: problem!':'frozen (skid '+skid[i]+')'):'running'; } }
+  function frTick(){
+    for(let i=0;i<W;i++) if(!stop[i]){ cnt[i]+=1+Math.floor(Math.random()*3); if(hit) skid[i]+=1; }
+    if(hit){ sinceHit++;
+      const walkie=document.getElementById('walkie').checked;
+      if(walkie && sinceHit>=1){ for(let i=1;i<W;i++) stop[i]=true; }
+      const m=document.getElementById('frMsg');
+      if(walkie) m.innerHTML='Channel 0 shouted "freeze!". The others stopped after a tiny skid, so everyone froze at <b>almost the same moment</b>. Now you can look inside safely.';
+      else m.innerHTML='No walkie-talkies: workers 1–3 keep running (watch their numbers grow). The shared boxes keep changing, so the moment of the problem is <b>lost</b>.';
+    }
+    renderW();
+  }
+  function frStart(){ clearInterval(frTimer); frTimer=setInterval(frTick,reduce?1200:450); }
+  document.getElementById('bp').addEventListener('click',()=>{ if(hit) return; hit=true; sinceHit=0; stop[0]=true; skid=[0,0,0,0]; renderW(); document.getElementById('frMsg').textContent='Worker 0 stopped…'; });
+  document.getElementById('frReset').addEventListener('click',()=>{ cnt=[0,0,0,0]; stop=[false,false,false,false]; skid=[0,0,0,0]; hit=false; renderW(); document.getElementById('frMsg').textContent='Workers are running. Press the red-flag button.'; });
+  document.getElementById('walkie').addEventListener('change',()=>{ if(hit){ const on=document.getElementById('walkie').checked; if(!on){ for(let i=1;i<W;i++) stop[i]=false; } } });
+  renderW(); frStart();
+
+  /* ---------- Keys ---------- */
+  const K=[['DBGEN','Pause key'],['NIDEN','Watch key'],['SPIDEN','Secret pause key'],['SPNIDEN','Secret watch key']];
+  const ks={DBGEN:0,NIDEN:1,SPIDEN:0,SPNIDEN:0};
+  const kw=document.getElementById('keys');
+  K.forEach(([s,n])=>{ const b=document.createElement('button'); b.type='button'; b.className='key'; b.id='k_'+s; b.innerHTML='<b>'+n+'</b><code>'+s+'</code>'; b.addEventListener('click',()=>{ks[s]^=1; renderKeys();}); kw.appendChild(b); });
+  function renderKeys(){
+    K.forEach(([s])=>document.getElementById('k_'+s).setAttribute('aria-pressed',ks[s]?'true':'false'));
+    const D=ks.DBGEN,N=ks.NIDEN,S=ks.SPIDEN,SN=ks.SPNIDEN;
+    const d=[['Pause normal workers',D,'DBGEN'],['Watch normal workers',D|N,'DBGEN or NIDEN'],['Pause secret wing',D&S,'DBGEN and SPIDEN'],['Watch secret wing',(S|SN)&(D|N),'(SPIDEN or SPNIDEN) and (DBGEN or NIDEN)']];
+    document.getElementById('doors').innerHTML=d.map(x=>'<div class="door '+(x[1]?'open':'shut')+'"><span class="s">'+(x[1]?'OPEN':'LOCKED')+'</span><b>'+x[0]+'</b><div style="font-family:var(--f-mono);font-size:11.5px;color:var(--muted)">'+x[2]+'</div></div>').join('');
+    let m='';
+    if(S&&!D) m='You gave the secret pause key but not the normal pause key, so the secret wing stays locked. Secret keys need their normal key too.';
+    else if(SN&&!(D|N)) m='Secret watch key alone does nothing. You also need a normal watch or pause key.';
+    else if(D&&!N) m='The pause key on its own also opens "watch". Pausing needs watching, so it comes free.';
+    else if(!D&&!N&&!S&&!SN) m='No keys: like a phone from a shop. You can still read name badges, but cannot pause or record anything.';
+    else if(D&&N&&S&&SN) m='All keys: like a developer board on an engineer\'s desk. Everything is open.';
+    else m='Try removing the normal keys while keeping a secret key, and see what happens.';
+    document.getElementById('keyMsg').textContent=m;
+  }
+  renderKeys();
+
+  /* ---------- Quiz ---------- */
+  const Q=[
+    ['What is CoreSight?',['A kind of CPU','Helper hardware inside the chip for debug and trace','A computer program on your laptop'],1,'It is built into the chip, next to the CPUs, only to help engineers see inside.'],
+    ['Which superpower does NOT stop the worker?',['Debug (pause and poke)','Trace (watch and record)'],1,'Trace is non-invasive: it records while the CPU keeps running normally.'],
+    ['Who answers first when your probe knocks on the chip?',['The ROM table','The Debug Port (DP)','The ETM'],1,'The DP is the receptionist. It then gives you access ports (APs) into the chip.'],
+    ['How does a debugger find every part of an unknown chip?',['It guesses addresses','It reads the ROM table, line by line','The user types every address'],1,'The ROM table lists offsets to each component, and can point to more ROM tables.'],
+    ['Where is the name badge in every CoreSight part?',['At the very end of its 4KB block (0xFD0–0xFFC)','At address zero of the chip','It has no badge'],0,'Same place in every component, so one tool can identify all of them.'],
+    ['On the ATB belt, when does a box move?',['When VALID is 1','When READY is 1','When VALID and READY are both 1'],2,'Both sides must agree. If READY is 0 the sender keeps holding the same box.'],
+    ['Why does the trace formatter add "stickers"?',['To make trace smaller','Because the trace port has no pins for the source ID','To encrypt trace'],1,'Outside the chip the ID tags are lost, so the formatter puts IDs into the data stream itself.'],
+    ['Worker 0 stops. What freezes the other workers at the same moment?',['CTI and CTM (walkie-talkies)','The funnel','The timestamp'],0,'CTIs send the halt event on a channel through the CTM to every other CTI.'],
+    ['You hold SPIDEN (secret pause) but not DBGEN. Can you pause the secret wing?',['Yes','No'],1,'Secure invasive debug needs DBGEN AND SPIDEN. Secure always needs the normal key too.'],
+    ['You read a register in a powered-down part. What should happen?',['The bus waits forever','An error response (PSLVERR) comes back','The chip resets'],1,'A sleeping part must answer with an error. Hanging forever is a classic bug testers look for.']
+  ];
+  let score=0; const qb=document.getElementById('quizbox');
+  qb.innerHTML=Q.map((q,i)=>'<div class="q" id="q'+i+'"><p>'+(i+1)+'. '+q[0]+'</p><div class="opts">'+q[1].map((o,j)=>'<button type="button" data-q="'+i+'" data-o="'+j+'">'+o+'</button>').join('')+'</div><div class="why" id="why'+i+'"></div></div>').join('');
+  qb.addEventListener('click',e=>{ const b=e.target.closest('button[data-q]'); if(!b) return; const i=+b.dataset.q, j=+b.dataset.o; const box=document.getElementById('q'+i); if(box.dataset.done) return; box.dataset.done=1;
+    box.querySelectorAll('button').forEach((x,k)=>{ x.disabled=true; if(k===Q[i][2]) x.classList.add('right'); });
+    if(j===Q[i][2]){ score++; document.getElementById('why'+i).textContent='Correct. '+Q[i][3]; } else { b.classList.add('wrong'); document.getElementById('why'+i).textContent='Not quite. '+Q[i][3]; }
+    document.getElementById('score').textContent='Score: '+score+' / '+Q.length+(score===Q.length?'. Perfect. Ready for the Field Guide.':'');
+  });
+})();
+</script>
+
+</html>

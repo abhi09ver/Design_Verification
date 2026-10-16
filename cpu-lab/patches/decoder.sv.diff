@@ -1,0 +1,37 @@
+--- rtl/decoder.sv	2026-10-15 23:41:13.586885462 +0000
++++ solutions/decoder.sv	2026-10-15 23:41:13.589879244 +0000
+@@ -135,6 +135,17 @@
+                     decode_reg[i].src1        <= fetch_instruction[i][19:15];
+                     decode_reg[i].src2        <= get_src2(fetch_instruction[i]);
+                     op = create_operation(fetch_instruction[i]); 
++                    // FIX-1 (op-key aliasing): instr[31:25] is a real funct7 ONLY for R-type
++                    // and for the shift-immediates (slli/srli/srai). For every other format
++                    // those bits are IMMEDIATE bits and must not be part of the opcode key.
++                    // jal has no funct3 either (bits[14:12] are imm[14:12]).
++                    unique case (fetch_instruction[i][6:0])
++                        7'b0110011: ;                                            // R-type: keep
++                        7'b0010011: if (fetch_instruction[i][13:12] != 2'b01)   // not a shift
++                                        op[16:10] = 7'b0;
++                        7'b1101111: op[16:7]  = 10'b0;                           // jal
++                        default:    op[16:10] = 7'b0;                            // ld/st/br/jalr
++                    endcase
+                     if (is_store(op) || is_branch(op)) begin
+                         temp_dst = 0;
+                     end else begin
+@@ -147,13 +158,13 @@
+                     // Correctly decode immediate based on opcode and assign to a temporary variable
+                     case (fetch_instruction[i][6:0])
+                         7'b0000011: // I-type (loads)
+-                            temp_imm = fetch_instruction[i][31:20];
++                            temp_imm = {{20{fetch_instruction[i][31]}}, fetch_instruction[i][31:20]}; // FIX-2: sign-extend
+                         7'b0100011: // S-type (stores)
+                             temp_imm = {{20{fetch_instruction[i][31]}}, fetch_instruction[i][31:25], fetch_instruction[i][11:7]};
+                         7'b0010011: // I-type (addi, slti, etc.)
+-                            temp_imm = fetch_instruction[i][31:20];
++                            temp_imm = {{20{fetch_instruction[i][31]}}, fetch_instruction[i][31:20]}; // FIX-2: sign-extend
+                         7'b1100111: // I-type (jalr)
+-                            temp_imm = fetch_instruction[i][31:20];
++                            temp_imm = {{20{fetch_instruction[i][31]}}, fetch_instruction[i][31:20]}; // FIX-2: sign-extend
+                         default:
+                             temp_imm = decode_immediate(fetch_instruction[i], fetch_instruction[i][6:0]);
+                     endcase

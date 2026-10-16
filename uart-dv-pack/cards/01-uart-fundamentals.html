@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · UART Fundamentals & Frame Format</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="02-checker-architecture.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 01 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05; color: #15171C;">UART Fundamentals &amp; Frame Format</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Async serial, no shared clock — every frame re-synchronises on its own start edge.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">01</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">One frame on the wire — 8E1, byte 0x53, LSB first</h2>
+<div style="display: flex; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div style="flex: 1; text-align: center;">IDLE</div><div style="flex: 1; text-align: center;">START</div><div style="flex: 1; text-align: center;">D0</div><div style="flex: 1; text-align: center;">D1</div><div style="flex: 1; text-align: center;">D2</div><div style="flex: 1; text-align: center;">D3</div><div style="flex: 1; text-align: center;">D4</div><div style="flex: 1; text-align: center;">D5</div><div style="flex: 1; text-align: center;">D6</div><div style="flex: 1; text-align: center;">D7</div><div style="flex: 1; text-align: center;">PAR</div><div style="flex: 1; text-align: center;">STOP</div><div style="flex: 1; text-align: center;">IDLE</div>
+</div>
+<div style="display: flex;">
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C; background: #EEF2FF;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; background: #FFF4E5;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C; background: #EEF2FF;"></div>
+<div style="flex: 1; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C;"></div>
+</div>
+<div style="display: flex; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">
+<div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">1</div>
+</div>
+<div style="font-size: 13px; color: #4A4F5A;">0x53 = 0101_0011 → sent D0..D7 = 1,1,0,0,1,0,1,0. Four 1s, so even parity bit = 0. Receiver samples every bit at its middle (16× oversampling: edge + 8 ticks, then every 16 ticks).</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Core concepts</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>Asynchronous:</b> no clock wire. TX and RX each run a local baud clock that must agree within a few %.</li>
+<li><b>Two signals:</b> TX → RX crossed between devices, plus common ground. Full-duplex, point-to-point.</li>
+<li><b>Idle = 1 (mark).</b> A falling edge is the only way a frame can begin.</li>
+<li><b>Start bit = 0:</b> gives the receiver a fresh timing reference every frame, so drift never accumulates across frames.</li>
+<li><b>Data:</b> 5–9 bits (8 typical), <b>LSB first</b>.</li>
+<li><b>Parity (optional):</b> none / even / odd / mark (1) / space (0).</li>
+<li><b>Stop:</b> 1, 1.5 or 2 bits of 1 — guarantees a high level before the next falling start edge.</li>
+<li><b>Notation:</b> 8N1 = 8 data, no parity, 1 stop. 7E1, 8O2 likewise.</li>
+</ul>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Numbers to know cold</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">8.68 µs</div><div style="font-size: 12.5px; color: #4A4F5A;">bit time @ 115200 baud</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">104.17 µs</div><div style="font-size: 12.5px; color: #4A4F5A;">bit time @ 9600 baud</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">10 bits</div><div style="font-size: 12.5px; color: #4A4F5A;">per byte in 8N1 → 80% efficiency</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">11,520 B/s</div><div style="font-size: 12.5px; color: #4A4F5A;">max payload, 115200 8N1</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">16×</div><div style="font-size: 12.5px; color: #4A4F5A;">typical RX oversampling</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700;">≈ ±2%</div><div style="font-size: 12.5px; color: #4A4F5A;">safe per-side clock error (8N1)</div></div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Baud = symbols/s. For UART one symbol = one bit, so baud = bit rate — but not throughput.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Deep dive — how the receiver locks on</h2>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px;">
+<li>Synchronise RX to the local clock (2-FF synchroniser — RX is an async input).</li>
+<li>Detect 1→0 on the synchronised line; start a 0–15 tick counter.</li>
+<li>At tick 8 (mid start bit) re-sample. Still 0? Real start. Back to 1? <b>False start</b> — glitch rejected, return to idle.</li>
+<li>Sample every 16 ticks: D0..Dn, parity, stop — always mid-bit, maximum margin to both edges.</li>
+<li>Stop must read 1, else <b>framing error</b>. Then hunt for the next falling edge.</li>
+</ol>
+<div style="font-size: 12.5px; color: #4A4F5A;">Some UARTs take 3 samples around mid-bit (ticks 7/8/9) and majority-vote for noise immunity.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">UART vs SPI vs I2C</h2>
+<div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; font-size: 12.5px; border-top: 1px solid #E2E2DC;">
+<div style="padding: 5px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;"></div><div style="padding: 5px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">UART</div><div style="padding: 5px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">SPI</div><div style="padding: 5px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">I2C</div>
+<div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">Clock</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">none (async)</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">SCLK from master</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">SCL, open-drain</div>
+<div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">Wires</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">2 (TX, RX)</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">4 + CS per slave</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">2 (SDA, SCL)</div>
+<div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">Topology</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">point-to-point</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">1 master, N slaves</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">multi-master, addressed</div>
+<div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">Duplex</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">full</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">full</div><div style="padding: 5px 4px; border-bottom: 1px solid #E2E2DC;">half</div>
+<div style="padding: 5px 4px;">Error check</div><div style="padding: 5px 4px;">parity, framing</div><div style="padding: 5px 4px;">none built-in</div><div style="padding: 5px 4px;">ACK/NACK</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">UART is the logic block; RS-232 / RS-485 are electrical layers (RS-232 swings ±3–15 V and is inverted).</div>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Traps interviewers set</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>"Asynchronous means no clock at all" — wrong. Both sides have clocks; they just aren't shared.</li>
+<li>Bit order: if driver and monitor are both written MSB-first, the test still passes. Check against a known asymmetric byte (0x01, 0x80).</li>
+<li>Throughput ≠ baud: 8N1 spends 2 of every 10 bits on framing.</li>
+<li>Flow control is separate: RTS/CTS (hardware) or XON/XOFF (in-band software).</li>
+<li>Long frames (9 data + parity + 2 stop) shrink the clock-tolerance budget.</li>
+</ul>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">What a DV plan must cover</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>All frame configs: data 5–8, parity ×5 modes, stop 1/1.5/2 — and their cross.</li>
+<li>Every supported baud divisor, plus min and max divisor.</li>
+<li>Back-to-back frames with minimum stop (no idle gap).</li>
+<li>Clock drift injection on the TB side.</li>
+<li>Each error type: parity, framing, break, overrun, false start.</li>
+<li>Loopback mode, FIFO enable/disable, interrupts, reset mid-frame.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A — say these out loud</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. Why is the idle line high?</div><div style="color: #C9CCD3;">So the start bit produces a guaranteed falling edge, and a broken or shorted line (stuck 0) is detectable as a break rather than looking like idle.</div></div>
+<div><div style="font-weight: 600;">Q. Why doesn't clock drift build up over a long message?</div><div style="color: #C9CCD3;">Each frame re-aligns on its own start edge, so error only accumulates across the ~10 bits of one frame.</div></div>
+<div><div style="font-weight: 600;">Q. Why sample at mid-bit?</div><div style="color: #C9CCD3;">It leaves equal margin to both edges, tolerating up to ~half a bit of accumulated timing error by the last bit.</div></div>
+<div><div style="font-weight: 600;">Q. What is a false start and why reject it?</div><div style="color: #C9CCD3;">A low glitch shorter than half a bit. Re-checking at mid-start stops noise from launching a garbage frame.</div></div>
+<div><div style="font-weight: 600;">Q. Why 16× oversampling and not 1×?</div><div style="color: #C9CCD3;">Without a shared clock the RX must find the edge itself; 16× locates it to within 1/16 bit.</div></div>
+<div><div style="font-weight: 600;">Q. How many errors can parity catch?</div><div style="color: #C9CCD3;">Any odd number of flipped bits. Two flips cancel out and go unseen — parity detects, never corrects.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Playlist: UART PROTOCOL · ALL ABOUT VLSI · basis: companion write-up "UART basics"</div>
+<div>Next → 02 Checker architecture</div>
+</footer>
+</div></div>
+</body>
+</html>
