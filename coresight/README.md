@@ -9,7 +9,7 @@ Source spec: **ARM IHI 0029E, CoreSight Architecture Specification v3.0** (not i
 |---|---|---|---|
 | 1 | [`coresight-from-zero.html`](coresight-from-zero.html) | 60–90 min | Beginner course: 16 lessons with everyday analogies, 4 mini games (ROM map, ATB belt, freeze game, auth keys), 10-question quiz |
 | 2 | [`coresight-field-guide.html`](coresight-field-guide.html) | 2–3 h | Senior infographic guide: system map, register frame, ROM rules, interfaces, auth simulator, formatter frame decoder, CTI, power, verification plan, bug catalog, 20 Q&A |
-| 3 | [`../26-coresight-debug-and-trace.md`](../26-coresight-debug-and-trace.md) | 1–2 h | Full written notes in this repo's challenge format (renders on GitHub), with follow-up questions and the 60-second pitch |
+| 3 | [`../34-coresight-debug-and-trace.md`](../34-coresight-debug-and-trace.md) | 1–2 h | Full written notes in this repo's challenge format (renders on GitHub), with follow-up questions and the 60-second pitch |
 | 4 | [`code/coresight_tools.py`](code/coresight_tools.py) | 30 min | Python golden models: ID decode, ROM entry decode and walk, auth equations + AUTHSTATUS, formatter decode/encode |
 | 5 | [`code/coresight_sva.sv`](code/coresight_sva.sv) | 30 min | Bind-able SVA checkers: ATB, async channel handshake, APB power-down, auth/AUTHSTATUS, CTI no-reflection |
 | 6 | [`CHEATSHEET.md`](CHEATSHEET.md) | 10 min | One page for the last hour before the interview |

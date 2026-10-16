@@ -1,6 +1,6 @@
 # CoreSight last-hour cheat sheet
 
-One page. Spec: ARM IHI 0029E (CoreSight v3.0). Full notes: [`../26-coresight-debug-and-trace.md`](../26-coresight-debug-and-trace.md).
+One page. Spec: ARM IHI 0029E (CoreSight v3.0). Full notes: [`../34-coresight-debug-and-trace.md`](../34-coresight-debug-and-trace.md).
 
 ## The pitch (say it in 60 s)
 

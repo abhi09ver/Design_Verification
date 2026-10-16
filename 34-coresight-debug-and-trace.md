@@ -1,4 +1,4 @@
-# Challenge 26: CoreSight Debug and Trace — Architecture, Spec and Verification
+# Challenge 34: CoreSight Debug and Trace — Architecture, Spec and Verification
 
 > **Level:** Fresher → Senior CPU DV interview (NVIDIA / ARM / Qualcomm style)
 > **Topics:** debug vs. trace, DAP (DP/AP), programmers' model and ID registers, ROM tables and discovery, topology detection, APB / ATB / event / channel / timestamp interfaces, authentication, trace formatter, cross-triggering (CTI/CTM), power and reset, verification plan, SVA, bug catalog
