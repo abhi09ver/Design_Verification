@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Parity Error Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="04-framing-error.html">← Prev</a> · <a href="06-break-condition.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 05 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Parity Error Check</h1>
+<div style="font-size: 15px; color: #4A4F5A;">One extra bit that makes the count of 1s even (or odd). Cheap, single-error detection — nothing more.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">05</div>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Five parity modes</h2>
+<div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px; font-size: 13px; border-top: 1px solid #E2E2DC;">
+<div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Mode</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Parity bit P</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Check passes if</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">None</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">no bit sent</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">—</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;"><b>Even</b></div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">P = ^data</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">^{data,P} == 0</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;"><b>Odd</b></div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">P = ~^data</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">^{data,P} == 1</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">Mark</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">always 1</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">P == 1</div>
+<div style="padding: 6px 4px;">Space</div><div style="padding: 6px 4px;">always 0</div><div style="padding: 6px 4px; font-family: 'JetBrains Mono', monospace;">P == 0</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">16550 LCR: bit 3 PEN (enable), bit 4 EPS (even select), bit 5 stick parity (mark/space). Error shows in LSR.PE, bit 2.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Worked examples</h2>
+<div style="display: grid; grid-template-columns: 1.2fr 1.6fr .6fr .8fr .8fr; font-size: 13px; border-top: 1px solid #E2E2DC; font-family: 'JetBrains Mono', monospace;">
+<div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Byte</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Binary</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">1s</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Even</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Odd</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0x53</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0101_0011</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">4</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">1</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0x57</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0101_0111</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">5</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">1</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0x00</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0000_0000</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">0</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">1</div>
+<div style="padding: 6px 4px;">0xFF</div><div style="padding: 6px 4px;">1111_1111</div><div style="padding: 6px 4px;">8</div><div style="padding: 6px 4px;">0</div><div style="padding: 6px 4px;">1</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Sanity check: odd parity is always the inverse of even parity for the same data.</div>
+</section>
+
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Deep dive — what parity can and cannot see</h2>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+<div style="background: #EEF2FF; border-radius: 8px; padding: 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;">1 bit flipped</div><div style="font-size: 13px;">Detected — count changes parity.</div></div>
+<div style="background: #FFF4E5; border-radius: 8px; padding: 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: #9A3F07;">2 bits flipped</div><div style="font-size: 13px;">Missed — flips cancel. Only the scoreboard catches it.</div></div>
+<div style="background: #EEF2FF; border-radius: 8px; padding: 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;">P itself flipped</div><div style="font-size: 13px;">Detected — looks the same as a data flip.</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 12px;"><div style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;">Which bit?</div><div style="font-size: 13px;">Unknown. Parity detects, never locates or corrects.</div></div>
+</div>
+<div style="font-size: 13px; color: #4A4F5A;">Formally: parity gives a minimum Hamming distance of 2 — detects any odd number of errors, corrects none. Need correction → Hamming / ECC. Need burst detection → CRC at a higher layer.</div>
+</section>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Checker — compute over the configured width only</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; white-space: pre;">function bit exp_parity(bit [8:0] data);
+  bit x = 1'b0;
+  for (int i = 0; i &lt; cfg.data_bits; i++) x ^= data[i];   // 5..8 bits, never blindly 8
+  case (cfg.parity)
+    PAR_EVEN : return x;
+    PAR_ODD  : return ~x;
+    PAR_MARK : return 1'b1;
+    PAR_SPACE: return 1'b0;
+  endcase
+endfunction
+
+// in write(uart_item it)
+if (cfg.parity != PAR_NONE) begin
+  it.pe = (it.par !== exp_parity(it.data));
+  if (it.pe &amp;&amp; !it.pe_expected)
+    `uvm_error("UART_PE", $sformatf("data 0x%0h par %b exp %b", it.data, it.par, exp_parity(it.data)))
+end</pre>
+<div style="font-size: 12.5px; color: #B9C0CC;">Two ways to check — pick one, don't mix: compare P to the computed value, <i>or</i> XOR data with P and compare the result to 0 (even) / 1 (odd). XOR-ing P in and then comparing to P is a classic bug.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Tests &amp; coverage</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>Injection enum in the item: <span style="font-family: 'JetBrains Mono', monospace;">{NONE, FLIP_PAR, FLIP_1_DATA, FLIP_2_DATA}</span>.</li>
+<li>Expect: PE set for FLIP_PAR and FLIP_1_DATA; PE clear but data mismatch for FLIP_2_DATA.</li>
+<li>Each mode with data_bits 5, 6, 7, 8 — the width bug only shows below 8.</li>
+<li>Change parity mode between frames (LCR write while idle).</li>
+<li>Cross: parity_mode × data_bits × injection × FIFO position.</li>
+<li>DUT TX side: verify generated P for all modes, incl. all-0 and all-1 data.</li>
+</ul>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Common bugs (DUT and TB)</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>Parity computed over all 8 bits when 7 are configured (stale MSB leaks in).</li>
+<li>Even / odd swapped — invisible if TB model has the same swap. Check against a hand-computed table.</li>
+<li>Mark / space ignored: hardware sends computed parity instead of a constant.</li>
+<li>Parity bit position off by one → RX also reports framing errors.</li>
+<li>PE flag attached to the wrong FIFO entry.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. Why do mark and space parity exist?</div><div style="color: #C9CCD3;">Used as a 9th bit: in multi-drop links the parity slot flags "address byte" vs "data byte".</div></div>
+<div><div style="font-weight: 600;">Q. How is parity computed in hardware?</div><div style="color: #C9CCD3;">An XOR tree (SV reduction ^), or a 1-bit toggle flop updated as each bit shifts out.</div></div>
+<div><div style="font-weight: 600;">Q. If parity misses double errors, why verify them?</div><div style="color: #C9CCD3;">To prove the DUT does <i>not</i> flag them and that your scoreboard, not the checker, catches the corruption.</div></div>
+<div><div style="font-weight: 600;">Q. Can a frame have both PE and FE?</div><div style="color: #C9CCD3;">Yes. Both flags are set for that character; report both, but treat the FE as the likely root cause.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: companion write-up "UART protocol checker – Parity error" · code is an original sketch</div>
+<div>Next → 06 Break condition</div>
+</footer>
+</div></div>
+</body>
+</html>
