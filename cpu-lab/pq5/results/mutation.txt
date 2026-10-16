@@ -1,0 +1,10 @@
+no forwarding from MEM (distance 1)           directed fails:  9/10 p01,p02,p03,p04,p06,p07,p08,p09,p10 random fails: 100/100
+no forwarding from WB (distance 2)            directed fails:  9/10 p01,p02,p03,p04,p06,p07,p08,p09,p10 random fails:  57/100
+forwarding priority reversed                  directed fails:  2/10 p02,p08                        random fails:   5/100
+forward a load's ADDRESS from MEM             directed fails:  0/10                                random fails:   0/100
+no register-file write-through (distance 3)   directed fails:  7/10 p01,p02,p04,p06,p07,p09,p10    random fails:  54/100
+no load-use stall                             directed fails:  2/10 p03,p07                        random fails:  26/100
+flush forgets the instruction in IF/ID        directed fails:  6/10 p04,p05,p06,p07,p09,p10        random fails:  98/100
+flush forgets the instruction in decode       directed fails:  6/10 p04,p05,p06,p07,p09,p10        random fails:  98/100
+x0 can be written                             directed fails:  5/10 p02,p03,p05,p06,p09            random fails:  54/100
+PERF: no branch prediction (always pc+4)      directed fails:  0/10                                random fails:   0/100  CPI p04_loop_sum=1.66 p09_multiply=1.48

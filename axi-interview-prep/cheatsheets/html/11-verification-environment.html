@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Verifying the AXI RAM: Full Testbench</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.blk{border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-size:13px;line-height:1.3;box-sizing:border-box;min-height:86px}
+.dk{background:#16202B;color:#FFFFFF}
+.tl{background:#0F766E;color:#FFFFFF}
+.bl{background:#2F4B7C;color:#FFFFFF}
+.og{background:#C2410C;color:#FFFFFF}
+.lt{background:#E6F2F0;color:#0B3B37;border:1px solid #A9D2CC}
+.arw{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5B6670;text-align:center;line-height:1.3}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.4;color:#2B3540}
+.box{flex:none;width:20px;height:20px;border:2px solid #0F766E;border-radius:4px;margin-top:1px;box-sizing:border-box}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="10-read-testbench.html">← Reading the RAM Back over AXI</a><a href="../../README.md">Index</a><a href="12-project-axi4-lite-uvm-explained.html">Your AXI4-Lite UVM Project, Explained →</a></nav>
+<div style="width: 1600px; height: 3080px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 11 · project final part</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">Verifying the AXI RAM: Full Testbench</h1>
+    <div style="font-size: 17px; color: #C9D2D8">From hand-written tasks to a layered, random, self-checking environment with coverage — the same shape as UVM.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 360px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">generate → drive → monitor → check</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">random + constrained + covered</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #7FD1C7">done = 0 errors &amp; 100% coverage</div>
+  </div>
+</div>
+
+<!-- ROW 1: architecture -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">1</span>Layered testbench architecture</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr) 70px minmax(0, 1fr) 70px minmax(0, 1fr); gap: 8px; align-items: center">
+    <div class="blk tl"><b style="font-size: 15px">Generator</b>creates random<br>transactions</div>
+    <div class="arw">mailbox<br>▶</div>
+    <div class="blk tl"><b style="font-size: 15px">Driver</b>axi_write() / axi_read()<br>on the interface</div>
+    <div class="arw">pins<br>▶</div>
+    <div class="blk og"><b style="font-size: 15px">DUT</b>axi_wrapper<br>→ axi_slave_ram</div>
+    <div class="arw">pins<br>▶</div>
+    <div class="blk bl"><b style="font-size: 15px">Monitor</b>watches handshakes,<br>rebuilds transactions</div>
+  </div>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr) 70px minmax(0, 1fr) 70px minmax(0, 1fr); gap: 8px; align-items: center">
+    <div class="blk lt"><b style="font-size: 15px">Interface</b>bundles all AXI signals; drivers and monitors use a virtual handle</div>
+    <div></div>
+    <div class="blk lt"><b style="font-size: 15px">Coverage</b>samples every monitored transaction</div>
+    <div class="arw">◀</div>
+    <div class="blk bl"><b style="font-size: 15px">Scoreboard</b>byte-level memory model, compares reads</div>
+    <div class="arw">◀<br>mailbox</div>
+    <div class="blk dk"><b style="font-size: 15px">Environment / Test</b>builds &amp; connects all, sets count, reports</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+    <div class="key"><b>Why layers?</b> Each block has one job, so you can swap the generator (new test) without touching the driver, or reuse the monitor elsewhere.</div>
+    <div class="key"><b>The monitor is passive</b> — it never drives a pin. The scoreboard trusts the monitor, not the driver, so driver bugs don't hide DUT bugs.</div>
+    <div class="key"><b>The driver reuses</b> the <span class="m">axi_write</span> / <span class="m">axi_read</span> tasks from the previous two sheets.</div>
+  </div>
+</div>
+
+<!-- ROW 2: transaction + env -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>Transaction class &amp; constraints</h2>
+    <pre class="code">class axi_txn;
+  rand bit        wr;            // 1 = write, 0 = read
+  rand bit [3:0]  id;
+  rand bit [31:0] addr;
+  rand bit [7:0]  len;
+  rand bit [2:0]  size;
+  rand bit [1:0]  burst;
+  rand bit [31:0] data[];
+  rand bit [3:0]  strb[];
+       bit [1:0]  resp;          // filled by monitor
+
+  constraint c_legal {
+    burst != 2'b11;
+    size  &lt;= 3'b010;                     // 32-bit bus
+    burst == 2'b10 -&gt; len inside {1, 3, 7, 15};
+    burst == 2'b00 -&gt; len &lt; 16;
+    burst == 2'b10 -&gt; addr % (1 &lt;&lt; size) == 0;
+  }
+  constraint c_range {
+    addr &lt; DEPTH * 4;
+    burst == 2'b01 -&gt;
+      (addr % 4096) + (len + 1) * (1 &lt;&lt; size) &lt;= 4096;
+    burst == 2'b01 -&gt; addr + (len + 1) * (1 &lt;&lt; size) &lt;= DEPTH * 4;
+  }
+  constraint c_arrays {
+    data.size() == len + 1;
+    strb.size() == len + 1;
+  }
+  constraint c_dist {
+    len dist {0 := 20, [1:15] :/ 50, [16:255] :/ 30};
+    solve burst before len;
+  }
+endclass</pre>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">3</span>Environment &amp; test</h2>
+    <pre class="code">class axi_env;
+  generator  gen;   driver     drv;
+  monitor    mon;   scoreboard sb;
+  mailbox #(axi_txn) gen2drv = new();
+  mailbox #(axi_txn) mon2sb  = new();
+
+  function new(virtual axi_if vif);
+    gen = new(gen2drv);
+    drv = new(gen2drv, vif);
+    mon = new(mon2sb,  vif);
+    sb  = new(mon2sb);
+  endfunction
+
+  task run(int n);
+    gen.count = n;
+    fork
+      gen.run();  drv.run();
+      mon.run();  sb.run();
+    join_none
+    wait (sb.checked == n);       // every txn seen &amp; checked
+    sb.report();                  // PASS only if errors == 0
+  endtask
+endclass</pre>
+    <div class="lbl">Driver loop</div>
+    <pre class="code">task run();
+  forever begin
+    gen2drv.get(t);
+    if (t.wr) axi_write(t);   // from sheet 9
+    else      axi_read (t);   // from sheet 10
+  end
+endtask</pre>
+    <div class="tip"><b>End of test</b> = scoreboard has checked N transactions, not "generator finished" — otherwise the last responses are never compared.</div>
+  </div>
+</div>
+
+<!-- ROW 3: monitor + scoreboard + coverage -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>Monitor</h2>
+    <pre class="code">task run();
+  forever begin
+    @(posedge vif.ACLK);
+    if (vif.AWVALID &amp;&amp; vif.AWREADY)
+      wr = capture_aw();            // addr, len…
+    if (vif.WVALID &amp;&amp; vif.WREADY) begin
+      wr.data.push_back(vif.WDATA);
+      wr.strb.push_back(vif.WSTRB);
+    end
+    if (vif.BVALID &amp;&amp; vif.BREADY) begin
+      wr.resp = vif.BRESP;
+      mon2sb.put(wr);               // write complete
+    end
+    // same pattern for AR / R → put on RLAST
+  end
+endtask</pre>
+    <ul class="ul">
+      <li>Samples <b>only on handshake edges</b>.</li>
+      <li>Sends a write only after B, a read only after RLAST.</li>
+      <li>Also a good home for protocol checks (or bind SVA).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Scoreboard</h2>
+    <pre class="code">bit [7:0] mem_model [bit [31:0]];   // sparse bytes
+
+task run();
+  forever begin
+    mon2sb.get(t);
+    a = t.addr;
+    for (int b = 0; b &lt;= t.len; b++) begin
+      for (int l = 0; l &lt; 4; l++) begin
+        ba = (a &amp; ~32'h3) + l;          // byte address
+        if (!in_beat(a, t.size, l)) continue;
+        if (t.wr &amp;&amp; t.strb[b][l])
+          mem_model[ba] = t.data[b][8*l +: 8];
+        else if (!t.wr &amp;&amp; mem_model.exists(ba) &amp;&amp;
+                 t.data[b][8*l +: 8] !== mem_model[ba])
+          error(t, b, l);
+      end
+      a = next_addr(a, t.len, t.size, t.burst);
+    end
+    checked++;
+  end
+endtask</pre>
+    <div class="p">Byte-level model handles narrow, unaligned and partial-strobe writes for free. <span class="m">next_addr()</span> is the same function as the RTL — but write it <b>independently</b> in the TB, or a shared bug passes.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>Functional coverage</h2>
+    <pre class="code">covergroup axi_cg with function sample(axi_txn t);
+  cp_dir   : coverpoint t.wr;
+  cp_burst : coverpoint t.burst
+             { bins b[] = {0, 1, 2}; }
+  cp_len   : coverpoint t.len {
+    bins one     = {0};
+    bins short_  = {[1:15]};
+    bins sixteen = {15};
+    bins long_   = {[16:254]};
+    bins max     = {255}; }
+  cp_size  : coverpoint t.size { bins s[] = {[0:2]}; }
+  cp_align : coverpoint (t.addr % (1 &lt;&lt; t.size) == 0);
+  cp_strb  : coverpoint t.strb[0] {
+    bins full = {4'hF}; bins none = {4'h0};
+    bins part = default; }
+  x_bls    : cross cp_burst, cp_len, cp_size;
+  x_dir    : cross cp_dir, cp_burst;
+endgroup</pre>
+    <div class="p">Plus <b>protocol coverage</b> sampled in the monitor: READY back-pressure on each channel, W-before-AW, read and write overlapping.</div>
+  </div>
+</div>
+
+<!-- ROW 4: test plan + bugs -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">7</span>Test plan</h2>
+    <table class="t">
+      <tr><th>Test</th><th>How</th><th>Targets</th></tr>
+      <tr><td><b>sanity</b></td><td>Directed single write + read</td><td>Bring-up, connectivity</td></tr>
+      <tr><td><b>burst_types</b></td><td>Each of FIXED / INCR / WRAP, write then read</td><td>Address generator</td></tr>
+      <tr><td><b>cross_burst</b></td><td>Write WRAP, read INCR and vice versa</td><td>Address order bugs</td></tr>
+      <tr><td><b>strobe</b></td><td>Random WSTRB, narrow &amp; unaligned</td><td>Byte enables, lanes</td></tr>
+      <tr><td><b>backpressure</b></td><td>Random BREADY / RREADY delays</td><td>Hold &amp; stable rules</td></tr>
+      <tr><td><b>concurrent</b></td><td>Write and read threads in parallel</td><td>FSM independence</td></tr>
+      <tr><td><b>max_len</b></td><td>LEN 255 INCR at a 4 KB-aligned base</td><td>Counters, RLAST</td></tr>
+      <tr><td><b>random</b></td><td>N = 10 000 random txns, many seeds</td><td>Everything; closes coverage</td></tr>
+      <tr><td><b>reset</b></td><td>Assert ARESETn mid-burst, then resume</td><td>Reset recovery</td></tr>
+      <tr><td><b>error</b></td><td>Out-of-range address, BURST = 11</td><td>SLVERR handling</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">8</span>Bugs this TB is built to catch</h2>
+    <table class="t">
+      <tr><th>Bug</th><th>Caught by</th></tr>
+      <tr><td>WRAP wraps at wrong boundary</td><td>cross_burst + scoreboard</td></tr>
+      <tr><td>Beat-2 address not aligned</td><td>strobe (unaligned) + scoreboard</td></tr>
+      <tr><td>WSTRB ignored</td><td>strobe + byte model</td></tr>
+      <tr><td>RLAST off by one</td><td>axi_read RLAST check</td></tr>
+      <tr><td>RDATA changes while stalled</td><td>backpressure + SVA</td></tr>
+      <tr><td>BID / RID wrong</td><td>Driver ID checks</td></tr>
+      <tr><td>Read blocks while writing</td><td>concurrent (timeout)</td></tr>
+      <tr><td>Counter overflow at LEN 255</td><td>max_len</td></tr>
+      <tr><td>Stuck after reset</td><td>reset test</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ROW 5: signoff + uvm + QA -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">✓</span>Sign-off checklist</h2>
+    <div class="chk"><span class="box"></span><span>All tests pass on many seeds, <b>0 errors</b></span></div>
+    <div class="chk"><span class="box"></span><span><b>Functional coverage 100%</b> of the plan (or waivers justified)</span></div>
+    <div class="chk"><span class="box"></span><span><b>Code coverage</b> reviewed: line, branch, toggle, FSM states &amp; transitions</span></div>
+    <div class="chk"><span class="box"></span><span>All <b>SVA</b> protocol assertions enabled and passing</span></div>
+    <div class="chk"><span class="box"></span><span>No X on outputs after reset</span></div>
+    <div class="chk"><span class="box"></span><span>Every bug filed, fixed and re-run in regression</span></div>
+    <div class="chk"><span class="box"></span><span>Scoreboard actually compared N transactions (no silent pass)</span></div>
+    <div class="tip"><b>100% coverage with 0 checks</b> is a classic trap — always confirm the checker ran.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">U</span>Same TB in UVM</h2>
+    <table class="t">
+      <tr><th>This TB</th><th>UVM</th></tr>
+      <tr><td>axi_txn</td><td>uvm_sequence_item</td></tr>
+      <tr><td>generator</td><td>uvm_sequence + uvm_sequencer</td></tr>
+      <tr><td>driver</td><td>uvm_driver</td></tr>
+      <tr><td>monitor</td><td>uvm_monitor + analysis port</td></tr>
+      <tr><td>mailbox</td><td>TLM port / analysis FIFO</td></tr>
+      <tr><td>scoreboard</td><td>uvm_scoreboard</td></tr>
+      <tr><td>driver + monitor + sqr</td><td>uvm_agent</td></tr>
+      <tr><td>env</td><td>uvm_env</td></tr>
+      <tr><td>test / N</td><td>uvm_test + config_db</td></tr>
+      <tr><td>wait(checked == n)</td><td>objections</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 50%">Question</th><th>Answer</th></tr>
+      <tr><td>Why a monitor if the driver knows what it sent?</td><td>Driver could be wrong; monitor shows what really happened on the pins.</td></tr>
+      <tr><td>Why a byte-level model?</td><td>Handles strobes, narrow and unaligned without special cases.</td></tr>
+      <tr><td>How do you know you're done?</td><td>Coverage closed, 0 errors over seeds, code coverage reviewed.</td></tr>
+      <tr><td>Random or directed?</td><td>Directed for bring-up, constrained random to close coverage.</td></tr>
+      <tr><td>Biggest risk in this TB?</td><td>Sharing address logic with RTL — common-mode bugs pass.</td></tr>
+      <tr><td>How to end the test cleanly?</td><td>Wait for scoreboard count (UVM: objections).</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

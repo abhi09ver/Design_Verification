@@ -1,0 +1,38 @@
+--- rtl/tomasulo_pkg.sv	2026-10-15 23:41:13.585064649 +0000
++++ solutions/tomasulo_pkg.sv	2026-10-15 23:41:13.588019473 +0000
+@@ -107,6 +107,7 @@
+     // Multiply/Divide (RV32M) instructions
+     parameter mul   = 17'b0000001_000_0110011;      // multiplication
+     parameter mulh  = 17'b0000001_001_0110011;      // multiplication high signed
++    parameter mulhsu= 17'b0000001_010_0110011;      // FIX-5: was missing (signed x unsigned high)
+     parameter mulhu = 17'b0000001_011_0110011;      // multiplication high unsigned
+     parameter div   = 17'b0000001_100_0110011;      // division
+     parameter divu  = 17'b0000001_101_0110011;      // division unsigned
+@@ -355,7 +356,7 @@
+                 get_instr_type = INSTR_TYPE_ALU;
+             lb[16:0], lh[16:0], lw[16:0], lbu[16:0], lhu[16:0], sb[16:0], sh[16:0], sw[16:0]:
+                 get_instr_type = INSTR_TYPE_MEM;
+-            mul[16:0], mulh[16:0], mulhu[16:0], div[16:0], divu[16:0], rem[16:0], remu[16:0]:
++            mul[16:0], mulh[16:0], mulhsu[16:0], mulhu[16:0], div[16:0], divu[16:0], rem[16:0], remu[16:0]:
+                 get_instr_type = INSTR_TYPE_MULDIV;
+             beq[16:0], bne[16:0], blt[16:0], bge[16:0], bltu[16:0], bgeu[16:0], jal[16:0], jalr[16:0]:
+                 get_instr_type = INSTR_TYPE_BRANCH;
+@@ -381,7 +382,7 @@
+     
+     // Function to check if operation is a multiply/divide
+     function automatic logic is_muldiv(logic [OPERATION_WIDTH-1:0] operation);
+-        is_muldiv = (operation == mul) || (operation == mulh) || (operation == mulhu) ||
++        is_muldiv = (operation == mul) || (operation == mulh) || (operation == mulhsu) || (operation == mulhu) ||
+                     (operation == div) || (operation == divu) || (operation == rem) || (operation == remu);
+     endfunction
+     
+@@ -410,4 +411,7 @@
+     
+ endpackage
+ 
+-`endif // TOMASULO_PKG_SV 
+\ No newline at end of file
++`endif // TOMASULO_PKG_SV 
++`ifndef MULDIV_HELPERS
++`define MULDIV_HELPERS
++`endif

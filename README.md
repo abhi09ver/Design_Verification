@@ -3,6 +3,24 @@
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
+> **Before an interview:** start at **[`axi-interview-prep/`](axi-interview-prep/)**. It has 15 one-page AXI and DV cheat sheets (PDF, PNG, HTML), runnable AXI slave code with a self-checking testbench, an SVA checker, and the bug-and-fix story for the AXI4-Lite UVM project. The all-in-one PDF is [`AXI_DV_Interview_Cheatsheets_ALL.pdf`](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf).
+
+## SV Course Sessions — solved exercises with runnable code
+
+**[sv-course-sessions/](sv-course-sessions/)**: worked solutions to the exercise slides from five SystemVerilog / UVM course sessions, each compiled and simulated. **Quick revision: [CHEATSHEET.md](sv-course-sessions/CHEATSHEET.md).**
+
+| Session | Topic | Notes |
+|---|---|---|
+| 1 | SV data structures: arrays, queues, assoc arrays, strings (23 Qs) | [notes](sv-course-sessions/01-session1-sv-data-structures.md) |
+| 2 | Layered UVM agent for AXI and AHB | [notes](sv-course-sessions/02-session2-layered-axi-ahb-agent.md) |
+| 3 | Dual-port APB driver / monitor / scoreboard (no UVM) | [notes](sv-course-sessions/03-session3-apb-dual-port-testbench.md) |
+| 4 | 12 constraint questions (4KB, alignment, primes, patterns…) | [notes](sv-course-sessions/04-session4-constraints.md) |
+| 5 | APB functional coverage model | [notes](sv-course-sessions/05-session5-apb-functional-coverage.md) |
+
+## Aligner UVM course: one-stop interview folder
+
+**[aligner-uvm-course/](aligner-uvm-course/README.md)** covers Cristian Slav's UVM course on the Aligner DUT end to end: a [last-30-minutes cheatsheet](aligner-uvm-course/cheatsheets/LAST-30-MINUTES.md), [7 STAR stories](aligner-uvm-course/cheatsheets/STORIES.md), [244 interview Q&A](aligner-uvm-course/INTERVIEW-QA.md), chapter notes, the interactive study pages, and the full RTL + UVM project code.
+
 ## Challenges
 
 | # | Topic | Key concepts |
@@ -32,7 +50,25 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 23 | [SystemVerilog OOP for Verification](23-systemverilog-oop.md) | Handles vs. objects, shallow vs. deep copy, virtual vs. non-virtual dispatch, `$cast`, abstract & interface classes, `kind` field vs. subclasses, constraint inheritance, how UVM uses OOP |
 | 24 | [Early-Career Expectations & Portfolio Project](24-early-career-dv-expectations-and-portfolio.md) | Realistic expectations, simulator vendors, free tools, writing a bug report, IEEE 1685 = IP-XACT, step-by-step portfolio project that produces real interview stories |
 | 25 | [Debugging Persistent & Intermittent Failures](25-debugging-intermittent-and-persistent-failures.md) | Reproducibility, non-determinism sources, failure signatures, first divergence, record-and-replay, git bisect, discriminating experiments, deadlock wait-for chains, "passes interactively, fails in batch" |
+| 26 | [Out-of-Order CPU: The 3-Wide Tomasulo Core](26-ooo-cpu-tomasulo-core.md) | Rename/RAT, ROB as physical register, RS wakeup/select, CDB + completion buffer, in-order commit, LSQ, circular-buffer age, branch-recovery capstone |
+| 27 | [Bug Hunt: 15 Real Bugs in an OOO Core](27-ooo-core-bug-hunt.md) | Bug masking, sentinel bugs (tag 0, way 3), lost instructions, memory ordering & SQ deadlock, Booth −2M overflow, frontend back-pressure, STAR bug stories |
+| 28 | [Verifying a CPU: ISS, Random, SVA, Mutation](28-cpu-verification-iss-random-sva-mutation.md) | Commit-trace scoreboard vs ISS, liveness watchdog, hazard-dense random, bind SVA, unit tests, mutation testing, random blind spots, perf checks |
+| 29 | [Pipelined In-Order CPU (Pequeno-style 5-stage)](29-pipelined-in-order-cpu-hazards.md) | RV32I formats, valid/stall/flush, forwarding distances 1–3, load-use interlock, static prediction, cycles = 4 + N + stalls + 2×flushes |
+| 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
+| 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
+| 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
+| 33 | [MMU & SMMUv3 One-Stop Kit](33-mmu-smmu/README.md) | VA/PA, pages, multi-level walks, TLB/ASID/VMID, stage 1/2 nesting, StreamID→STE→CD, command/event queues, CMD_SYNC, stall vs terminate, ATS/PRI/PASID, RME/GPC, invalidation-aware scoreboard; Python model, SVA, UVM code, fresher + senior HTML guides |
 | 34 | [CoreSight Debug and Trace](34-coresight-debug-and-trace.md) | DAP (DP/AP), ID registers, ROM tables & discovery, topology detection, APB/ATB/event/channel/timestamp, authentication, trace formatter, CTI/CTM, power & reset, vplan, SVA, bug catalog. **Kit:** [`coresight/`](coresight/README.md) (beginner + senior HTML guides, Python golden models, SVA checkers, [cheat sheet](coresight/CHEATSHEET.md)) |
+
+## CPU Lab (code for challenges 26–31)
+
+[`cpu-lab/`](cpu-lab/README.md) holds the runnable code: the uploaded 3-wide OOO core with all fixes and per-file patches, a commit-scoreboard testbench with an ISS, 20 directed bug hunts, a random generator, bind-based SVA, a 5-stage pipelined RV32I CPU (pq5), an 11-level beginner RTL ladder, and three interactive HTML study pages in [`cpu-lab/pages/`](cpu-lab/pages/). Runs on free Verilator.
+
+## Protocol Packs
+
+| Pack | Contents |
+|---|---|
+| [UART DV Interview Pack](uart-dv-pack/README.md) | 10 one-page cards (PDF / HTML / PNG), text cheatsheet, UVM reference environment: baud, framing, parity, break, overrun, idle-line checks |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
@@ -55,6 +91,8 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | RAL computes offsets itself; the predictor detects mismatches | Offsets are specified/generated; mismatches are found on checked reads | 15 |
 | TLM has cycle latency; analysis FIFOs give back-pressure | TLM is untimed; analysis FIFOs are unbounded | 16 |
 | PCIe: "no TLP when credits = 0" | Credits are per type; an advertised 0 means infinite | 17 |
+| "The test passes, so the design works" | A hand-written checker on one program passed 33/33 while 15 bugs remained; an assertion fired on that same passing test | 27, 28 |
+| Out-of-order means results can be written to registers as soon as they're ready | Execution is out of order; commit to architectural state stays in program order (precise state) | 26, 30 |
 
 ## How each file is structured
 

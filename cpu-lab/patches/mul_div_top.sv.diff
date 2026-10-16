@@ -1,0 +1,133 @@
+--- rtl/mul_div_top.sv	2026-10-15 23:41:13.585234525 +0000
++++ solutions/mul_div_top.sv	2026-10-15 23:41:13.588163536 +0000
+@@ -47,82 +47,57 @@
+     // Fast Dispatch Logic: Combinational dispatch for zero-cycle latency
+     // Priority is given to the lowest ROB index (oldest instruction)
+     // -------------------------------------------------------------------------
+-    always_comb begin
+-        if (rst || flush) begin
+-            for (muldiv = 0; muldiv < no_MulDiv_units; muldiv++) begin
+-                muldiv_in_mul[muldiv] = '{default: '0};
+-                muldiv_in_div[muldiv] = '{default: '0};
+-            end
+-            muldiv_ex_valid_mul = '0;
+-            muldiv_ex_valid_div = '0;
+-            rs_clear = '0;
+-        end else begin
+-            // Initialize outputs
+-            for (muldiv = 0; muldiv < no_MulDiv_units; muldiv++) begin
+-                muldiv_in_mul[muldiv] = '{default: '0};
+-                muldiv_in_div[muldiv] = '{default: '0};
+-            end
+-            muldiv_ex_valid_mul = '0;
+-            muldiv_ex_valid_div = '0;
+-            rs_clear = '0;
++    // FIX-5: issue/select rewritten.
++    //  Original bug: the DIVIDE search loop ran for EVERY slot (it sat outside the
++    //  'even slot' if), and wrote muldiv_in_div[slot_idx/2]. Slots 0 and 1 both map to
++    //  unit 0, so a 2nd ready DIV overwrote the 1st one - whose RS entry had already been
++    //  cleared (rs_clear) -> instruction silently lost -> ROB deadlock.
++    //  Also only mul/mulh/div/rem were ever selected: mulhsu/mulhu/divu/remu sat in the
++    //  RS forever.
++    //  New structure: one MUL port + one DIV port per unit, each picks the OLDEST ready
++    //  candidate of its class that nobody else picked this cycle.
++    function automatic logic is_mul_class(input logic [16:0] op);
++        return (op == mul) || (op == mulh) || (op == mulhsu) || (op == mulhu);
++    endfunction
++    function automatic logic is_div_class(input logic [16:0] op);
++        return (op == div) || (op == divu) || (op == rem) || (op == remu);
++    endfunction
+ 
+-            if (!stall) begin
+-                // Priority encoder-based dispatch
+-                muldiv_allocated_this_cycle = '0;
+-                // Dispatch operations to all slots (2*no_MulDiv_units total)
+-                for (slot_idx = 0; slot_idx < 2*no_MulDiv_units; slot_idx++) begin
+-                    muldiv_min_rob = {32{1'b1}}; // Initialize to max value
+-                    muldiv_min_idx = -1;
+-                    // Check if this is an even slot (multiply) or odd slot (divide)
+-                    if (!slot_idx[0]) begin
+-                        // Even slot - dispatch multiply operation
+-                        for (muldiv_rs = 0; muldiv_rs < no_RS_muldiv; muldiv_rs++) begin
+-                            if (muldiv_rs_in[muldiv_rs].busy && 
+-                                muldiv_rs_in[muldiv_rs].ready && 
+-                                !muldiv_allocated_this_cycle[muldiv_rs]) begin
+-                                // Check if it's a multiply operation
+-                                if (muldiv_rs_in[muldiv_rs].operation == mul || 
+-                                    muldiv_rs_in[muldiv_rs].operation == mulh) begin
+-                                    if (muldiv_rs_in[muldiv_rs].ROB_index < muldiv_min_rob) begin
+-                                        muldiv_min_rob = muldiv_rs_in[muldiv_rs].ROB_index;
+-                                        muldiv_min_idx = muldiv_rs;
+-                                    end
+-                                end
+-                            end
+-                        end
+-                        // Assign the highest priority multiply operation found
+-                        if (muldiv_min_idx != -1) begin
+-                            muldiv_in_mul[slot_idx/2] = muldiv_rs_in[muldiv_min_idx];
+-                            muldiv_allocated_this_cycle[muldiv_min_idx] = 1;
+-                            rs_clear[muldiv_min_idx] = 1'b1; // Signal to clear this RS entry
+-                        end
+-                    end
+-                    // Odd slot - dispatch divide operation
+-                    for (muldiv_rs = 0; muldiv_rs < no_RS_muldiv; muldiv_rs++) begin
+-                        if (muldiv_rs_in[muldiv_rs].busy && 
+-                            muldiv_rs_in[muldiv_rs].ready && 
+-                            !muldiv_allocated_this_cycle[muldiv_rs]) begin
+-                            // Check if it's a divide operation
+-                            if (muldiv_rs_in[muldiv_rs].operation == div || 
+-                                muldiv_rs_in[muldiv_rs].operation == rem) begin
+-                                if (muldiv_rs_in[muldiv_rs].ROB_index < muldiv_min_rob) begin
+-                                    muldiv_min_rob = muldiv_rs_in[muldiv_rs].ROB_index;
+-                                    muldiv_min_idx = muldiv_rs;
+-                                end
+-                            end
+-                        end
+-                    end
+-                    // Assign the highest priority divide operation found
+-                    if (muldiv_min_idx != -1) begin
+-                        muldiv_in_div[slot_idx/2] = muldiv_rs_in[muldiv_min_idx];
+-                        muldiv_allocated_this_cycle[muldiv_min_idx] = 1;
+-                        rs_clear[muldiv_min_idx] = 1'b1; // Signal to clear this RS entry
++    always_comb begin
++        for (muldiv = 0; muldiv < no_MulDiv_units; muldiv++) begin
++            muldiv_in_mul[muldiv] = '{default: '0};
++            muldiv_in_div[muldiv] = '{default: '0};
++        end
++        muldiv_ex_valid_mul = '0;
++        muldiv_ex_valid_div = '0;
++        rs_clear = '0;
++        muldiv_allocated_this_cycle = '0;
++        if (!(rst || flush) && !stall) begin
++            for (slot_idx = 0; slot_idx < 2*no_MulDiv_units; slot_idx++) begin
++                muldiv_min_rob = {32{1'b1}};
++                muldiv_min_idx = -1;
++                for (muldiv_rs = 0; muldiv_rs < no_RS_muldiv; muldiv_rs++) begin
++                    if (muldiv_rs_in[muldiv_rs].busy && muldiv_rs_in[muldiv_rs].ready &&
++                        !muldiv_allocated_this_cycle[muldiv_rs] &&
++                        (slot_idx[0] ? is_div_class(muldiv_rs_in[muldiv_rs].operation)
++                                     : is_mul_class(muldiv_rs_in[muldiv_rs].operation)) &&
++                        muldiv_rs_in[muldiv_rs].ROB_index < muldiv_min_rob) begin
++                        // NOTE: raw ROB_index compare is NOT true age once the ROB wraps.
++                        // It only affects fairness here (not correctness) - see course module 5.
++                        muldiv_min_rob = muldiv_rs_in[muldiv_rs].ROB_index;
++                        muldiv_min_idx = muldiv_rs;
+                     end
+                 end
+-                // Set units as busy if any operation was assigned
+-                for (muldiv = 0; muldiv < no_MulDiv_units; muldiv++) begin
+-                    muldiv_ex_valid_mul[muldiv] = (muldiv_in_mul[muldiv].operation != 0);
+-                    muldiv_ex_valid_div[muldiv] = (muldiv_in_div[muldiv].operation != 0);
++                if (muldiv_min_idx != -1) begin
++                    if (slot_idx[0]) begin
++                        muldiv_in_div[slot_idx/2]       = muldiv_rs_in[muldiv_min_idx];
++                        muldiv_ex_valid_div[slot_idx/2] = 1'b1;
++                    end else begin
++                        muldiv_in_mul[slot_idx/2]       = muldiv_rs_in[muldiv_min_idx];
++                        muldiv_ex_valid_mul[slot_idx/2] = 1'b1;
++                    end
++                    muldiv_allocated_this_cycle[muldiv_min_idx] = 1'b1;
++                    rs_clear[muldiv_min_idx] = 1'b1;
+                 end
+             end
+         end

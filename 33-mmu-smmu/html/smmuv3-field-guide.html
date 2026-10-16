@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SMMUv3 Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: datasheet column with a sticky chapter rail; diagrams as schematic plates. */
+:root{
+  --bg:#f3f5f4; --paper:#fbfcfb; --ink:#14201d; --muted:#56635f; --rule:#cfd8d4;
+  --accent:#0b6e63; --accent-soft:#d6ebe7; --signal:#b4520e; --signal-soft:#f6e4d6;
+  --s1:#2d5fa8; --s1-soft:#dde7f5; --s2:#7a3e9d; --s2-soft:#ece0f3; --bad:#a3262a; --bad-soft:#f5dcdc;
+  --code-bg:#e8eeeb;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --paper:#151d1b; --ink:#e3ebe8; --muted:#9aa9a4; --rule:#2c3a36;
+  --accent:#4fc2b2; --accent-soft:#163a35; --signal:#f0a061; --signal-soft:#3d2817;
+  --s1:#7fa9ea; --s1-soft:#1b2a40; --s2:#c69be0; --s2-soft:#2e2038; --bad:#ef7f82; --bad-soft:#3d1c1e;
+  --code-bg:#1d2826; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --paper:#151d1b; --ink:#e3ebe8; --muted:#9aa9a4; --rule:#2c3a36;
+  --accent:#4fc2b2; --accent-soft:#163a35; --signal:#f0a061; --signal-soft:#3d2817;
+  --s1:#7fa9ea; --s1-soft:#1b2a40; --s2:#c69be0; --s2-soft:#2e2038; --bad:#ef7f82; --bad-soft:#3d1c1e;
+  --code-bg:#1d2826; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:210px minmax(0,1fr);gap:40px;padding-block:28px 80px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.rail{display:none}}
+.rail{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;padding-top:12px;font-family:var(--f-display);font-size:13px}
+.rail a{display:flex;gap:8px;color:var(--muted);text-decoration:none;padding:4px 0;border-left:2px solid transparent;padding-left:10px}
+.rail a:hover,.rail a:focus-visible{color:var(--accent);border-left-color:var(--accent);outline:none}
+.rail b{font-family:var(--f-mono);font-weight:400;color:var(--accent);width:20px}
+main{min-width:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.1;margin:0}
+h1{font-size:clamp(40px,7vw,76px);font-weight:800;font-stretch:72%;letter-spacing:-.01em}
+h2{font-size:32px;font-weight:750;font-stretch:80%}
+h3{font-size:18px;font-weight:700;margin-bottom:6px}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hero{padding-block:8px 28px;border-bottom:2px solid var(--ink);display:grid;gap:14px}
+.hero .lede{font-size:20px;color:var(--muted);max-width:60ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border:1px solid var(--rule);border-radius:3px;background:var(--paper)}
+section{padding-block:44px 8px;display:grid;gap:18px;scroll-margin-top:12px}
+.sec-head{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:18px}
+.sec-num{font-family:var(--f-mono);font-size:13px;color:var(--signal)}
+.plate{background:var(--paper);border:1px solid var(--rule);padding:18px;overflow-x:auto}
+.plate svg{display:block;width:100%;min-width:680px;height:auto}
+.plate figcaption{font-family:var(--f-display);font-size:13px;color:var(--muted);margin-top:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:var(--paper);border:1px solid var(--rule);padding:14px 16px;min-width:0}
+.card p,.card li{font-size:15.5px}
+.card ul{margin:6px 0 0;padding-left:18px}
+.key{border-left:4px solid var(--signal);background:var(--signal-soft);padding:12px 16px;font-size:16px;max-width:none}
+.key strong{font-family:var(--f-display)}
+code,.mono{font-family:var(--f-mono);font-size:.84em;background:var(--code-bg);padding:1px 5px;border-radius:2px}
+.tbl{overflow-x:auto;border:1px solid var(--rule);background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--f-display);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+td.m{font-family:var(--f-mono);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:2px}
+.t-c{background:var(--bad-soft);color:var(--bad)} .t-f{background:var(--signal-soft);color:var(--signal)} .t-e{background:var(--accent-soft);color:var(--accent)}
+.timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border:1px solid var(--rule);background:var(--paper)}
+.tl{padding:12px 14px;border-right:1px solid var(--rule);min-width:0}
+.tl:last-child{border-right:0}
+.tl .v{font-family:var(--f-display);font-weight:800;font-size:22px;font-stretch:75%}
+.tl .a{font-family:var(--f-mono);font-size:11px;color:var(--accent)}
+.tl ul{margin:6px 0 0;padding-left:16px;font-size:14px;line-height:1.45}
+.seq{display:grid;gap:0;border:1px solid var(--rule);background:var(--paper)}
+.seq div{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:9px 12px;border-bottom:1px solid var(--rule);font-size:15.5px}
+.seq div:last-child{border-bottom:0}
+.seq span{font-family:var(--f-mono);color:var(--signal);font-size:13px;padding-top:2px}
+/* calculators */
+.tool{background:var(--paper);border:1px solid var(--accent);padding:16px;display:grid;gap:12px}
+.tool label{font-family:var(--f-display);font-size:13px;color:var(--muted);display:grid;gap:4px}
+.tool input,.tool select{font-family:var(--f-mono);font-size:15px;padding:7px 9px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:3px;min-width:0}
+.tool input:focus-visible,.tool select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.bits{display:flex;flex-wrap:wrap;gap:4px}
+.bits .f{font-family:var(--f-mono);font-size:12.5px;padding:6px 8px;border-radius:3px;display:grid;gap:2px;min-width:72px}
+.bits .f b{font-size:15px}
+.lv0{background:var(--s1-soft);color:var(--s1)} .lv1{background:var(--s2-soft);color:var(--s2)} .lv2{background:var(--accent-soft);color:var(--accent)} .lv3{background:var(--signal-soft);color:var(--signal)} .off{background:var(--code-bg);color:var(--muted)}
+.big{font-family:var(--f-display);font-weight:800;font-size:44px;font-stretch:75%;color:var(--accent);line-height:1}
+.walkgrid{display:grid;gap:2px;width:max-content;max-width:100%}
+.walkgrid i{width:18px;height:18px;display:block;border-radius:2px}
+.wg-s2{background:var(--s2)} .wg-s1{background:var(--s1)} .wg-x{background:var(--rule)}
+/* q&a */
+details{background:var(--paper);border:1px solid var(--rule);border-bottom:0}
+details:last-of-type{border-bottom:1px solid var(--rule)}
+summary{cursor:pointer;padding:11px 14px;font-family:var(--f-display);font-weight:600;font-size:16px;list-style:none;display:grid;grid-template-columns:46px minmax(0,1fr);gap:8px}
+summary::-webkit-details-marker{display:none}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+summary .qn{font-family:var(--f-mono);font-weight:400;font-size:13px;color:var(--signal);padding-top:2px}
+details[open] summary{color:var(--accent)}
+details .ans{padding:0 14px 14px 68px;font-size:15.5px;display:grid;gap:8px}
+@media (max-width:560px){details .ans{padding-left:14px}}
+.qa-tools{display:flex;gap:8px;flex-wrap:wrap}
+button{font-family:var(--f-display);font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:3px;cursor:pointer}
+button:hover{background:var(--accent-soft)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* svg tokens */
+.sv-box{fill:var(--paper);stroke:var(--ink);stroke-width:1.3}
+.sv-acc{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.3}
+.sv-s1{fill:var(--s1-soft);stroke:var(--s1);stroke-width:1.3}
+.sv-s2{fill:var(--s2-soft);stroke:var(--s2);stroke-width:1.3}
+.sv-sig{fill:var(--signal-soft);stroke:var(--signal);stroke-width:1.3}
+.sv-bad{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.3}
+.sv-line{stroke:var(--ink);stroke-width:1.3;fill:none}
+.sv-dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 4}
+.sv-t{fill:var(--ink);font-family:var(--f-display);font-size:13px}
+.sv-tb{fill:var(--ink);font-family:var(--f-display);font-size:14px;font-weight:700}
+.sv-m{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.sv-a{fill:var(--accent);font-family:var(--f-mono);font-size:11px}
+.sv-s{fill:var(--signal);font-family:var(--f-mono);font-size:11px}
+.sv-arrow{fill:var(--ink)}
+.foot{margin-top:50px;border-top:1px solid var(--rule);padding-top:14px;font-size:13px;color:var(--muted);font-family:var(--f-display)}
+@media (prefers-reduced-motion:no-preference){details[open] .ans{animation:fade .18s ease-out}@keyframes fade{from{opacity:.4}to{opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="rail" aria-label="Chapters">
+  <a href="#model"><b>00</b>Mental model</a>
+  <a href="#place"><b>01</b>System placement</a>
+  <a href="#versions"><b>02</b>Versions</a>
+  <a href="#config"><b>03</b>STE &amp; CD walk</a>
+  <a href="#xlat"><b>04</b>Translation &amp; nesting</a>
+  <a href="#queues"><b>05</b>Queues &amp; commands</a>
+  <a href="#faults"><b>06</b>Faults &amp; events</a>
+  <a href="#tlb"><b>07</b>TLBs &amp; invalidation</a>
+  <a href="#pcie"><b>08</b>PCIe: ATS, PRI, PASID</a>
+  <a href="#sec"><b>09</b>Security, virt, RME</a>
+  <a href="#uarch"><b>10</b>Inside the design</a>
+  <a href="#dv"><b>11</b>Verification playbook</a>
+  <a href="#drill"><b>12</b>Interview drill</a>
+  <a href="#cheat"><b>13</b>Cheat sheet</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Arm IHI 0070 H.a · SMMUv3.0 – v3.5 · Senior CPU / SoC DV prep</div>
+  <h1>SMMUv3 Field Guide</h1>
+  <p class="lede">The System MMU in one sitting: how it is built, how software drives it, where it breaks, and how a senior verification engineer would test it. Every section ends in something you can say in an interview.</p>
+  <div class="meta"><span class="chip">StreamID ≤ 32b</span><span class="chip">SubstreamID/PASID ≤ 20b</span><span class="chip">ASID/VMID 16b</span><span class="chip">STE 64B · CD 64B</span><span class="chip">CMD 16B · EVT 32B · PRI 16B</span></div>
+</header>
+
+<!-- 00 -->
+<section id="model">
+  <div class="sec-head"><div class="sec-num">00</div><h2>The mental model</h2></div>
+  <p>A CPU core's MMU translates addresses for the software running on that core. The SMMU does the same job for <em>everything else</em> that does DMA: GPUs, NICs, NVMe, accelerators, PCIe endpoints. It uses the same VMSAv8-64 page tables as the CPU, so the OS or hypervisor can share one set of tables between a process and its device.</p>
+  <div class="grid3">
+    <div class="card"><h3>"Who is asking?"</h3><p>On a CPU the answer is the current EL plus <code>TTBR</code>/<code>ASID</code>/<code>VMID</code> held in system registers. On an SMMU it arrives <em>with each transaction</em>: a <b>StreamID</b> (which device) and an optional <b>SubstreamID</b> (which process context, the PCIe PASID).</p></div>
+    <div class="card"><h3>Config lives in memory</h3><p>SMMUv2 used a fixed number of register "context banks". v3 moved all per-device state into in-memory tables (Stream Table → STE → CD), so it scales to thousands of devices and contexts. This is why v3 is <b>not backward compatible</b> with v2.</p></div>
+    <div class="card"><h3>Software talks through queues</h3><p>No register-poke per operation. Software writes commands into a <b>Command queue</b> in memory; the SMMU writes faults into an <b>Event queue</b> and PCIe page requests into a <b>PRI queue</b>. All are circular buffers with PROD/CONS pointers.</p></div>
+  </div>
+  <p class="key"><strong>One-line answer:</strong> "SMMUv3 is an IOMMU that maps a transaction's StreamID to an STE, optionally its SubstreamID to a CD, then performs a stage-1 (VA→IPA) and/or stage-2 (IPA→PA) walk using Armv8/v9 page tables, with in-memory configuration and queue-based software interface."</p>
+</section>
+
+<!-- 01 -->
+<section id="place">
+  <div class="sec-head"><div class="sec-num">01</div><h2>Where it sits in the SoC</h2></div>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 900 360" role="img" aria-label="SoC diagram: devices send transactions with StreamID and SubstreamID through TBUs to a TCU, then to the interconnect and memory; CPUs broadcast TLB maintenance">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <!-- devices -->
+      <rect x="20" y="30" width="150" height="54" class="sv-box"/><text x="34" y="54" class="sv-tb">GPU / Accelerator</text><text x="34" y="72" class="sv-m">AXI / ACE-Lite DMA</text>
+      <rect x="20" y="112" width="150" height="54" class="sv-box"/><text x="34" y="136" class="sv-tb">NIC / NVMe</text><text x="34" y="154" class="sv-m">platform device</text>
+      <rect x="20" y="194" width="150" height="74" class="sv-sig"/><text x="34" y="218" class="sv-tb">PCIe Root Complex</text><text x="34" y="236" class="sv-m">EPs with ATC</text><text x="34" y="254" class="sv-m">RID→SID, PASID→SSID</text>
+      <!-- TBUs -->
+      <rect x="250" y="40" width="110" height="40" class="sv-acc"/><text x="270" y="65" class="sv-tb">TBU 0</text>
+      <rect x="250" y="122" width="110" height="40" class="sv-acc"/><text x="270" y="147" class="sv-tb">TBU 1</text>
+      <rect x="250" y="210" width="110" height="40" class="sv-acc"/><text x="270" y="235" class="sv-tb">TBU 2</text>
+      <path d="M170 57H248" class="sv-line" marker-end="url(#ar)"/><path d="M170 139H248" class="sv-line" marker-end="url(#ar)"/><path d="M170 230H248" class="sv-line" marker-end="url(#ar)"/>
+      <text x="178" y="50" class="sv-a">VA+SID+SSID</text>
+      <!-- TCU -->
+      <rect x="430" y="60" width="200" height="190" class="sv-box"/>
+      <text x="446" y="84" class="sv-tb">TCU (translation control)</text>
+      <text x="446" y="108" class="sv-t">• Config cache (STE/CD)</text>
+      <text x="446" y="128" class="sv-t">• Walk cache + main TLB</text>
+      <text x="446" y="148" class="sv-t">• Page-table walkers</text>
+      <text x="446" y="168" class="sv-t">• CMDQ / EVTQ / PRIQ</text>
+      <text x="446" y="188" class="sv-t">• Registers, IRQ/MSI</text>
+      <text x="446" y="208" class="sv-t">• ATS translation service</text>
+      <text x="446" y="232" class="sv-m">miss path from TBUs</text>
+      <path d="M360 60 L428 110" class="sv-dash" marker-end="url(#ar)"/><path d="M360 142 L428 150" class="sv-dash" marker-end="url(#ar)"/><path d="M360 230 L428 200" class="sv-dash" marker-end="url(#ar)"/>
+      <!-- interconnect & memory -->
+      <rect x="700" y="30" width="180" height="250" class="sv-box"/>
+      <text x="716" y="56" class="sv-tb">Interconnect</text><text x="716" y="74" class="sv-m">CHI / AXI / DVM</text>
+      <rect x="716" y="190" width="148" height="72" class="sv-acc"/><text x="730" y="214" class="sv-tb">DRAM</text><text x="730" y="232" class="sv-m">page tables, STE/CD,</text><text x="730" y="248" class="sv-m">queues, data</text>
+      <path d="M360 52 C 520 20, 620 30, 698 50" class="sv-line" marker-end="url(#ar)"/><text x="520" y="30" class="sv-s">PA + attributes (hit path)</text>
+      <path d="M630 150H698" class="sv-line" marker-end="url(#ar)"/><text x="634" y="142" class="sv-m">walks</text>
+      <!-- CPUs -->
+      <rect x="430" y="290" width="200" height="54" class="sv-s1"/><text x="446" y="314" class="sv-tb">CPU cluster (PE MMUs)</text><text x="446" y="332" class="sv-m">TLBI broadcast (BTM/DVM)</text>
+      <path d="M530 290V252" class="sv-dash" marker-end="url(#ar)"/>
+      <path d="M630 316 H790 V282" class="sv-line" marker-end="url(#ar)"/>
+      <text x="20" y="300" class="sv-m">SEC_SID tags Secure vs Non-secure (and Realm with RME)</text>
+      <text x="20" y="318" class="sv-m">ATS Translated txns may bypass translation (EATS)</text>
+    </svg>
+    <figcaption>The TBU/TCU split is how Arm's CoreLink MMU-600/700 are built (linked by the DTI protocol). The architecture spec does not mandate it, but interviewers expect you to know it.</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card"><h3>Inputs on every transaction</h3><ul><li><b>StreamID</b>: device identity (PCIe: from Requester ID). Size from <code>SMMU_IDR1.SIDSIZE</code>.</li><li><b>SubstreamID + SSV</b>: process context (PCIe PASID). Size from <code>SSIDSIZE</code>.</li><li><b>SEC_SID</b>: which Security state's tables to use.</li><li>Address, R/W/X, privilege, memory attributes.</li></ul></div>
+    <div class="card"><h3>Outputs</h3><ul><li>Translated PA (with NS/PA space), transformed memory attributes and shareability, MPAM PARTID/PMG.</li><li>Or an abort / RAZ-WI termination, or a <b>stall</b> waiting for software.</li><li>Event records, PRI requests, interrupts or MSIs.</li></ul></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="versions">
+  <div class="sec-head"><div class="sec-num">02</div><h2>Version map</h2></div>
+  <p>Read <code>SMMU_AIDR[7:0]</code>: 0x00 = v3.0 … 0x05 = v3.5. Each minor revision tracks a CPU architecture revision. Expect "what changed in v3.x?" questions.</p>
+  <div class="timeline">
+    <div class="tl"><div class="v">v3.0</div><div class="a">Armv8.1</div><ul><li>In-memory STE/CD</li><li>S1, S2, nested</li><li>16b ASID/VMID, 49b VA</li><li>ATS, PRI, BTM</li><li>HTTU (AF/dirty)</li><li>PMCG</li></ul></div>
+    <div class="tl"><div class="v">v3.1</div><div class="a">Armv8.2</div><ul><li>52b VA/IPA/PA (64K)</li><li>PBHA</li><li>S2 XN for EL0/EL1</li><li>Stash / destructive read</li></ul></div>
+    <div class="tl"><div class="v">v3.2</div><div class="a">Armv8.4</div><ul><li>MPAM</li><li>Secure EL2 / Secure S2</li><li>Range TLBI + level hint</li><li>BBML1/2</li><li>VMS, S2FWB, STT</li></ul></div>
+    <div class="tl"><div class="v">v3.3</div><div class="a">Armv8.5 + RME</div><ul><li>ECMDQ</li><li>E0PD, MTE rules</li><li>ATS config error recording</li><li>RME: Root, GPC</li><li>RME DA: Realm, DPT, MEC</li></ul></div>
+    <div class="tl"><div class="v">v3.4</div><div class="a">Armv8.7 / 8.9</div><ul><li>LPA2 (52b on 4K/16K)</li><li>S1/S2 permission indirection</li><li>S2 POE, THE</li><li>D128, 56b PA</li><li>HAFT, PASID on Translated</li></ul></div>
+    <div class="tl"><div class="v">v3.5</div><div class="a">Armv9.5</div><ul><li>HDBSS, HACDBS</li><li>Direct-mode ECMDQ</li><li>vSID → pSID</li><li>GPC2/3, GDI</li><li>MTCOMB</li></ul></div>
+  </div>
+  <p class="key"><strong>Verification angle:</strong> every optional feature has an <code>SMMU_IDRn</code> bit. A configurable testbench reads the ID registers and gates stimulus, coverage and checks on them, so one environment covers every product configuration.</p>
+</section>
+
+<!-- 03 -->
+<section id="config">
+  <div class="sec-head"><div class="sec-num">03</div><h2>The configuration walk: STE and CD</h2></div>
+  <p>Before any page-table walk, the SMMU has to find out <em>how</em> to translate. That is a lookup indexed by the transaction's IDs.</p>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 960 300" role="img" aria-label="Configuration lookup chain from STRTAB_BASE through L1STD, STE, L1CD, CD, to stage 1 and stage 2 page tables">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <rect x="10" y="40" width="130" height="62" class="sv-box"/><text x="22" y="64" class="sv-tb">STRTAB_BASE</text><text x="22" y="82" class="sv-m">+ _CFG: FMT,</text><text x="22" y="96" class="sv-m">LOG2SIZE, SPLIT</text>
+      <rect x="175" y="40" width="120" height="62" class="sv-acc"/><text x="187" y="64" class="sv-tb">L1STD</text><text x="187" y="82" class="sv-m">8B, idx SID[hi]</text><text x="187" y="96" class="sv-m">(2-level only)</text>
+      <rect x="330" y="30" width="150" height="82" class="sv-acc"/><text x="342" y="54" class="sv-tb">STE (64B)</text><text x="342" y="72" class="sv-m">V, Config[2:0]</text><text x="342" y="86" class="sv-m">S1ContextPtr, S1CDMax</text><text x="342" y="100" class="sv-m">S2TTB, S2VMID, EATS</text>
+      <rect x="515" y="40" width="120" height="62" class="sv-s1"/><text x="527" y="64" class="sv-tb">L1CD</text><text x="527" y="82" class="sv-m">8B, idx SSID[hi]</text><text x="527" y="96" class="sv-m">(2-level only)</text>
+      <rect x="670" y="30" width="140" height="82" class="sv-s1"/><text x="682" y="54" class="sv-tb">CD (64B)</text><text x="682" y="72" class="sv-m">TTB0/TTB1, TCR</text><text x="682" y="86" class="sv-m">ASID, MAIR, AA64</text><text x="682" y="100" class="sv-m">A / R / S fault bits</text>
+      <rect x="840" y="40" width="110" height="62" class="sv-s1"/><text x="852" y="64" class="sv-tb">Stage 1</text><text x="852" y="82" class="sv-m">VA → IPA</text>
+      <path d="M140 71H173" class="sv-line" marker-end="url(#ar2)"/><path d="M295 71H328" class="sv-line" marker-end="url(#ar2)"/><path d="M480 71H513" class="sv-line" marker-end="url(#ar2)"/><path d="M635 71H668" class="sv-line" marker-end="url(#ar2)"/><path d="M810 71H838" class="sv-line" marker-end="url(#ar2)"/>
+      <rect x="330" y="180" width="150" height="62" class="sv-s2"/><text x="342" y="204" class="sv-tb">Stage 2 tables</text><text x="342" y="222" class="sv-m">IPA → PA, VMID-tagged</text>
+      <path d="M405 112V178" class="sv-line" marker-end="url(#ar2)"/><text x="412" y="150" class="sv-m">S2TTB</text>
+      <rect x="840" y="180" width="110" height="62" class="sv-acc"/><text x="852" y="204" class="sv-tb">PA</text><text x="852" y="222" class="sv-m">+ attrs</text>
+      <path d="M895 102V178" class="sv-line" marker-end="url(#ar2)"/><text x="900" y="150" class="sv-m">IPA</text>
+      <path d="M480 211H838" class="sv-dash" marker-end="url(#ar2)"/><text x="560" y="203" class="sv-s">every S1 table / CD fetch is an IPA → also goes through S2</text>
+      <text x="10" y="280" class="sv-a">Linear table: STE = BASE + SID×64.   2-level: L1 index = SID[n:SPLIT], L2 index = SID[SPLIT-1:0] (SPLIT = 6, 8 or 10).</text>
+    </svg>
+    <figcaption>Config lookup is cached in a configuration cache. Software must invalidate it (CMD_CFGI_*) after editing an STE or CD.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>STE.Config</th><th>Stage 1</th><th>Stage 2</th><th>Typical use</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0b000</td><td colspan="2">Abort, <b>no event recorded</b></td><td>Device quarantined / not yet assigned</td></tr>
+      <tr><td class="m">0b100</td><td>Bypass</td><td>Bypass</td><td>Trusted device, identity mapping</td></tr>
+      <tr><td class="m">0b101</td><td>Translate</td><td>Bypass</td><td>Host OS DMA API / SVA on bare metal</td></tr>
+      <tr><td class="m">0b110</td><td>Bypass</td><td>Translate</td><td>Device passthrough to a VM, guest has no IOMMU</td></tr>
+      <tr><td class="m">0b111</td><td>Translate</td><td>Translate</td><td>Nested: guest owns S1 (vIOMMU), hypervisor owns S2</td></tr>
+    </tbody></table></div>
+  <div class="grid2">
+    <div class="card"><h3>STE fields that come up in interviews</h3><ul>
+      <li><code>V</code>: invalid STE gives <b>C_BAD_STE</b>.</li>
+      <li><code>S1Fmt</code>, <code>S1CDMax</code>: linear or 2-level CD table, number of SSIDs.</li>
+      <li><code>S1DSS</code>: what a transaction <em>without</em> an SSID does when substreams are on: terminate, bypass S1, or use CD 0.</li>
+      <li><code>STRW</code>: StreamWorld (NS-EL1, EL2, EL2-E2H, Secure, EL3) tags TLB entries.</li>
+      <li><code>EATS</code>: ATS off, full ATS, or split-stage.</li>
+      <li><code>S1STALLD</code>, <code>S2S</code>, <code>S2R</code>: stall and record controls.</li>
+      <li><code>SHCFG</code>, <code>MTCFG/MemAttr</code>, <code>INSTCFG</code>, <code>PRIVCFG</code>: input attribute overrides.</li></ul></div>
+    <div class="card"><h3>CD fields that come up</h3><ul>
+      <li><code>TTB0/TTB1</code>, <code>T0SZ/T1SZ</code>, <code>TG0/TG1</code>, <code>IPS</code>: same meaning as the CPU's <code>TCR_EL1</code>/<code>TTBRn_EL1</code>.</li>
+      <li><code>ASID</code>, <code>ASET</code>: TLB tag; ASET decides whether broadcast TLBI from PEs applies.</li>
+      <li><code>MAIR</code>, <code>AA64</code>, <code>ENDI</code>, <code>HA/HD</code> (HTTU).</li>
+      <li><code>A</code>, <code>R</code>, <code>S</code>: abort vs RAZ/WI on terminate, record events, stall on fault.</li>
+      <li>A CD with <code>V=0</code> or illegal fields gives <b>C_BAD_CD</b>; SSID ≥ 2<sup>S1CDMax</sup> gives <b>C_BAD_SUBSTREAMID</b>.</li></ul></div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="xlat">
+  <div class="sec-head"><div class="sec-num">04</div><h2>Translation and nesting</h2></div>
+  <p>The page-table format is VMSAv8-64 (plus the LPAE VMSAv8-32 format at S1 if supported). Granule decides how the VA is sliced into level indices. Try it:</p>
+  <div class="tool" aria-label="VA slicer">
+    <div class="row">
+      <label for="va">Input VA (hex)<input id="va" value="0x0000_7F12_3456_7ABC" size="24"></label>
+      <label for="gran">Granule<select id="gran"><option value="12">4KB</option><option value="14">16KB</option><option value="16">64KB</option></select></label>
+      <label for="vab">VA bits (64 − TnSZ)<select id="vab"><option>39</option><option selected>48</option><option>52</option></select></label>
+    </div>
+    <div class="bits" id="bits" aria-live="polite"></div>
+    <p id="bitnote" style="font-size:14.5px;color:var(--muted)"></p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Stage 1 (VA → IPA)</h3><p>Owned by the OS (or a guest OS). Tables from the CD. Tagged by <b>ASID</b>. TTB0 for the lower VA range, TTB1 for the upper. Permissions: AP, UXN/PXN, PAN, and in v3.4 permission indirection (PIE).</p></div>
+    <div class="card"><h3>Stage 2 (IPA → PA)</h3><p>Owned by the hypervisor. Table base from the STE (<code>S2TTB</code>). Tagged by <b>VMID</b>. Controls VM isolation, S2AP, memory type combining (or FWB), and in v3.4 permission overlays.</p></div>
+  </div>
+  <div class="tool" aria-label="Nested walk cost">
+    <div class="row">
+      <label for="n1">Stage-1 levels<select id="n1"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></label>
+      <label for="n2">Stage-2 levels<select id="n2"><option value="0">0 (S2 bypass)</option><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option></select></label>
+      <div><div class="big" id="walkn">24</div><div style="font-family:var(--f-display);font-size:13px;color:var(--muted)">memory accesses for one cold miss</div></div>
+    </div>
+    <div class="walkgrid" id="wg" aria-hidden="true"></div>
+    <p style="font-size:14.5px;color:var(--muted)">Formula: <code>(n+1)(m+1) − 1</code>. Each of the n S1 descriptor addresses, plus the final output IPA, is an IPA that needs its own m-level S2 walk. Purple = S2 reads, blue = S1 descriptor reads. The CD fetch also needs an S2 walk when nested. This is why walk caches (caching partial S1 and S2 results) matter so much for performance.</p>
+  </div>
+  <p class="key"><strong>Say this:</strong> "Nested translation multiplies walk latency. Designs cache intermediate S2 results and partial S1 walks separately, and the verification plan must cover invalidation of each cache type independently, because a stale walk-cache entry gives a wrong PA without any fault."</p>
+</section>
+
+<!-- 05 -->
+<section id="queues">
+  <div class="sec-head"><div class="sec-num">05</div><h2>Queues and commands</h2></div>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 880 230" role="img" aria-label="Circular queue with PROD and CONS indices and wrap bits">
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <text x="20" y="28" class="sv-tb">Command queue (2^LOG2SIZE entries × 16B)</text>
+      <g>
+        <rect x="20" y="60" width="90" height="50" class="sv-box"/><rect x="110" y="60" width="90" height="50" class="sv-box"/>
+        <rect x="200" y="60" width="90" height="50" class="sv-sig"/><rect x="290" y="60" width="90" height="50" class="sv-sig"/><rect x="380" y="60" width="90" height="50" class="sv-sig"/>
+        <rect x="470" y="60" width="90" height="50" class="sv-box"/><rect x="560" y="60" width="90" height="50" class="sv-box"/><rect x="650" y="60" width="90" height="50" class="sv-box"/>
+        <text x="216" y="90" class="sv-t">TLBI_VA</text><text x="306" y="90" class="sv-t">ATC_INV</text><text x="400" y="90" class="sv-t">SYNC</text>
+        <text x="60" y="128" class="sv-m">0</text><text x="150" y="128" class="sv-m">1</text><text x="240" y="128" class="sv-m">2</text><text x="330" y="128" class="sv-m">3</text><text x="420" y="128" class="sv-m">4</text><text x="510" y="128" class="sv-m">5</text><text x="600" y="128" class="sv-m">6</text><text x="690" y="128" class="sv-m">7</text>
+      </g>
+      <path d="M245 160V114" class="sv-line" marker-end="url(#ar3)"/><text x="205" y="178" class="sv-a">CONS (SMMU reads)</text>
+      <path d="M515 160V114" class="sv-line" marker-end="url(#ar3)"/><text x="475" y="178" class="sv-s">PROD (SW writes)</text>
+      <text x="20" y="208" class="sv-m">Index = {WRAP bit, RD/WR[LOG2SIZE-1:0]}.  Empty: PROD == CONS (wrap equal).  Full: indices equal, wrap bits differ.</text>
+      <text x="760" y="70" class="sv-t">EVTQ, PRIQ:</text><text x="760" y="88" class="sv-m">SMMU = producer</text><text x="760" y="104" class="sv-m">SW = consumer</text>
+    </svg>
+    <figcaption>The wrap bit is the classic "N entries usable, not N−1" trick. Overflow on EVTQ/PRIQ toggles <code>PROD.OVFLG</code>; software acknowledges by copying it to <code>CONS.OVACKFLG</code>.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Opcode</th><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0x01 / 0x02</td><td class="m">PREFETCH_CONFIG / _ADDR</td><td>Hint only. Errors found while prefetching are <b>never</b> reported.</td></tr>
+      <tr><td class="m">0x03 / 0x04</td><td class="m">CFGI_STE / _STE_RANGE</td><td>Invalidate cached STE(s); Leaf flag limits scope.</td></tr>
+      <tr><td class="m">0x05 / 0x06</td><td class="m">CFGI_CD / _CD_ALL</td><td>Invalidate cached CD for one SSID or all SSIDs of a stream.</td></tr>
+      <tr><td class="m">0x10–0x13</td><td class="m">TLBI_NH_ALL / ASID / VA / VAA</td><td>Non-hyp (EL1) stage-1 invalidation, scoped by VMID.</td></tr>
+      <tr><td class="m">0x20–0x23</td><td class="m">TLBI_EL2_*</td><td>EL2 / EL2-E2H StreamWorld.</td></tr>
+      <tr><td class="m">0x28 / 0x2A</td><td class="m">TLBI_S12_VMALL / S2_IPA</td><td>Everything for a VMID / one IPA at stage 2.</td></tr>
+      <tr><td class="m">0x30</td><td class="m">TLBI_NSNH_ALL</td><td>All Non-secure non-hyp entries, all VMIDs.</td></tr>
+      <tr><td class="m">0x40</td><td class="m">ATC_INV</td><td>Send ATS Invalidate Request to the endpoint's ATC.</td></tr>
+      <tr><td class="m">0x41</td><td class="m">PRI_RESP</td><td>Respond to a Page Request Group (Success / Invalid / Failure).</td></tr>
+      <tr><td class="m">0x44 / 0x45</td><td class="m">RESUME / STALL_TERM</td><td>Retry or abort a stalled transaction.</td></tr>
+      <tr><td class="m">0x46</td><td class="m">CMD_SYNC</td><td>Barrier: completes only when all earlier commands, their side effects and outstanding ATC invalidations are done. Signals via MSI, SEV or nothing (poll CONS).</td></tr>
+      <tr><td class="m">0x50–0x60</td><td class="m">TLBI_S_*</td><td>Secure-state variants.</td></tr>
+      <tr><td class="m">0x70 / 0x73</td><td class="m">DPTI_ALL / DPTI_PA</td><td>Device Permission Table invalidation (RME DA).</td></tr>
+    </tbody></table></div>
+  <div class="grid2">
+    <div>
+      <h3>Canonical sequence: change an STE</h3>
+      <div class="seq"><div><span>1</span>Write STE (respecting the 64-bit single-copy atomicity rules; make V=0 or a safe state first if many fields change).</div><div><span>2</span><code>CMD_CFGI_STE</code> (SID, Leaf)</div><div><span>3</span><code>CMD_SYNC</code>, wait for completion</div><div><span>4</span>Now the new config is guaranteed to be used.</div></div>
+    </div>
+    <div>
+      <h3>Canonical sequence: unmap a page</h3>
+      <div class="seq"><div><span>1</span>Write invalid PTE, DSB</div><div><span>2</span><code>CMD_TLBI_NH_VA</code> (ASID, VA) or broadcast TLBI</div><div><span>3</span><code>CMD_SYNC</code> (SMMU TLBs clean)</div><div><span>4</span><code>CMD_ATC_INV</code> then <code>CMD_SYNC</code> (device ATC clean). ATC after TLB, or the device can refill the ATC from a stale TLB.</div></div>
+    </div>
+  </div>
+  <div class="card"><h3>Command errors</h3><p>On a bad command the SMMU stops consuming, sets <code>CMDQ_CONS.ERR</code> = <code>CERROR_ILL</code>, <code>CERROR_ABT</code> (abort reading the queue) or <code>CERROR_ATC_INV_SYNC</code> (ATC invalidation timed out), and raises <code>GERROR.CMDQ_ERR</code>. CONS points at the bad command. Software fixes it and acknowledges through <code>GERRORN</code>. ECMDQ (v3.3) gives each CPU or VM its own queue to remove lock contention.</p></div>
+</section>
+
+<!-- 06 -->
+<section id="faults">
+  <div class="sec-head"><div class="sec-num">06</div><h2>Faults, events and the stall model</h2></div>
+  <p>Each incoming transaction can cause <b>at most one</b> event: either a configuration error (<span class="tag t-c">C_</span>) or, if the config is valid, one translation fault (<span class="tag t-f">F_</span>). Errors are found only when a real transaction uses the structure, never on prefetch.</p>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Fault handling flow: terminate or stall">
+      <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <rect x="10" y="95" width="120" height="50" class="sv-box"/><text x="24" y="124" class="sv-tb">Fault detected</text>
+      <rect x="180" y="95" width="130" height="50" class="sv-sig"/><text x="192" y="117" class="sv-tb">Stall enabled?</text><text x="192" y="134" class="sv-m">CD.S / STE.S2S</text>
+      <path d="M130 120H178" class="sv-line" marker-end="url(#ar4)"/>
+      <rect x="370" y="20" width="200" height="60" class="sv-s1"/><text x="384" y="44" class="sv-tb">STALL</text><text x="384" y="62" class="sv-m">hold txn, always record (Stall=1)</text>
+      <rect x="370" y="160" width="200" height="60" class="sv-bad"/><text x="384" y="184" class="sv-tb">TERMINATE</text><text x="384" y="202" class="sv-m">CD.A: abort vs RAZ/WI · CD.R: record</text>
+      <path d="M310 110 L368 55" class="sv-line" marker-end="url(#ar4)"/><text x="318" y="72" class="sv-a">yes</text>
+      <path d="M310 132 L368 186" class="sv-line" marker-end="url(#ar4)"/><text x="318" y="176" class="sv-a">no</text>
+      <rect x="630" y="10" width="250" height="34" class="sv-acc"/><text x="644" y="32" class="sv-t">CMD_RESUME(Retry) → re-translate</text>
+      <rect x="630" y="54" width="250" height="34" class="sv-bad"/><text x="644" y="76" class="sv-t">CMD_RESUME(Abort) / CMD_STALL_TERM</text>
+      <path d="M570 42H628" class="sv-line" marker-end="url(#ar4)"/><path d="M570 60 L628 72" class="sv-line" marker-end="url(#ar4)"/>
+      <rect x="630" y="160" width="250" height="60" class="sv-box"/><text x="644" y="184" class="sv-t">Event record (32B) → EVTQ</text><text x="644" y="202" class="sv-m">if queue writable, else dropped</text>
+      <path d="M570 190H628" class="sv-line" marker-end="url(#ar4)"/>
+    </svg>
+    <figcaption>Stall support is advertised by <code>SMMU_IDR0.STALL_MODEL</code> (both / terminate only / stall forced). Do not stall PCIe traffic: posted writes can deadlock the fabric. PCIe uses PRI instead.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Event</th><th>Kind</th><th>Typical cause (and a test idea)</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0x01</td><td class="m">F_UUT</td><td><span class="tag t-f">fault</span></td><td>Unsupported upstream transaction type (e.g. atomics/stash not supported).</td></tr>
+      <tr><td class="m">0x02</td><td class="m">C_BAD_STREAMID</td><td><span class="tag t-c">config</span></td><td>SID beyond table size or L1STD invalid. Sweep SID across the 2-level split boundary.</td></tr>
+      <tr><td class="m">0x03</td><td class="m">F_STE_FETCH</td><td><span class="tag t-f">fault</span></td><td>External abort fetching the STE. Inject bus error on config read.</td></tr>
+      <tr><td class="m">0x04</td><td class="m">C_BAD_STE</td><td><span class="tag t-c">config</span></td><td>V=0, reserved Config, illegal field combinations.</td></tr>
+      <tr><td class="m">0x05</td><td class="m">F_BAD_ATS_TREQ</td><td><span class="tag t-f">fault</span></td><td>ATS Translation Request not permitted by config.</td></tr>
+      <tr><td class="m">0x06</td><td class="m">F_STREAM_DISABLED</td><td><span class="tag t-f">fault</span></td><td>Non-substream txn with S1DSS = terminate.</td></tr>
+      <tr><td class="m">0x07</td><td class="m">F_TRANSL_FORBIDDEN</td><td><span class="tag t-f">fault</span></td><td>ATS Translated txn to a stream where it is not allowed.</td></tr>
+      <tr><td class="m">0x08</td><td class="m">C_BAD_SUBSTREAMID</td><td><span class="tag t-c">config</span></td><td>SSID out of range, or SSID present but substreams off.</td></tr>
+      <tr><td class="m">0x09</td><td class="m">F_CD_FETCH</td><td><span class="tag t-f">fault</span></td><td>External abort fetching CD.</td></tr>
+      <tr><td class="m">0x0A</td><td class="m">C_BAD_CD</td><td><span class="tag t-c">config</span></td><td>CD invalid or illegal (e.g. bad TxSZ, unsupported granule).</td></tr>
+      <tr><td class="m">0x0B</td><td class="m">F_WALK_EABT</td><td><span class="tag t-f">fault</span></td><td>External abort on a page-table read.</td></tr>
+      <tr><td class="m">0x10</td><td class="m">F_TRANSLATION</td><td><span class="tag t-f">fault</span></td><td>Invalid descriptor or out of TxSZ range. Most common.</td></tr>
+      <tr><td class="m">0x11</td><td class="m">F_ADDR_SIZE</td><td><span class="tag t-f">fault</span></td><td>Output address beyond IPS/OAS.</td></tr>
+      <tr><td class="m">0x12</td><td class="m">F_ACCESS</td><td><span class="tag t-f">fault</span></td><td>AF = 0 and HTTU not updating AF.</td></tr>
+      <tr><td class="m">0x13</td><td class="m">F_PERMISSION</td><td><span class="tag t-f">fault</span></td><td>Write to RO, exec of XN, privileged checks.</td></tr>
+      <tr><td class="m">0x20</td><td class="m">F_TLB_CONFLICT</td><td><span class="tag t-f">fault</span></td><td>Multiple TLB hits (BBM violated). Remap block↔page without BBM.</td></tr>
+      <tr><td class="m">0x21</td><td class="m">F_CFG_CONFLICT</td><td><span class="tag t-f">fault</span></td><td>Conflicting config cache entries.</td></tr>
+      <tr><td class="m">0x24</td><td class="m">E_PAGE_REQUEST</td><td><span class="tag t-e">misc</span></td><td>Speculative page request hint, asynchronous to traffic.</td></tr>
+      <tr><td class="m">0x25</td><td class="m">F_VMS_FETCH</td><td><span class="tag t-f">fault</span></td><td>Abort fetching the Virtual Machine Structure.</td></tr>
+    </tbody></table></div>
+  <div class="grid2">
+    <div class="card"><h3>Stage reporting</h3><p>Translation faults record which stage faulted (<code>S2</code> bit), the input address, and for S2 faults the IPA. A fault during the S2 walk of an S1 table address is a stage-2 fault with <code>CLASS</code> = TT fetch. Interviewers love: "the CD fetch faulted at S2, what is reported?"</p></div>
+    <div class="card"><h3>Global errors (GERROR)</h3><p>Not per-transaction: CMDQ_ERR, EVTQ_ABT_ERR, PRIQ_ABT_ERR, MSI write aborts, SFM_ERR (service failure mode). <code>GERROR</code> vs <code>GERRORN</code> uses a toggle handshake: a bit is active when the two differ. While EVTQ_ABT_ERR is unacknowledged, the Event queue is not writable.</p></div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="tlb">
+  <div class="sec-head"><div class="sec-num">07</div><h2>TLBs, tagging and invalidation</h2></div>
+  <div class="grid3">
+    <div class="card"><h3>What tags an entry</h3><p><b>StreamWorld</b> (from STE.STRW + Security state) + <b>VMID</b> + <b>ASID</b> (or global, nG=0) + VA. Entries are not tagged by StreamID, so two streams sharing a CD/ASID share TLB entries. All SMMU translations are treated as Common (CnP does not apply).</p></div>
+    <div class="card"><h3>Broadcast TLB maintenance</h3><p>With <code>IDR0.BTM</code>, the SMMU snoops the CPUs' <code>TLBI</code> over DVM. This lets the SMMU share page tables with a process (SVA) without the driver issuing SMMU commands. <code>CR2.PTM</code> opts out. <code>CD.ASET</code> marks ASIDs that should ignore broadcast.</p></div>
+    <div class="card"><h3>Caches you must invalidate</h3><ul><li>Config cache: STE, CD, VMS → CMD_CFGI_*</li><li>TLB + walk cache → CMD_TLBI_*</li><li>Device ATC → CMD_ATC_INV</li><li>GPT / DPT caches → TLBI PA / DPTI</li></ul><p>TLBI by VA also invalidates walk-cache entries for that VA unless <code>Leaf=1</code>.</p></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Break-before-make</h3><p>Changing size, output address or attributes of a live mapping needs: invalid → TLBI → SYNC → new entry. Skipping it can hit two entries at once and give <b>F_TLB_CONFLICT</b> or unpredictable results. v3.2 BBML1/2 relaxes this for block-size changes.</p></div>
+    <div class="card"><h3>HTTU (hardware AF/dirty)</h3><p>With <code>CD.HA/HD</code> the SMMU sets the Access flag and clears the read-only bit for DBM pages with an atomic read-modify-write on the descriptor. Verify: atomicity against concurrent CPU updates, no update on a faulting txn, correct stage, and S2 dirty for VM live migration (v3.5 adds HDBSS logging).</p></div>
+  </div>
+  <p class="key"><strong>Classic interview trap:</strong> "Is a TLBI enough before reusing a freed page?" No. You also need CMD_SYNC (or DSB with BTM), the ATC invalidate for ATS devices, and the SYNC after that. Until the SYNC completes, in-flight transactions may still use the old translation.</p>
+</section>
+
+<!-- 08 -->
+<section id="pcie">
+  <div class="sec-head"><div class="sec-num">08</div><h2>PCIe: ATS, PRI and PASID</h2></div>
+  <div class="grid3">
+    <div class="card"><h3>ATS: device-side TLB</h3><p>The endpoint sends a <b>Translation Request</b>; the SMMU walks and returns a <b>Translation Completion</b>; the device caches it in its ATC and later issues <b>Translated</b> transactions (AT=Translated) that skip SMMU translation. Controlled by <code>STE.EATS</code>. Split-stage (EATS=0b10) returns IPA only and the SMMU still does stage 2. <code>CR0.ATSCHK</code> makes the SMMU check Translated traffic against STE.EATS.</p></div>
+    <div class="card"><h3>PRI: demand paging for DMA</h3><p>A device that got a "not present" ATS completion sends a <b>Page Request</b> (grouped into a PRG; the "Last" bit closes the group). The SMMU queues it in the <b>PRI queue</b>; the OS faults the page in and replies with <code>CMD_PRI_RESP</code>. On PRI queue overflow the SMMU auto-responds so the device is not left waiting.</p></div>
+    <div class="card"><h3>PASID = SubstreamID</h3><p>PASID selects the CD, so one device can work in many process address spaces (Shared Virtual Addressing). v3.4 adds PASID on Translated transactions. A GPU/accelerator interview will ask how SVA, ATS and PRI fit together.</p></div>
+  </div>
+  <div class="seq">
+    <div><span>1</span>Device: ATS Translation Request (VA, PASID)</div>
+    <div><span>2</span>SMMU: STE/CD lookup, walk. No mapping → completion with R=W=0 (not a fault event).</div>
+    <div><span>3</span>Device: PRI Page Request(s) → SMMU writes 16B entries to PRIQ, IRQ to OS</div>
+    <div><span>4</span>OS: handle_mm_fault, map page, <code>CMD_PRI_RESP</code>(Success)</div>
+    <div><span>5</span>Device: re-issue Translation Request, cache in ATC, send Translated DMA</div>
+    <div><span>6</span>Later unmap: TLBI → SYNC → ATC_INV → SYNC (with completion timeout → CERROR_ATC_INV_SYNC)</div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="sec">
+  <div class="sec-head"><div class="sec-num">09</div><h2>Security, virtualization and RME</h2></div>
+  <div class="grid2">
+    <div class="card"><h3>Security states</h3><p><code>SEC_SID</code> selects the programming interface. Secure has its own register page (<code>SMMU_S_*</code>), Stream Table, queues and Event queue. Non-secure faults never produce Secure events and the reverse. v3.2 adds Secure stage 2 (SEL2).</p></div>
+    <div class="card"><h3>Virtualization</h3><p>Hypervisor owns S2 and the STE; guest owns S1 tables and CDs (nested). v3.2 VMS gives per-VM structures. v3.3 ECMDQ and v3.5 vSID→pSID translation and direct-mode ECMDQ let a guest's vIOMMU driver issue commands with less trapping.</p></div>
+    <div class="card"><h3>RME: Granule Protection Checks</h3><p>An SMMU with RME has a <b>Root</b> interface (<code>SMMU_ROOT_*</code>, <code>GPCEN</code>). Every output PA is checked against the Granule Protection Table, same format as the CPU's FEAT_RME. A GPC fault on a client access is returned to the device <b>like an external abort and is not written to the Event queue</b>; details go to <code>SMMU_ROOT_GPF_FAR</code>. An ATS request hitting a GPC fault gets Completer Abort.</p></div>
+    <div class="card"><h3>RME DA: Realm + DPT</h3><p>Realm programming interface for assigning devices to Realms (CCA). The <b>Device Permission Table</b> checks PA granules against VMIDs for ATS Translated traffic (which skipped translation), giving VM isolation even when the device holds translations. Invalidate with <code>CMD_DPTI_*</code>.</p></div>
+  </div>
+  <p class="key"><strong>Security-focused verification:</strong> the bugs that matter most here are isolation leaks: a Non-secure stream reaching Secure PA space, a stale TLB entry crossing a VMID or StreamWorld, Translated ATS traffic from an untrusted device bypassing checks, or GPC applied to the input address instead of the output. Build negative tests and assertions for each.</p>
+</section>
+
+<!-- 10 -->
+<section id="uarch">
+  <div class="sec-head"><div class="sec-num">10</div><h2>Inside the design</h2></div>
+  <p>The spec defines behaviour. Microarchitecture is where most bugs live. For a senior role, be ready to sketch this pipeline and point at the hazards.</p>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 960 220" role="img" aria-label="TBU and TCU microarchitecture pipeline">
+      <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <rect x="10" y="70" width="110" height="56" class="sv-box"/><text x="22" y="94" class="sv-tb">Ingress</text><text x="22" y="112" class="sv-m">AXI slave port</text>
+      <rect x="150" y="70" width="120" height="56" class="sv-acc"/><text x="162" y="94" class="sv-tb">Micro-TLB</text><text x="162" y="112" class="sv-m">fully assoc, 1 cyc</text>
+      <rect x="300" y="70" width="120" height="56" class="sv-acc"/><text x="312" y="94" class="sv-tb">TBU main TLB</text><text x="312" y="112" class="sv-m">set assoc</text>
+      <rect x="450" y="20" width="160" height="56" class="sv-s1"/><text x="462" y="44" class="sv-tb">Config cache</text><text x="462" y="62" class="sv-m">STE / CD</text>
+      <rect x="450" y="120" width="160" height="56" class="sv-s2"/><text x="462" y="144" class="sv-tb">Walk cache + walkers</text><text x="462" y="162" class="sv-m">N parallel PTWs</text>
+      <rect x="650" y="70" width="140" height="56" class="sv-sig"/><text x="662" y="94" class="sv-tb">Miss tracker</text><text x="662" y="112" class="sv-m">merge same-page misses</text>
+      <rect x="820" y="70" width="130" height="56" class="sv-box"/><text x="832" y="94" class="sv-tb">Egress</text><text x="832" y="112" class="sv-m">PA + attrs, ordering</text>
+      <path d="M120 98H148" class="sv-line" marker-end="url(#ar5)"/><path d="M270 98H298" class="sv-line" marker-end="url(#ar5)"/>
+      <path d="M420 92 L448 56" class="sv-dash" marker-end="url(#ar5)"/><path d="M420 104 L448 140" class="sv-dash" marker-end="url(#ar5)"/>
+      <path d="M610 48 L648 88" class="sv-dash" marker-end="url(#ar5)"/><path d="M610 148 L648 110" class="sv-dash" marker-end="url(#ar5)"/>
+      <path d="M790 98H818" class="sv-line" marker-end="url(#ar5)"/>
+      <text x="10" y="205" class="sv-m">hit: µTLB → egress in a few cycles.  miss: TBU → (DTI) → TCU config + walk → fill both levels → replay held transactions.</text>
+    </svg>
+  </figure>
+  <div class="grid3">
+    <div class="card"><h3>Performance levers</h3><ul><li>TLB reach: large pages, contiguous hint, range TLBI.</li><li>Hit-under-miss and miss-under-miss per stream.</li><li>Miss coalescing so 64 DMA beats to one page do one walk.</li><li>Walk cache levels and S2 caching for nested.</li><li>Prefetch commands for latency-critical streams.</li></ul></div>
+    <div class="card"><h3>Hazards to design around</h3><ul><li>Invalidation racing an in-flight walk: the walk must not fill a stale entry after the TLBI completes.</li><li>CMD_SYNC must drain all transactions translated by now-invalid entries.</li><li>Same-ID ordering when hits pass misses.</li><li>HTTU RMW atomicity versus CPU writes.</li><li>Stall + queue-full + SMMUEN off interactions.</li></ul></div>
+    <div class="card"><h3>Integration</h3><ul><li>Clocks/power: idle ports, Q-channel, retention of TLBs.</li><li>Coherent table walks (<code>CR1</code> attributes) vs non-coherent with cache maintenance.</li><li>MSI path loops back through the SMMU fabric.</li><li>RAS: ECC on TLB RAMs, error records, poison propagation.</li><li>PMCG counters for TLB miss, walk count, latency.</li></ul></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="dv">
+  <div class="sec-head"><div class="sec-num">11</div><h2>Verification playbook</h2></div>
+  <figure class="plate" style="margin:0">
+    <svg viewBox="0 0 960 300" role="img" aria-label="UVM testbench architecture for SMMU">
+      <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="sv-arrow"/></marker></defs>
+      <rect x="10" y="20" width="200" height="50" class="sv-acc"/><text x="22" y="42" class="sv-tb">Upstream AXI agents</text><text x="22" y="59" class="sv-m">SID/SSID/attr randomized</text>
+      <rect x="10" y="85" width="200" height="50" class="sv-acc"/><text x="22" y="107" class="sv-tb">PCIe/ATS EP agent</text><text x="22" y="124" class="sv-m">TReq, Translated, PRI, ATC</text>
+      <rect x="10" y="150" width="200" height="50" class="sv-acc"/><text x="22" y="172" class="sv-tb">Register / driver agent</text><text x="22" y="189" class="sv-m">APB + queue programming</text>
+      <rect x="10" y="215" width="200" height="50" class="sv-acc"/><text x="22" y="237" class="sv-tb">DVM agent</text><text x="22" y="254" class="sv-m">broadcast TLBI / sync</text>
+      <rect x="290" y="80" width="160" height="120" class="sv-sig"/><text x="306" y="130" class="sv-tb">SMMU DUT</text><text x="306" y="150" class="sv-m">TBUs + TCU</text>
+      <path d="M210 45 L288 100" class="sv-line" marker-end="url(#ar6)"/><path d="M210 110 L288 125" class="sv-line" marker-end="url(#ar6)"/><path d="M210 175 L288 160" class="sv-line" marker-end="url(#ar6)"/><path d="M210 240 L288 185" class="sv-line" marker-end="url(#ar6)"/>
+      <rect x="530" y="80" width="180" height="120" class="sv-box"/><text x="546" y="106" class="sv-tb">Memory model</text><text x="546" y="126" class="sv-m">page-table builder,</text><text x="546" y="142" class="sv-m">STE/CD/queues in mem,</text><text x="546" y="158" class="sv-m">error injection,</text><text x="546" y="174" class="sv-m">latency/backpressure</text>
+      <path d="M450 140H528" class="sv-line" marker-end="url(#ar6)"/>
+      <rect x="770" y="20" width="180" height="70" class="sv-s1"/><text x="786" y="44" class="sv-tb">Reference model</text><text x="786" y="62" class="sv-m">spec ch.15 translation</text><text x="786" y="78" class="sv-m">procedure, "allowed set"</text>
+      <rect x="770" y="115" width="180" height="70" class="sv-s2"/><text x="786" y="139" class="sv-tb">Scoreboard</text><text x="786" y="157" class="sv-m">PA, attrs, fault, event,</text><text x="786" y="173" class="sv-m">ordering, completion</text>
+      <rect x="770" y="210" width="180" height="70" class="sv-box"/><text x="786" y="234" class="sv-tb">Coverage + SVA</text><text x="786" y="252" class="sv-m">functional crosses,</text><text x="786" y="268" class="sv-m">queue/proto assertions</text>
+      <path d="M710 120 L768 60" class="sv-dash" marker-end="url(#ar6)"/><path d="M860 90V113" class="sv-line" marker-end="url(#ar6)"/><path d="M710 160H768" class="sv-dash" marker-end="url(#ar6)"/>
+      <text x="290" y="240" class="sv-m">Monitors on every port feed the scoreboard;</text><text x="290" y="256" class="sv-m">the model predicts against memory state at</text><text x="290" y="272" class="sv-m">the time the DUT could have observed it.</text>
+    </svg>
+    <figcaption>The hard part of the reference model is non-determinism: caching and invalidation timing allow more than one correct answer. Model "the set of legal outcomes" and check the DUT is inside it.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="card"><h3>Checker strategy</h3><ul>
+      <li><b>Translation checker:</b> for each egress beat, prove there is a mapping that existed between the txn's arrival and the last CMD_SYNC completion that permits this PA and attributes.</li>
+      <li><b>Invalidation checker:</b> after CMD_SYNC completes, no egress may use a mapping invalidated before it. This is the single most valuable check.</li>
+      <li><b>Event checker:</b> exact record contents, one event per txn, fault priority, and no events for prefetch or Config=abort.</li>
+      <li><b>Queue SVA:</b> PROD/CONS wrap, full/empty, overflow flags, CONS.ERR stop.</li>
+      <li><b>Isolation checker:</b> output PA space vs SEC_SID, GPC, DPT.</li></ul></div>
+    <div class="card"><h3>Coverage model (crosses that find bugs)</h3><ul>
+      <li>STE.Config × Security state × StreamWorld × EATS</li>
+      <li>Granule × levels × block/page/contiguous × TxSZ edges</li>
+      <li>Fault type × stage × terminate/stall × A/R bits</li>
+      <li>Command type × scope (VA, range, Leaf, TTL) × concurrent traffic hitting that scope</li>
+      <li>Queue: empty, full, wrap, overflow, error at each position</li>
+      <li>Linear vs 2-level stream table at SPLIT boundaries</li>
+      <li>ID-register configuration (each optional feature on/off)</li></ul></div>
+  </div>
+  <h3>High-value scenarios</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Scenario</th><th>Why it finds bugs</th></tr></thead>
+    <tbody>
+      <tr><td>TLBI issued while a walk for the same VA is in flight</td><td>Walk returns after the invalidate and fills a stale entry.</td></tr>
+      <tr><td>STE swapped live (V=1 → V=1 different Config) with traffic</td><td>Torn 64B read, config cache not invalidated, mixed old/new fields.</td></tr>
+      <tr><td>Nested walk where an S1 table address faults at S2</td><td>Wrong stage, wrong IPA, wrong CLASS in event.</td></tr>
+      <tr><td>Event queue full + stalled transactions + CMD_STALL_TERM</td><td>Lost stall records, hung transactions, OVFLG handling.</td></tr>
+      <tr><td>Block ↔ page remap without BBM</td><td>F_TLB_CONFLICT detection or silent multi-hit.</td></tr>
+      <tr><td>ATC_INV timeout during CMD_SYNC</td><td>CERROR_ATC_INV_SYNC, SMMU must stop at the right command.</td></tr>
+      <tr><td>SMMUEN 1→0→1 with traffic and stalls</td><td>GBPA bypass/abort, stalls terminated, caches not reused.</td></tr>
+      <tr><td>HTTU dirty update racing CPU write to same PTE</td><td>Non-atomic RMW loses CPU's update.</td></tr>
+      <tr><td>Broadcast TLBI with ASET and PTM variations</td><td>SMMU invalidates too little (security bug) or too much (perf bug).</td></tr>
+      <tr><td>External abort on queue, STE, CD, walk, MSI</td><td>Every error path, GERROR toggles, recovery.</td></tr>
+    </tbody></table></div>
+  <div class="grid3">
+    <div class="card"><h3>Formal is a good fit for</h3><p>Queue pointer and wrap logic, GERROR/GERRORN handshake, TLB multi-hit freedom, miss-tracker deadlock freedom, ordering rules on egress.</p></div>
+    <div class="card"><h3>System-level / emulation</h3><p>Boot Linux with <code>arm-smmu-v3</code> driver, VFIO passthrough, SVA with a real device model. Finds driver-visible ordering and performance bugs that unit-level random misses.</p></div>
+    <div class="card"><h3>Sign-off metrics</h3><p>Code + functional coverage closed per IDR configuration, zero open checker waivers on invalidation, performance targets (miss latency, walks/cycle, TLB hit rate) met on traffic profiles from real workloads.</p></div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="drill">
+  <div class="sec-head"><div class="sec-num">12</div><h2>Interview drill</h2></div>
+  <p>Answer out loud first, then open. Answers are short on purpose: this is the level of detail a strong senior candidate gives before the interviewer asks for more.</p>
+  <div class="qa-tools"><button type="button" id="openall">Open all</button><button type="button" id="closeall">Close all</button></div>
+  <div id="qa">
+    <details><summary><span class="qn">Q01</span>Why did SMMUv3 move configuration into memory?</summary><div class="ans"><p>v2's register context banks capped the number of concurrently live streams (a few hundred at most). Systems with thousands of PCIe functions and many processes per device need every stream always configured, since DMA can start any time. In-memory Stream Table/CD tables scale with memory, and the SMMU caches what is hot.</p></div></details>
+    <details><summary><span class="qn">Q02</span>Walk me through a translation from transaction to PA.</summary><div class="ans"><p>SID → STE (via linear or 2-level stream table). Check V and Config. If S1 enabled and SSID valid → CD (via CD table, through S2 if nested). Check TLB with StreamWorld/VMID/ASID/VA tag. On miss, S1 walk with each table address translated by S2, then S2 walk of the output IPA. Apply permissions, attributes, MPAM, GPC. Emit PA or fault.</p></div></details>
+    <details><summary><span class="qn">Q03</span>How many memory accesses does a cold nested walk take?</summary><div class="ans"><p><code>(n+1)(m+1)−1</code>; 24 for 4-level by 4-level, plus the STE and CD fetches (and the CD fetch itself needs an S2 walk). Walk caches and S2 caching exist to cut this down.</p></div></details>
+    <details><summary><span class="qn">Q04</span>What does CMD_SYNC guarantee, exactly?</summary><div class="ans"><p>When it completes, all prior commands in the queue have completed, including their effect on in-flight transactions: no transaction will use an invalidated config or translation, and outstanding ATC invalidations have finished. Completion is signalled by MSI, SEV, or observed by CONS passing it.</p></div></details>
+    <details><summary><span class="qn">Q05</span>Why ATC invalidation after the SMMU TLB invalidation, not before?</summary><div class="ans"><p>If you clear the ATC first, the device can immediately send a new Translation Request that hits the still-stale SMMU TLB and repopulate the ATC with the old mapping. TLBI → SYNC → ATC_INV → SYNC closes that window.</p></div></details>
+    <details><summary><span class="qn">Q06</span>Stall vs terminate: when would you use each?</summary><div class="ans"><p>Stall holds the faulting transaction so software can fix the mapping and RESUME, giving demand paging for devices that tolerate long latency. Terminate aborts (or RAZ/WI) immediately. Never stall PCIe: stalled posted writes can block the fabric and deadlock. PCIe uses ATS + PRI for the same goal.</p></div></details>
+    <details><summary><span class="qn">Q07</span>What happens if the Event queue is full?</summary><div class="ans"><p>Events not tied to stalls are discarded and overflow is flagged by toggling <code>PROD.OVFLG</code>. Stall events are not discarded: the stalled transaction waits, retries, or records later when the queue becomes writable. Interview bonus: STE.Config=abort and prefetch errors never record anyway.</p></div></details>
+    <details><summary><span class="qn">Q08</span>How does SVA work with an SMMU?</summary><div class="ans"><p>The device's PASID maps to a CD whose TTB0 and ASID are the process's own page tables and ASID. With BTM the SMMU snoops the CPU's TLBIs, so the kernel's normal munmap path also clears SMMU TLBs. With ATS/PRI the device can fault pages in on demand.</p></div></details>
+    <details><summary><span class="qn">Q09</span>What is a StreamWorld and why does it exist?</summary><div class="ans"><p>The translation regime a stream belongs to (NS-EL1, EL2, EL2-E2H, Secure, EL3), set by STE.STRW and Security state. It tags TLB entries so TLBI commands and broadcast TLBIs hit exactly the entries of the regime they target, just like the CPU's TLB regime tagging.</p></div></details>
+    <details><summary><span class="qn">Q10</span>Name the bug you'd worry about most in an SMMU and how you'd catch it.</summary><div class="ans"><p>A walk in flight across an invalidation filling a stale TLB entry after CMD_SYNC completed. It produces a wrong PA silently. Catch with an invalidation-aware scoreboard (every egress after SYNC must use a mapping valid after the invalidation), directed race tests with controllable memory latency, and coverage that the TLBI scope actually overlapped in-flight walks.</p></div></details>
+    <details><summary><span class="qn">Q11</span>How do you build a reference model when caching makes outcomes non-deterministic?</summary><div class="ans"><p>Keep a timestamped history of every table and config write. For each transaction, compute the set of legal translations from snapshots between its earliest observation point and the last completed sync. Pass if the DUT's result is in the set. Also check fault reporting is consistent with the chosen snapshot.</p></div></details>
+    <details><summary><span class="qn">Q12</span>What is split-stage ATS?</summary><div class="ans"><p>STE.EATS=0b10: ATS completions return the stage-1 result (IPA) only. Translated transactions still go through the SMMU's stage 2. The hypervisor keeps control of VM isolation while the device caches guest translations.</p></div></details>
+    <details><summary><span class="qn">Q13</span>How does RME change the SMMU?</summary><div class="ans"><p>Adds a Root programming interface and Granule Protection Checks on every output PA against the GPT, the same structure the CPUs use. A GPC fault looks like an external abort to the device and is not recorded in the Event queue. RME DA adds the Realm interface and the DPT for isolating ATS Translated traffic.</p></div></details>
+    <details><summary><span class="qn">Q14</span>Compare a CPU MMU, an SMMU and a GPU MMU.</summary><div class="ans"><p>CPU MMU: context from system registers, synchronous precise faults, TLBI + DSB + ISB. SMMU: context from the transaction's IDs and in-memory tables, asynchronous fault reporting via queues, commands for maintenance, many concurrent streams, ATS/PRI. GPU MMU (vendor-specific): huge parallel miss rates, large page sizes, replayable faults through a fault buffer, often sits behind or alongside an SMMU in the SoC for system-level isolation.</p></div></details>
+    <details><summary><span class="qn">Q15</span>How would you verify the command queue in isolation?</summary><div class="ans"><p>Drive random command streams with random PROD updates, sizes and wrap points; SVA for full/empty and pointer monotonicity; inject illegal opcodes and aborts at every position to check CONS.ERR, GERROR and the restart flow; cover CMD_SYNC completion modes; and check that consumption order matches issue order for commands with visible side effects.</p></div></details>
+    <details><summary><span class="qn">Q16</span>What does SMMUEN=0 do?</summary><div class="ans"><p>Translation is off. Incoming transactions follow <code>SMMU_GBPA</code>: bypass with overridden attributes or abort. Queues can still be enabled (SMMUEN=0 does not imply EVENTQEN=0). Transitioning SMMUEN to 0 terminates stalled transactions. Reset value of GBPA.ABORT is implementation choice, which matters for secure boot.</p></div></details>
+    <details><summary><span class="qn">Q17</span>How do you make one testbench cover many SMMU configurations?</summary><div class="ans"><p>Read IDR0–IDR6, AIDR and the S_/R_/ROOT_ ID registers at the start of each test; use them to constrain stimulus, enable checkers, and select coverage groups. Keep a regression matrix across RTL parameter sets so each optional feature is exercised both present and absent.</p></div></details>
+    <details><summary><span class="qn">Q18</span>What is the contiguous bit and why does it matter for verification?</summary><div class="ans"><p>A hint that 16 (4K granule) adjacent entries map a contiguous, aligned region with identical attributes, so the TLB can hold one entry. Bugs appear when software misprograms it (not all entries identical): architecture allows constrained-unpredictable results, and the TLB conflict path must still behave legally. Cover TLBI of one page inside a contiguous range.</p></div></details>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="cheat">
+  <div class="sec-head"><div class="sec-num">13</div><h2>Cheat sheet</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Thing</th><th>Value / rule</th></tr></thead>
+    <tbody>
+      <tr><td>Version register</td><td class="m">SMMU_AIDR[7:0] 0x00..0x05 → v3.0..v3.5</td></tr>
+      <tr><td>Sizes</td><td class="m">STE 64B · CD 64B · L1STD 8B · L1CD 8B · CMD 16B · EVT 32B · PRI 16B</td></tr>
+      <tr><td>ID widths</td><td class="m">SID ≤ 32b · SSID ≤ 20b · ASID 8/16b · VMID 8/16b</td></tr>
+      <tr><td>Stream table</td><td class="m">linear or 2-level, SPLIT = 6/8/10</td></tr>
+      <tr><td>Enable order</td><td class="m">tables + queues → CR1/CR2 → CMDQEN, EVTQEN, PRIQEN → invalidate all → SMMUEN; poll CR0ACK each time</td></tr>
+      <tr><td>4KB granule, 48b VA</td><td class="m">L0[47:39] L1[38:30] L2[29:21] L3[20:12] off[11:0]; blocks 1GB, 2MB</td></tr>
+      <tr><td>64KB granule, 48b VA</td><td class="m">L1[47:42] L2[41:29] L3[28:16] off[15:0]; block 512MB</td></tr>
+      <tr><td>Nested cold walk</td><td class="m">(n+1)(m+1) − 1 → 24 for 4×4</td></tr>
+      <tr><td>Queue full</td><td class="m">index equal, WRAP bits differ</td></tr>
+      <tr><td>Global error active</td><td class="m">GERROR.bit ≠ GERRORN.bit</td></tr>
+      <tr><td>Never reported</td><td class="m">Config=abort, prefetch errors, GPC fault on client output PA (→ ROOT_GPF_FAR)</td></tr>
+      <tr><td>Unmap order</td><td class="m">PTE → TLBI → SYNC → ATC_INV → SYNC</td></tr>
+    </tbody></table></div>
+  <p class="foot">Built from Arm IHI 0070 H.a (SMMU Architecture Specification, SMMUv3.0–3.5). Field and opcode values are from the spec; TBU/TCU, DTI and testbench structure describe common implementation practice, not architecture. Check exact field encodings in chapters 5–7 before quoting them in a design review.</p>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  // VA slicer
+  var va=document.getElementById('va'),gr=document.getElementById('gran'),vb=document.getElementById('vab'),out=document.getElementById('bits'),note=document.getElementById('bitnote');
+  function slice(){
+    var g=+gr.value, vbits=+vb.value, raw=(va.value||'').replace(/[_\s]/g,'').replace(/^0x/i,'');
+    var n; try{ n=BigInt('0x'+(raw||'0')); }catch(e){ out.innerHTML=''; note.textContent='Enter a hex address such as 0x7F1234567ABC.'; return; }
+    var per=g-3, lv=[], hi=vbits-1, lo, idx=0, html='';
+    var levels=Math.ceil((vbits-g)/per);
+    var startLevel=4-levels; // last level is 3
+    var cls=['lv0','lv1','lv2','lv3'];
+    for(var L=startLevel; L<=3; L++){
+      lo=g+per*(3-L); var top=Math.min(hi,vbits-1);
+      var w=top-lo+1, v=(n>>BigInt(lo))&((1n<<BigInt(w))-1n);
+      html+='<div class="f '+cls[(L+4)%4]+'"><span>L'+L+' ['+top+':'+lo+']</span><b>'+v.toString()+'</b></div>';
+      hi=lo-1;
+    }
+    var off=n&((1n<<BigInt(g))-1n);
+    html+='<div class="f off"><span>offset ['+(g-1)+':0]</span><b>0x'+off.toString(16)+'</b></div>';
+    out.innerHTML=html;
+    var up=n>>BigInt(vbits), ok=(up===0n)||(up===((1n<<BigInt(64-vbits))-1n));
+    var table=(up===0n)?'TTB0 (lower range)':(ok?'TTB1 (upper range)':'neither: out of range, F_TRANSLATION');
+    note.textContent=levels+' levels, '+per+' index bits per level, '+(1<<per)+' entries per table. Upper bits select '+table+'.'+(vbits===52&&g!==16?' 52-bit on 4K/16K needs LPA2 (v3.4); with LPA2 the walk starts at level −1 on 4K.':'');
+  }
+  [va,gr,vb].forEach(function(e){e.addEventListener('input',slice);e.addEventListener('change',slice);});
+  slice();
+  // nested walk
+  var n1=document.getElementById('n1'),n2=document.getElementById('n2'),wn=document.getElementById('walkn'),wg=document.getElementById('wg');
+  function walk(){
+    var n=+n1.value,m=+n2.value; wn.textContent=String((n+1)*(m+1)-1);
+    var cols=m+1, rows=n+1, h='';
+    wg.style.gridTemplateColumns='repeat('+cols+',18px)';
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+      var k=(c<m)?'wg-s2':(r<n?'wg-s1':'wg-x'); h+='<i class="'+k+'"></i>';
+    }
+    wg.innerHTML=h;
+  }
+  n1.addEventListener('change',walk);n2.addEventListener('change',walk);walk();
+  // q&a
+  var ds=document.querySelectorAll('#qa details');
+  document.getElementById('openall').addEventListener('click',function(){ds.forEach(function(d){d.open=true;});});
+  document.getElementById('closeall').addEventListener('click',function(){ds.forEach(function(d){d.open=false;});});
+})();
+</script>
+
+</body>
+</html>

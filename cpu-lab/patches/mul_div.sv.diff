@@ -1,0 +1,74 @@
+--- rtl/mul_div.sv	2026-10-15 23:41:13.584684543 +0000
++++ solutions/mul_div.sv	2026-10-15 23:41:13.587556039 +0000
+@@ -44,6 +44,11 @@
+     // Operation pipeline registers for each tag (parameterized by no_ROB)
+     logic [OP_WIDTH-1:0] mul_op_pipeline [0:no_ROB-1];
+     logic [OP_WIDTH-1:0] div_op_pipeline [0:no_ROB-1];
++    // FIX-5: keep the raw operands per tag so we can derive MULHU / MULHSU from the
++    //        signed 64-bit Booth product:   hi_u  = hi_s + (a<0 ? b : 0) + (b<0 ? a : 0)
++    //                                       hi_su = hi_s + (b<0 ? a : 0)
++    logic [31:0] mul_a_pipeline [0:no_ROB-1];
++    logic [31:0] mul_b_pipeline [0:no_ROB-1];
+     
+     // Store operation for each tag on issue and clear when operation completes
+     always_ff @(posedge clk) begin
+@@ -62,6 +67,8 @@
+                     div_op_pipeline[i] <= 17'h1FFFF; // Clear completed divide
+                 end else if (mul_valid_in && mul_tag_in == i) begin
+                     mul_op_pipeline[i] <= rs_in[0].operation; // Set new multiply
++                    mul_a_pipeline[i]  <= rs_in[0].src1_value;
++                    mul_b_pipeline[i]  <= rs_in[0].src2_value;
+                 end else if (div_valid_in && div_tag_in == i) begin
+                     div_op_pipeline[i] <= rs_in[1].operation; // Set new divide
+                 end
+@@ -90,6 +97,7 @@
+         .rst(rst),
+         .flush(flush),
+         .valid_in(div_valid_in),
++        .is_signed(div_signed),
+         .dividend(div_dividend),
+         .divisor(div_divisor),
+         .tag_in(div_tag_in),
+@@ -101,14 +109,16 @@
+ 
+     // Fixed mapping: slot 0 = multiplier, slot 1 = divider
+     // Multiplier path
+-    assign mul_valid_in      = ex_valid[0] && (rs_in[0].operation == mul || rs_in[0].operation == mulh);
++    assign mul_valid_in      = ex_valid[0] && (rs_in[0].operation == mul || rs_in[0].operation == mulh ||
++                                                rs_in[0].operation == mulhsu || rs_in[0].operation == mulhu);
+     assign mul_multiplicand  = $signed(rs_in[0].src1_value);
+     assign mul_multiplier    = $signed(rs_in[0].src2_value);
+     assign mul_tag_in        = rs_in[0].ROB_index;
+ 
+     // Divider path
+-    assign div_valid_in      = ex_valid[1] && (rs_in[1].operation == div || rs_in[1].operation == rem);
+-    assign div_signed        = 1'b1; // Always signed, since only div/rem are supported
++    assign div_valid_in      = ex_valid[1] && (rs_in[1].operation == div || rs_in[1].operation == rem ||
++                                                rs_in[1].operation == divu || rs_in[1].operation == remu);
++    assign div_signed        = (rs_in[1].operation == div) || (rs_in[1].operation == rem); // FIX-5
+     assign div_dividend      = $signed(rs_in[1].src1_value);
+     assign div_divisor       = $signed(rs_in[1].src2_value);
+     assign div_tag_in        = rs_in[1].ROB_index;
+@@ -130,6 +140,11 @@
+             case (mul_op_pipeline[mul_tag_out])
+                 mul:   out[0].result = mul_product[31:0];
+                 mulh:  out[0].result = mul_product[63:32];
++                mulhsu: out[0].result = mul_product[63:32]
++                                      + (mul_b_pipeline[mul_tag_out][31] ? mul_a_pipeline[mul_tag_out] : 32'd0);
++                mulhu: out[0].result = mul_product[63:32]
++                                      + (mul_a_pipeline[mul_tag_out][31] ? mul_b_pipeline[mul_tag_out] : 32'd0)
++                                      + (mul_b_pipeline[mul_tag_out][31] ? mul_a_pipeline[mul_tag_out] : 32'd0);
+                 default: out[0].result = 32'h0;
+             endcase
+             out[0].ROB_index = mul_tag_out;
+@@ -139,8 +154,8 @@
+         // Divider result to out[1]
+         if (div_valid_out && div_op_pipeline[div_tag_out] != 17'h1FFFF) begin
+             case (div_op_pipeline[div_tag_out])
+-                div: out[1].result = $signed(div_quotient);
+-                rem: out[1].result = $signed(div_remainder);
++                div, divu: out[1].result = div_quotient;
++                rem, remu: out[1].result = div_remainder;
+                 default: out[1].result = 32'h0;
+             endcase
+             out[1].ROB_index = div_tag_out;
