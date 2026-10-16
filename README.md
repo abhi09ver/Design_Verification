@@ -17,6 +17,10 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 4 | 12 constraint questions (4KB, alignment, primes, patterns…) | [notes](sv-course-sessions/04-session4-constraints.md) |
 | 5 | APB functional coverage model | [notes](sv-course-sessions/05-session5-apb-functional-coverage.md) |
 
+## Aligner UVM course: one-stop interview folder
+
+**[aligner-uvm-course/](aligner-uvm-course/README.md)** covers Cristian Slav's UVM course on the Aligner DUT end to end: a [last-30-minutes cheatsheet](aligner-uvm-course/cheatsheets/LAST-30-MINUTES.md), [7 STAR stories](aligner-uvm-course/cheatsheets/STORIES.md), [244 interview Q&A](aligner-uvm-course/INTERVIEW-QA.md), chapter notes, the interactive study pages, and the full RTL + UVM project code.
+
 ## Challenges
 
 | # | Topic | Key concepts |
