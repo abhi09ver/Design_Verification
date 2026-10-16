@@ -3,6 +3,18 @@
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
+## SV Course Sessions — solved exercises with runnable code
+
+**[sv-course-sessions/](sv-course-sessions/)**: worked solutions to the exercise slides from five SystemVerilog / UVM course sessions, each compiled and simulated. **Quick revision: [CHEATSHEET.md](sv-course-sessions/CHEATSHEET.md).**
+
+| Session | Topic | Notes |
+|---|---|---|
+| 1 | SV data structures: arrays, queues, assoc arrays, strings (23 Qs) | [notes](sv-course-sessions/01-session1-sv-data-structures.md) |
+| 2 | Layered UVM agent for AXI and AHB | [notes](sv-course-sessions/02-session2-layered-axi-ahb-agent.md) |
+| 3 | Dual-port APB driver / monitor / scoreboard (no UVM) | [notes](sv-course-sessions/03-session3-apb-dual-port-testbench.md) |
+| 4 | 12 constraint questions (4KB, alignment, primes, patterns…) | [notes](sv-course-sessions/04-session4-constraints.md) |
+| 5 | APB functional coverage model | [notes](sv-course-sessions/05-session5-apb-functional-coverage.md) |
+
 ## Challenges
 
 | # | Topic | Key concepts |

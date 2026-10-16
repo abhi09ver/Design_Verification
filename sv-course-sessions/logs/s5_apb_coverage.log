@@ -1,0 +1,6 @@
+--- after directed stimulus (high-region READ deliberately missing):
+calls=8 sampled=5 (gated off: 3)
+total=92.3%
+--- after closing the hole:
+calls=9 sampled=6 (gated off: 3)
+total=100.0%
