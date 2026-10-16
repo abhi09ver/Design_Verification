@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · Error Reporting & Full Integration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="08-data-validity-idle-line.html">← Prev</a> · <a href="10-chipmunk-uart-ip-map.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 09 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Error Reporting &amp; Full Integration</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Every check in one place — what it sees, who catches it, and how a failure gets reported cleanly.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">09</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Error taxonomy — the one table to memorise</h2>
+<div style="display: grid; grid-template-columns: 1.1fr .8fr 1.5fr 1fr 1.6fr; font-size: 12.5px; border-top: 1px solid #E2E2DC;">
+<div style="padding: 6px 6px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Error</div><div style="padding: 6px 6px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">On wire?</div><div style="padding: 6px 6px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Caught by</div><div style="padding: 6px 6px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">DUT flag (LSR)</div><div style="padding: 6px 6px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Inject with</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>Baud / timing</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">yes</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">checker: edge-gap timing</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">none (shows as FE)</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">driver drift %</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>Framing</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">yes</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">checker: stop sample</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">FE · bit 3</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">force stop = 0</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>Parity</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">yes</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">checker: XOR over width</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">PE · bit 2</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">flip P or 1 data bit</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>Break</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">yes</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">checker: low-time timer</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">BI · bit 4</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">hold low &gt; 1 char</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC; background: #FFF4E5;"><b>Overrun</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC; background: #FFF4E5; font-weight: 600; color: #9A3F07;">no</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC; background: #FFF4E5;">scoreboard: line in + bus out</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC; background: #FFF4E5;">OE · bit 1</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC; background: #FFF4E5;">stop reading, burst</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>False start</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">yes</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">checker: pulse width</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">none (silently dropped)</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">short low glitch</div>
+<div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;"><b>Data / order</b></div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">partly</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">scoreboard + directed waveform</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">—</div><div style="padding: 6px 6px; border-bottom: 1px solid #E2E2DC;">asymmetric bytes</div>
+<div style="padding: 6px 6px;"><b>Idle / X</b></div><div style="padding: 6px 6px;">yes</div><div style="padding: 6px 6px;">SVA in interface</div><div style="padding: 6px 6px;">—</div><div style="padding: 6px 6px;">reset mid-frame</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Other LSR bits: DR (0) data ready · THRE (5) TX holding empty · TEMT (6) TX fully empty · bit 7 error somewhere in RX FIFO. Error bits are sticky and clear on LSR read.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">The complete environment</h2>
+<div style="border: 2px solid #15171C; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">uart_test → sets uart_cfg (format, baud, tolerance, check enables, error knobs) · raises objections · adds report catchers</div>
+<div style="border: 1.5px solid #1D4ED8; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #1D4ED8;">uart_env</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 12.5px;">
+<div style="background: #EEF2FF; border-radius: 6px; padding: 8px;"><b>Serial agent (active)</b><div>sequencer · driver with error knobs · monitor — drives DUT RX</div></div>
+<div style="background: #EEF2FF; border-radius: 6px; padding: 8px;"><b>Serial agent (passive)</b><div>monitor only — watches DUT TX</div></div>
+<div style="background: #EEF2FF; border-radius: 6px; padding: 8px;"><b>Bus agent + RAL</b><div>APB/AXI-lite to THR, RBR, LCR, LSR, IER, FCR</div></div>
+<div style="background: #EEF2FF; border-radius: 6px; padding: 8px;"><b>Virtual sequencer</b><div>coordinates register config with serial traffic</div></div>
+<div style="background: #F3F4F1; border-radius: 6px; padding: 8px;"><b>Protocol checker</b><div>baud · framing · parity · break · glitch</div></div>
+<div style="background: #F3F4F1; border-radius: 6px; padding: 8px;"><b>Scoreboard</b><div>FIFO model · data in order · OE · error-flag per char</div></div>
+<div style="background: #F3F4F1; border-radius: 6px; padding: 8px;"><b>Coverage collector</b><div>format × baud × error × FIFO level</div></div>
+<div style="background: #F3F4F1; border-radius: 6px; padding: 8px;"><b>uart_if + SVA</b><div>idle-high, no-X, minimum pulse width</div></div>
+</div>
+</div>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Reporting done right</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>One ID per check</b> (UART_FE, UART_PE, UART_BRK, UART_OE, UART_BAUD) so logs can be filtered and severities overridden per ID.</li>
+<li><b>Severity:</b> DUT violation = <span style="font-family: 'JetBrains Mono', monospace;">uvm_error</span>; TB-injected and seen = info; avoid warnings nobody reads.</li>
+<li><b>Message content:</b> time, direction (TX/RX), data, which bit, measured vs expected.</li>
+<li><b>Suppress cascades:</b> after FE or break, mark "resyncing" and hold follow-up checks until the line is idle.</li>
+<li><b>report_phase summary:</b> frames seen, per-error counts, expected vs unexpected.</li>
+<li><b>Knobs:</b> every check has an enable bit in cfg — but never disable one to make a test pass.</li>
+</ul>
+</section>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Expected errors — a report catcher</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; white-space: pre;">class fe_expect_catcher extends uvm_report_catcher;
+  `uvm_object_utils(fe_expect_catcher)
+  int seen;
+  function new(string name = "fe_expect_catcher");
+    super.new(name);
+  endfunction
+  function action_e catch();
+    if (get_id() == "UART_FE" &amp;&amp;
+        get_severity() == UVM_ERROR) begin
+      set_severity(UVM_INFO);  seen++;
+    end
+    return THROW;
+  endfunction
+endclass
+// test: uvm_report_cb::add(null, catcher);
+// check_phase: seen == number injected</pre>
+<div style="font-size: 12px; color: #B9C0CC;">Count what you demote and compare to what you injected — otherwise a missing error passes silently.</div>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Rapid-fire revision — the whole series in 10 lines</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px; font-size: 13px;">
+<div><b>1.</b> Idle 1, start 0, 5–8 data LSB-first, optional parity, 1–2 stop of 1.</div>
+<div><b>2.</b> RX: 16× oversample, confirm start at mid-bit, sample every 16 ticks.</div>
+<div><b>3.</b> Tolerance: last sample at 9.5 T → ~4.6% total → design to ±2% per side.</div>
+<div><b>4.</b> Check baud by timing every edge gap as n × T, never by counting transitions.</div>
+<div><b>5.</b> Framing = stop bit sampled 0. Resync policy comes from the spec.</div>
+<div><b>6.</b> Parity catches odd-count flips only; compute over configured width.</div>
+<div><b>7.</b> Break = low longer than one char; one 0x00 + BI per break, then wait for mark.</div>
+<div><b>8.</b> Overrun is invisible on the wire — model FIFO with line + bus monitors.</div>
+<div><b>9.</b> Symmetric bugs pass loopback; verify one raw waveform against the spec.</div>
+<div><b>10.</b> Unique IDs, expected-error flags or catchers, cascade suppression, summary in report_phase.</div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: "Error reporting" from the series roadmap · code is an original sketch</div>
+<div>End of series · back to 01</div>
+</footer>
+</div></div>
+</body>
+</html>

@@ -33,6 +33,12 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 24 | [Early-Career Expectations & Portfolio Project](24-early-career-dv-expectations-and-portfolio.md) | Realistic expectations, simulator vendors, free tools, writing a bug report, IEEE 1685 = IP-XACT, step-by-step portfolio project that produces real interview stories |
 | 25 | [Debugging Persistent & Intermittent Failures](25-debugging-intermittent-and-persistent-failures.md) | Reproducibility, non-determinism sources, failure signatures, first divergence, record-and-replay, git bisect, discriminating experiments, deadlock wait-for chains, "passes interactively, fails in batch" |
 
+## Protocol Packs
+
+| Pack | Contents |
+|---|---|
+| [UART DV Interview Pack](uart-dv-pack/README.md) | 10 one-page cards (PDF / HTML / PNG), text cheatsheet, UVM reference environment: baud, framing, parity, break, overrun, idle-line checks |
+
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
 | Myth | Reality | See |
