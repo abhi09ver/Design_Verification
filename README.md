@@ -54,6 +54,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
 | 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
 | 33 | [MMU & SMMUv3 One-Stop Kit](33-mmu-smmu/README.md) | VA/PA, pages, multi-level walks, TLB/ASID/VMID, stage 1/2 nesting, StreamID→STE→CD, command/event queues, CMD_SYNC, stall vs terminate, ATS/PRI/PASID, RME/GPC, invalidation-aware scoreboard; Python model, SVA, UVM code, fresher + senior HTML guides |
+| 34 | [GPIO Core & Pinmux Verification](34-gpio-core-and-pinmux-verification.md) · [one-stop kit](34-gpio-core-pinmux/README.md) | Chipmunk GPIO v1.0, tristate pads, 2-FF sync & glitch filter, level vs. edge, enable vs. mask, W1C, APB 2/3-cycle timing, RAL access types, uncertainty-window scoreboard, white-box race SVA, bug injection, pinmux bugs, STAR story. Kit: HTML field guide, clean-room RTL, UVM TB, SVA, free-tool smoke test |
 
 ## CPU Lab (code for challenges 26–31)
 
@@ -88,6 +89,8 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | PCIe: "no TLP when credits = 0" | Credits are per type; an advertised 0 means infinite | 17 |
 | "The test passes, so the design works" | A hand-written checker on one program passed 33/33 while 15 bugs remained; an assertion fired on that same passing test | 27, 28 |
 | Out-of-order means results can be written to registers as soon as they're ready | Execution is out of order; commit to architectural state stays in program order (precise state) | 26, 30 |
+| Passing directed tests means the behaviour is checked | A one-cycle race (W1C vs. event) passed all 37 directed checks; only a white-box assertion caught it | 34 |
+| A status register listed "RO" is read-only | Read the text too: GPIO v1.0's status is W1C | 34 |
 
 ## How each file is structured
 

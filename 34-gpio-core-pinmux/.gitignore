@@ -1,0 +1,4 @@
+build/
+uvm-core/
+*.vcd
+ip/gpio_v1_0/
