@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>AXI Write & Read Transfers, Cycle by Cycle</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 6px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;min-height:28px;box-sizing:border-box}
+.hi{background:#0F766E;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.xf{background:#C2410C;color:#FFFFFF}
+.dt{background:#D7EEEA;color:#0B4A44}
+.wv{display:grid;grid-template-columns:150px repeat(10,minmax(0,1fr));gap:4px;align-items:center}
+.sig{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16202B}
+.cyc{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5B6670;text-align:center}
+.lane{display:inline-flex;align-items:center;justify-content:center;width:54px;height:32px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="02-axi-signals-by-channel.html">← AXI Signals, Channel by Channel</a><a href="../../README.md">Index</a><a href="04-valid-ready-handshake.html">The VALID-READY Handshake, In Depth →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 3</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">AXI Write &amp; Read Transfers, Cycle by Cycle</h1>
+    <div style="font-size: 17px; color: #C9D2D8">How a burst actually moves on the wires: handshakes, stalls, last beats, responses and byte lanes.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 320px">
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip hi" style="width: 34px">1</span><span style="font-size: 14px; color: #C9D2D8">signal HIGH</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip xf" style="width: 34px">⇄</span><span style="font-size: 14px; color: #C9D2D8">handshake (transfer happens)</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="chip lo" style="width: 34px">0</span><span style="font-size: 14px; color: #C9D2D8">signal LOW / idle</span></div>
+  </div>
+</div>
+
+<!-- WRITE BURST WAVE -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">W</span>Write burst — 4 beats, INCR, 32-bit bus, AWADDR = 0x00</h2>
+  <div class="p"><span class="m">AWLEN = 3</span> · <span class="m">AWSIZE = 3'b010</span> (4 B) · <span class="m">AWBURST = 2'b01</span> · slave stalls the write data once (WREADY low in T4).</div>
+  <div class="wv">
+    <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div><div class="cyc">T7</div><div class="cyc">T8</div><div class="cyc">T9</div><div class="cyc">T10</div>
+    <div class="sig">AWVALID</div><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">AWREADY</div><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">AWADDR</div><span class="chip dt">0x00</span><span class="chip dt">0x00</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+    <div class="sig">WVALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">WREADY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">WDATA</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">D0</span><span class="chip dt">D1</span><span class="chip dt">D1</span><span class="chip dt">D2</span><span class="chip dt">D3</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+    <div class="sig">WLAST</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">BVALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip lo">0</span>
+    <div class="sig">BREADY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span>
+    <div class="sig">BRESP</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">OKAY</span><span class="chip dt">OKAY</span><span class="chip lo">–</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+    <div class="key"><b>T2</b> — address accepted (AWVALID &amp; AWREADY).</div>
+    <div class="key"><b>T3, T5, T6, T7</b> — 4 data beats. <b>T4</b> = slave back-pressure: master <b>holds D1</b> and WVALID until accepted.</div>
+    <div class="key"><b>T7</b> — WLAST with beat 4 (= AWLEN + 1).</div>
+    <div class="key"><b>T8–T9</b> — slave raises BVALID after WLAST; master accepts at T9 with BREADY → write done.</div>
+  </div>
+</div>
+
+<!-- READ BURST WAVE -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">R</span>Read burst — 4 beats, INCR, 32-bit bus, ARADDR = 0x40</h2>
+  <div class="p"><span class="m">ARLEN = 3</span> · <span class="m">ARSIZE = 3'b010</span> · <span class="m">ARBURST = 2'b01</span> · the <b>master</b> stalls once (RREADY low in T6).</div>
+  <div class="wv">
+    <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div><div class="cyc">T7</div><div class="cyc">T8</div><div class="cyc">T9</div><div class="cyc">T10</div>
+    <div class="sig">ARVALID</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">ARREADY</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">ARADDR</div><span class="chip dt">0x40</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+    <div class="sig">RVALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    <div class="sig">RREADY</div><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip hi">1</span><span class="chip hi">1</span>
+    <div class="sig">RDATA</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">D0</span><span class="chip dt">D1</span><span class="chip dt">D2</span><span class="chip dt">D2</span><span class="chip dt">D3</span><span class="chip lo">–</span><span class="chip lo">–</span>
+    <div class="sig">RRESP</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">OK</span><span class="chip dt">OK</span><span class="chip dt">OK</span><span class="chip dt">OK</span><span class="chip dt">OK</span><span class="chip lo">–</span><span class="chip lo">–</span>
+    <div class="sig">RLAST</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip lo">0</span><span class="chip lo">0</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+    <div class="key"><b>T1</b> — address accepted in the same cycle (VALID &amp; READY together).</div>
+    <div class="key"><b>T2–T3</b> — slave latency; RREADY can sit HIGH waiting (allowed).</div>
+    <div class="key"><b>T6</b> — master back-pressure: slave <b>holds D2</b> and RVALID until RREADY returns.</div>
+    <div class="key"><b>T8</b> — RLAST on beat 4 (addr 0x4C). No separate response channel — RRESP came with every beat.</div>
+  </div>
+</div>
+
+<!-- ROW: single + overlapping -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">1</span>Single-beat transfer (AWLEN = 0)</h2>
+    <ul class="ul">
+      <li>One AW handshake, one W beat with <b>WLAST = 1</b>, one B response.</li>
+      <li>AW and W can handshake in the <b>same cycle</b>, or W can even come <b>first</b>.</li>
+      <li>Fastest write = 2 cycles (AW+W together, then B). Fastest read = AR, then R next cycle.</li>
+      <li>AXI-Lite is always this case — no LEN, no LAST, no ID.</li>
+    </ul>
+    <div class="lbl">Write orderings the slave must handle</div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span class="chip hi" style="padding: 6px 10px">AW</span><span class="p">then</span><span class="chip hi" style="padding: 6px 10px">W</span><span class="p">then</span><span class="chip xf" style="padding: 6px 10px">B</span><span class="p">— normal</span></div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span class="chip hi" style="padding: 6px 10px">AW + W same cycle</span><span class="p">then</span><span class="chip xf" style="padding: 6px 10px">B</span><span class="p">— fastest</span></div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span class="chip hi" style="padding: 6px 10px">W</span><span class="p">then</span><span class="chip hi" style="padding: 6px 10px">AW</span><span class="p">then</span><span class="chip xf" style="padding: 6px 10px">B</span><span class="p">— legal, often missed in TBs</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>Overlapping (outstanding) transfers</h2>
+    <div class="p">Master issues the next address before the previous burst's data finishes — this hides slave latency.</div>
+    <div class="wv" style="grid-template-columns: 110px repeat(8, minmax(0, 1fr))">
+      <div class="sig">Cycle</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div><div class="cyc">T7</div><div class="cyc">T8</div>
+      <div class="sig">AR</div><span class="chip xf">A</span><span class="chip xf">B</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      <div class="sig">R</div><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip dt">A0</span><span class="chip dt">A1</span><span class="chip dt">A2</span><span class="chip dt">A3·L</span><span class="chip dt">B0</span><span class="chip dt">B1·L</span>
+    </div>
+    <ul class="ul">
+      <li>Without overlap B's address would wait until T7 → 4 wasted cycles.</li>
+      <li>Same ID → B's data must follow A's. Different IDs → B's data could return first.</li>
+      <li>Max outstanding is a design parameter ("acceptance capability") — cover 0 … max in DV.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ROW: byte lanes -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">3</span>Byte lanes: narrow &amp; unaligned transfers (32-bit bus = 4 lanes)</h2>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Narrow INCR · SIZE = 1 B · start 0x00 · 4 beats</div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">beat 1</span><span class="lane lo">B3</span><span class="lane lo">B2</span><span class="lane lo">B1</span><span class="lane hi">B0</span><span class="m">0001</span></div>
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">beat 2</span><span class="lane lo">B3</span><span class="lane lo">B2</span><span class="lane hi">B1</span><span class="lane lo">B0</span><span class="m">0010</span></div>
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">beat 3</span><span class="lane lo">B3</span><span class="lane hi">B2</span><span class="lane lo">B1</span><span class="lane lo">B0</span><span class="m">0100</span></div>
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">beat 4</span><span class="lane hi">B3</span><span class="lane lo">B2</span><span class="lane lo">B1</span><span class="lane lo">B0</span><span class="m">1000</span></div>
+      </div>
+      <div class="key">Narrow = SIZE smaller than bus. Active lane <b>moves</b> each beat with the address.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Unaligned INCR · SIZE = 4 B · start 0x01 · 3 beats</div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">0x01</span><span class="lane hi">B3</span><span class="lane hi">B2</span><span class="lane hi">B1</span><span class="lane lo">B0</span><span class="m">1110</span></div>
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">0x04</span><span class="lane hi">B3</span><span class="lane hi">B2</span><span class="lane hi">B1</span><span class="lane hi">B0</span><span class="m">1111</span></div>
+        <div style="display: flex; gap: 6px; align-items: center"><span class="p" style="width: 60px">0x08</span><span class="lane hi">B3</span><span class="lane hi">B2</span><span class="lane hi">B1</span><span class="lane hi">B0</span><span class="m">1111</span></div>
+      </div>
+      <div class="key">Only the <b>first beat</b> is unaligned; later beats snap to aligned addresses (0x04, 0x08). Total = 11 bytes.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Rules to remember</div>
+      <ul class="ul">
+        <li>Lane for a byte = <span class="m">addr mod (bus bytes)</span> (little-endian).</li>
+        <li>INCR next address = <span class="m">aligned(addr) + 2^SIZE</span>.</li>
+        <li><b>FIXED</b> narrow: the same lanes every beat.</li>
+        <li><b>WRAP</b> must start aligned — unaligned WRAP is illegal.</li>
+        <li>Reads use the same lane logic; master just picks the bytes it needs.</li>
+        <li>WSTRB must be 0 on lanes outside the transfer.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ROW: DV + QA -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>What to check &amp; cover for transfers</h2>
+    <div class="lbl">Checks (monitor / SVA)</div>
+    <ul class="ul">
+      <li>Payload (WDATA, WSTRB, RDATA…) <b>stable while VALID &amp;&amp; !READY</b> — the T4 / T6 stall cases above.</li>
+      <li>Exactly LEN+1 beats; LAST only on the final beat.</li>
+      <li>BVALID never before WLAST handshake; RVALID never before AR handshake.</li>
+      <li>WSTRB lanes match address/SIZE for narrow &amp; unaligned beats.</li>
+      <li>Read data matches reference memory; write updates only strobed bytes.</li>
+    </ul>
+    <div class="lbl">Coverage</div>
+    <ul class="ul">
+      <li>Back-pressure on every channel (READY low for 0, 1, N cycles).</li>
+      <li>W before AW, same-cycle AW+W, AW before W.</li>
+      <li>Back-to-back bursts (no idle), overlapped addresses, max outstanding.</li>
+      <li>Narrow × aligned/unaligned × burst type × LEN.</li>
+      <li>Error responses mid-burst on R (RRESP changes beat to beat).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Transfer interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Crisp answer</th></tr>
+      <tr><td>Minimum cycles for a single write?</td><td>2 — AW+W handshake together, B next cycle.</td></tr>
+      <tr><td>What happens when WREADY drops mid-burst?</td><td>Master holds the same WDATA/WSTRB and WVALID until WREADY returns.</td></tr>
+      <tr><td>Can RREADY be held HIGH all the time?</td><td>Yes, and it's common; it just means "always ready".</td></tr>
+      <tr><td>How does the slave know the burst ended?</td><td>WLAST (it may also count LEN+1).</td></tr>
+      <tr><td>Can a read error stop the burst early?</td><td>No — all LEN+1 beats are still returned with RRESP error.</td></tr>
+      <tr><td>Start 0x03, SIZE 4 B, 2 beats — strobes?</td><td>Beat 1: 1000, beat 2 (0x04): 1111.</td></tr>
+      <tr><td>Why overlap addresses?</td><td>Hides latency; keeps the data channel busy back-to-back.</td></tr>
+      <tr><td>Can AW for burst 2 come before W of burst 1 ends?</td><td>Yes — outstanding writes; in AXI4 W data still follows AW order.</td></tr>
+      <tr><td>Who drives BREADY / RREADY?</td><td>The master.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+--- rtl/radix_8_dividor.sv	2026-10-15 23:41:13.586230672 +0000
++++ solutions/radix_8_dividor.sv	2026-10-15 23:41:13.589323114 +0000
+@@ -10,6 +10,7 @@
+     input  logic                     rst,
+     input  logic                     flush,
+     input  logic                     valid_in,
++    input  logic                     is_signed,   // FIX-5: divu/remu support
+     input  logic signed [WIDTH-1:0]  dividend,
+     input  logic signed [WIDTH-1:0]  divisor,
+     input  logic [TAG_WIDTH-1:0]     tag_in,
+@@ -47,6 +48,8 @@
+         logic sign_quotient;                         // Sign of quotient (propagated)
+         logic sign_remainder;                        // Sign of remainder (propagated)
+         logic [TAG_WIDTH-1:0] tag;                   // Tag for result tracking (propagated)
++        logic div_by_zero;                           // FIX-5: RISC-V /0 semantics
++        logic [WIDTH-1:0] orig_dividend;             // FIX-5: remainder of x/0 is x
+         logic valid;                                 // Valid bit for pipeline handshake
+     } stage_t;
+     stage_t pipeline [0:STAGES]; // The pipeline register array
+@@ -76,10 +79,12 @@
+         end else begin
+             // Stage 0: latch new input and initialize pipeline
+             if (valid_in) begin
+-                next_pipeline[0].dividend = (dividend[WIDTH-1]) ? -dividend : dividend;
+-                next_pipeline[0].divisor = (divisor[WIDTH-1]) ? -divisor : divisor;
+-                next_pipeline[0].sign_quotient = dividend[WIDTH-1] ^ divisor[WIDTH-1];
+-                next_pipeline[0].sign_remainder = dividend[WIDTH-1];
++                next_pipeline[0].dividend = (is_signed && dividend[WIDTH-1]) ? -dividend : dividend;
++                next_pipeline[0].divisor = (is_signed && divisor[WIDTH-1]) ? -divisor : divisor;
++                next_pipeline[0].sign_quotient = is_signed && (dividend[WIDTH-1] ^ divisor[WIDTH-1]);
++                next_pipeline[0].sign_remainder = is_signed && dividend[WIDTH-1];
++                next_pipeline[0].div_by_zero = (divisor == 0);
++                next_pipeline[0].orig_dividend = dividend;
+                 next_pipeline[0].tag = tag_in;
+                 next_pipeline[0].valid = 1'b1;
+                 next_pipeline[0].partial_remainder = 0;
+@@ -98,6 +103,8 @@
+                 next_pipeline[0].valid = 0;
+                 next_pipeline[0].partial_remainder = 0;
+                 next_pipeline[0].quotient = 0;
++                next_pipeline[0].div_by_zero = 0;
++                next_pipeline[0].orig_dividend = 0;
+             end
+ 
+             // Pipeline stages: propagate state and perform one radix-8 division step per stage
+@@ -111,6 +118,8 @@
+                 next_pipeline[i].valid = pipeline[i-1].valid;
+                 next_pipeline[i].quotient = pipeline[i-1].quotient;
+                 next_pipeline[i].partial_remainder = pipeline[i-1].partial_remainder;
++                next_pipeline[i].div_by_zero = pipeline[i-1].div_by_zero;
++                next_pipeline[i].orig_dividend = pipeline[i-1].orig_dividend;
+ 
+                 // Radix-8 step: extract next 3 bits from dividend (from MSB to LSB)
+                 bit_pos = (STAGES - i) * 3;  // Start from MSB
+@@ -150,8 +159,12 @@
+     end
+ 
+     // Output from the last pipeline stage, with sign restoration and masking
+-    assign quotient  = pipeline[STAGES].valid ? (pipeline[STAGES].sign_quotient ? -pipeline[STAGES].quotient[WIDTH-1:0] : pipeline[STAGES].quotient[WIDTH-1:0]) : '0;
+-    assign remainder = pipeline[STAGES].valid ? (pipeline[STAGES].sign_remainder ? -pipeline[STAGES].partial_remainder[WIDTH-1:0] : pipeline[STAGES].partial_remainder[WIDTH-1:0]) : '0;
++    // FIX-5: RISC-V spec: x/0 = all-ones, x%0 = x (no trap). The magnitude algorithm
++    //        produced all-ones too, but then NEGATED it for negative dividends (-> +1).
++    assign quotient  = !pipeline[STAGES].valid ? '0 : pipeline[STAGES].div_by_zero ? '1 :
++                       (pipeline[STAGES].sign_quotient ? -pipeline[STAGES].quotient[WIDTH-1:0] : pipeline[STAGES].quotient[WIDTH-1:0]);
++    assign remainder = !pipeline[STAGES].valid ? '0 : pipeline[STAGES].div_by_zero ? pipeline[STAGES].orig_dividend :
++                       (pipeline[STAGES].sign_remainder ? -pipeline[STAGES].partial_remainder[WIDTH-1:0] : pipeline[STAGES].partial_remainder[WIDTH-1:0]);
+     assign valid_out = pipeline[STAGES].valid;
+     assign tag_out   = pipeline[STAGES].valid ? pipeline[STAGES].tag : '0;
+     

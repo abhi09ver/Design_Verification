@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Bugs in the Repo: Evidence & Fixes</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:14px;font-family:'IBM Plex Mono',monospace}
+.sev{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:.04em;margin-left:auto}
+.dut{background:#B91C1C;color:#FFFFFF}
+.tb{background:#C2410C;color:#FFFFFF}
+.tool{background:#2F4B7C;color:#FFFFFF}
+.p{margin:0;font-size:14.5px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.3px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:11px 13px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.ev{background:#FDECEC;border:1px solid #F1B5B5;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#6B1111}
+.fix{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#0B3B37}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#5A2A0C}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="12-project-axi4-lite-uvm-explained.html">← Your AXI4-Lite UVM Project, Explained</a><a href="../../README.md">Index</a><a href="14-top-tier-upgrade-roadmap.html">Upgrade Roadmap for Top-Tier DV Interviews →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 20px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">Project sheet 2 · every finding reproduced in simulation</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 54px; line-height: 1; color: #FFFFFF">Bugs in the Repo — Evidence &amp; Fixes</h1>
+    <div style="font-size: 17px; color: #C9D2D8">Ran <span style="font-family: 'IBM Plex Mono', monospace">make all_tests SIM=iverilog</span> on the repo as-is, then directed probes. Fixes below were re-run: 6/6 pass for real, and failures now fail.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 260px">
+    <div style="display: flex; gap: 8px; align-items: center"><span class="sev dut" style="margin: 0">DUT</span><span style="font-size: 14px; color: #C9D2D8">design bug</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="sev tb" style="margin: 0">TB</span><span style="font-size: 14px; color: #C9D2D8">testbench bug</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="sev tool" style="margin: 0">TOOL</span><span style="font-size: 14px; color: #C9D2D8">simulator limitation</span></div>
+  </div>
+</div>
+
+<!-- BUG 1 -->
+<div class="card">
+  <h2 class="h2"><span class="num">#1</span>Regression says PASS while the scoreboard logs FAILs<span class="sev tb">TB · most important</span></h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div class="ev"><b>Evidence (repo as-is):</b> <span class="m">ALL TESTS DONE: PASS=6 FAIL=0</span> — yet the logs show scoreboard failures in 5 of 6 tests: read 7/1, rw 8/8, stress 30/2, error 1/1, wr_rd_chk 2/1 (pass/fail).</div>
+      <div class="p"><b>Root cause:</b> <span class="m">scoreboard_report()</span> only <span class="m">$display</span>s "TEST FAILED"; <span class="m">vvp</span> still exits 0, and the Makefile judges a test by exit code. So <b>this testbench cannot fail</b>.</div>
+      <div class="tip">Interview gold: "How do you know your test passed?" Answer: a non-zero exit / UVM_ERROR count checked by the regression script, and a check that the scoreboard compared <b>more than zero</b> items.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div class="lbl">Fix (verified: failing run now exits 1 → make reports FAILED)</div>
+      <pre class="code">if (sb_fail == 0 &amp;&amp; sb_pass &gt; 0)
+  $display("[SB] *** TEST PASSED ***");
+else begin
+  $display("[SB] *** TEST FAILED ***");
+  $fatal(1, "scoreboard failures");   // non-zero exit
+end
+// UVM: fail in report_phase if UVM_ERROR count &gt; 0,
+// and grep the log for "UVM_ERROR :    0" in regression</pre>
+    </div>
+  </div>
+</div>
+
+<!-- BUG 2 -->
+<div class="card">
+  <h2 class="h2"><span class="num">#2</span>Deadlock when write data arrives before the address<span class="sev dut">DUT · protocol violation</span></h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div class="p">In <span class="m">WR_ADDR</span> the slave holds <b>WREADY high</b> but only looks at AWVALID. A master that sends W first completes the W handshake — the slave <b>drops the data</b>. When AW arrives the FSM goes to <span class="m">WR_DATA</span> and waits forever for a W beat that already happened.</div>
+      <div class="ev"><b>Evidence:</b> directed probe (W first, then AW, BREADY high) → <span class="m">NO BVALID after 50 cycles</span>.</div>
+      <div class="p"><b>Why the TB missed it:</b> the driver always raises AWVALID and WVALID in the <b>same cycle</b>. W-before-AW is legal AXI and the stimulus never produced it — a <b>stimulus coverage hole</b>, not a checker problem.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div class="lbl">Fix: accept AW and W independently (verified: BVALID arrives)</div>
+      <pre class="code">assign awready = !aw_got &amp;&amp; !bvalid;   // from own state only
+assign wready  = !w_got  &amp;&amp; !bvalid;
+always_ff @(posedge aclk or negedge aresetn)
+  if (!aresetn) {aw_got, w_got, bvalid} &lt;= '0;
+  else begin
+    if (awvalid &amp;&amp; awready) begin aw_addr &lt;= awaddr; aw_got &lt;= 1; end
+    if (wvalid  &amp;&amp; wready)  begin w_data &lt;= wdata; w_strb &lt;= wstrb; w_got &lt;= 1; end
+    if (aw_got &amp;&amp; w_got &amp;&amp; !bvalid) begin
+      if (in_range) mem[idx] &lt;= apply_strobe(mem[idx], w_data, w_strb);
+      bresp  &lt;= in_range ? 2'b00 : 2'b10;     // also fixes #3
+      bvalid &lt;= 1;  aw_got &lt;= 0;  w_got &lt;= 0;
+    end
+    if (bvalid &amp;&amp; bready) bvalid &lt;= 0;
+  end</pre>
+    </div>
+  </div>
+</div>
+
+<!-- BUG 3 + 4 -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">#3</span>No SLVERR — out-of-range addresses alias<span class="sev dut">DUT</span></h2>
+    <div class="p">The header comment and the UVM scoreboard both expect <b>SLVERR</b> above 256 words, but the RTL indexes with <span class="m">(addr &gt;&gt; 2) % 256</span> and always returns OKAY.</div>
+    <div class="ev"><b>Evidence:</b> write DEADBEEF to <span class="m">0x400</span> → <span class="m">BRESP = 00</span>; then read <span class="m">0x000</span> → <span class="m">DEADBEEF</span>. The out-of-range write <b>corrupted word 0</b>.</div>
+    <div class="p">error_test "passed" because it wrote and read the same aliased address — a <b>self-consistent but wrong</b> result. Classic reason to check against a spec-based model, not a DUT echo.</div>
+    <div class="fix"><b>Fix:</b> <span class="m">in_range = addr[31:2] &lt; MEM_DEPTH</span>. Write: skip the memory update, BRESP = 10. Read: RDATA = 0, RRESP = 10. Scoreboard expects SLVERR and doesn't update the model. Verified: both return <span class="m">10</span>, word 0 untouched.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">#4</span>Monitor records a bogus X transaction at start-up<span class="sev tb">TB</span></h2>
+    <div class="p">Monitor loops on <span class="m">while (!(bus.arvalid &amp;&amp; bus.arready))</span>. At start ARVALID is <b>X</b>, ARREADY is 1 → condition is X → a <span class="m">while</span> treats X as false and <b>exits immediately</b>, capturing a read with <span class="m">addr = X</span>.</div>
+    <div class="ev"><b>Evidence:</b> <span class="m">[SB] FAIL READ addr=0xxxxxxxxx</span> as the first scoreboard entry in 5 tests.</div>
+    <div class="fix"><b>Fix (verified):</b> 4-state compare <span class="m">while (!(bus.arvalid === 1'b1 &amp;&amp; bus.arready === 1'b1))</span>, and drive all master VALIDs to 0 from time 0, not after reset.</div>
+    <div class="tip"><b>Concept:</b> X-pessimism / X-optimism. <span class="m">if</span> and <span class="m">while</span> treat X as false; <span class="m">==</span> returns X; <span class="m">===</span> returns 0/1. Add an SVA "no X on VALID after reset".</div>
+  </div>
+</div>
+
+<!-- BUG 5 + 6 -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">#5</span>Scoreboard model corrupts data on iverilog<span class="sev tool">TOOL</span></h2>
+    <div class="p"><span class="m">sb_mem[idx][b*8+:8] = tr.data[b*8+:8]</span> — a variable part-select <b>on a class property</b>. iverilog returns the low byte for every lane.</div>
+    <div class="ev"><b>Evidence:</b> 5-line repro: <span class="m">c.data = 40895E81</span> → model got <span class="m">81818181</span>. Same pattern in rw_test: <span class="m">exp=0x81818181 got=0x40895e81</span> — the DUT was right, the <b>checker</b> was wrong.</div>
+    <div class="fix"><b>Fix (verified):</b> copy into locals first: <span class="m">d = tr.data; st = tr.strb;</span> then part-select <span class="m">d</span>.</div>
+    <div class="tip"><b>Lesson:</b> prove the checker can catch a <b>known-bad DUT</b>, and when a mismatch appears, suspect the model as much as the RTL.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">#6</span>The UVM files have never been compiled<span class="sev tb">TB</span></h2>
+    <table class="t">
+      <tr><th>Problem</th><th>Effect</th></tr>
+      <tr><td>Makefile compiles only pkg + interface + tb_top</td><td>tb/axi4_agent, driver, env… are dead code</td></tr>
+      <tr><td>No <span class="m">import uvm_pkg::*</span>, <span class="m">run_test()</span> or <span class="m">config_db::set</span></td><td>Nothing would start; driver's <span class="m">get</span> would hit uvm_fatal</td></tr>
+      <tr><td>Interface has no <span class="m">driver_cb</span> / <span class="m">monitor_cb</span>, no modports, no SVA (header claims all three)</td><td>Driver and monitor don't compile</td></tr>
+      <tr><td><span class="m">uvm_analysis_imp_write</span> used without <span class="m">`uvm_analysis_imp_decl(_write)</span></td><td>Coverage class doesn't compile</td></tr>
+      <tr><td>Typo <span class="m">bins55_pat</span> (missing space)</td><td>Syntax error in cg_wr_data</td></tr>
+      <tr><td>Two different <span class="m">axi4_seq_item</span> classes</td><td>Name clash if both compiled</td></tr>
+      <tr><td>error_seq inline range conflicts with <span class="m">c_addr_legal</span></td><td>randomize() fails → uvm_fatal</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- BUG 7 + STAR -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">#7</span>Coverage &amp; stimulus gaps<span class="sev tb">TB</span></h2>
+    <ul class="ul">
+      <li><b>WSTRB:</b> comment says "all 15 patterns", covergroup has 10 bins, constraint can only generate 7 → 0010, 0100, 1000, 0111, 1110 are <b>unreachable</b>; coverage can never close.</li>
+      <li><b>No protocol coverage:</b> handshake order (AW first / W first / same cycle) and back-pressure length are never measured — exactly where bug #2 hid.</li>
+      <li><b>READY never randomised:</b> driver raises BREADY / RREADY at once; slave hold behaviour is barely exercised.</li>
+      <li><b>SLVERR bins</b> unreachable while #3 exists — a coverage hole that would have flagged the bug if anyone had looked.</li>
+      <li><b>UVM scoreboard skips</b> reads of never-written words — but the RAM resets to 0, so those could be checked.</li>
+      <li><b>End of test</b> by fixed <span class="m">#100ns</span> instead of waiting for the scoreboard to drain.</li>
+    </ul>
+    <div class="tip">Coverage only tells you what you <b>asked</b> about. A 100% number on a weak plan proves little.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">★</span>Turn this into your STAR story</h2>
+    <div class="lbl">Situation</div>
+    <div class="p">AXI4-Lite slave RAM, self-checking TB, regression green 6/6.</div>
+    <div class="lbl">Task</div>
+    <div class="p">Make sure green actually meant correct before calling it done.</div>
+    <div class="lbl">Action</div>
+    <ul class="ul">
+      <li>Read the logs, not the summary → found FAIL lines hidden behind exit code 0.</li>
+      <li>Root-caused each: X-pessimism in the monitor, a simulator part-select bug in the model.</li>
+      <li>Added W-before-AW stimulus → <b>DUT deadlock</b>; probed out-of-range → <b>aliasing, no SLVERR</b>.</li>
+      <li>Fixed RTL, made failures fatal, added SVA + handshake-order coverage.</li>
+    </ul>
+    <div class="lbl">Result</div>
+    <div class="p">2 real DUT bugs fixed, a regression that can fail, and coverage that measures the protocol, not just addresses.</div>
+    <div class="fix">Do the fixes in the repo first — then every line of this story is true and you can show the commits.</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MMU From Zero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column of "levels", each level = story + picture + toy + one-line takeaway. */
+:root{
+  --bg:#f4f7fb; --paper:#ffffff; --ink:#1b2440; --muted:#5a6684; --rule:#d8e0ee;
+  --blue:#2f6fd6; --blue-soft:#e1ecfc; --green:#1f8a5b; --green-soft:#dcf3e8;
+  --note:#e9b10f; --note-soft:#fff3c9; --coral:#d24d3e; --coral-soft:#fbe2de;
+  --violet:#7149c6; --violet-soft:#ebe3fb; --code-bg:#e9eef7;
+  --f-display:"Fredoka","Trebuchet MS",Verdana,sans-serif;
+  --f-body:"Atkinson Hyperlegible",Verdana,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11162a; --paper:#182038; --ink:#e7ecf8; --muted:#a3aec9; --rule:#2c3756;
+  --blue:#7eaaf4; --blue-soft:#1d2f55; --green:#5fd09c; --green-soft:#173a2c;
+  --note:#f3cc52; --note-soft:#3d3416; --coral:#f08b7f; --coral-soft:#43221f;
+  --violet:#b39af0; --violet-soft:#2c2350; --code-bg:#222c48; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11162a; --paper:#182038; --ink:#e7ecf8; --muted:#a3aec9; --rule:#2c3756;
+  --blue:#7eaaf4; --blue-soft:#1d2f55; --green:#5fd09c; --green-soft:#173a2c;
+  --note:#f3cc52; --note-soft:#3d3416; --coral:#f08b7f; --coral-soft:#43221f;
+  --violet:#b39af0; --violet-soft:#2c2350; --code-bg:#222c48; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:860px;margin:0 auto;padding-block:30px 90px;display:grid;gap:0}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(40px,7vw,64px);font-weight:700}
+h2{font-size:30px;font-weight:600}
+h3{font-size:20px;font-weight:600}
+p{margin:0;max-width:66ch}
+code,.mono{font-family:var(--f-mono);font-size:.82em;background:var(--code-bg);padding:1px 6px;border-radius:4px}
+.hero{display:grid;gap:14px;padding-bottom:26px}
+.hero .lede{font-size:21px;color:var(--muted)}
+.path{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.path a{font-family:var(--f-display);font-size:14px;font-weight:500;text-decoration:none;color:var(--ink);background:var(--paper);border:1.5px solid var(--rule);border-radius:999px;padding:4px 12px}
+.path a:hover,.path a:focus-visible{border-color:var(--blue);color:var(--blue);outline:none}
+.level{display:grid;gap:16px;padding-block:40px 6px;border-top:2px dashed var(--rule);scroll-margin-top:10px}
+.lvl{font-family:var(--f-display);font-weight:600;font-size:14px;color:var(--blue);letter-spacing:.06em;text-transform:uppercase}
+.like{background:var(--note-soft);border:1.5px solid var(--note);border-radius:12px;padding:14px 18px;display:grid;gap:6px}
+.like b.k{font-family:var(--f-display);font-weight:600;color:var(--ink)}
+.real{background:var(--blue-soft);border-radius:12px;padding:14px 18px;display:grid;gap:6px}
+.real b.k{font-family:var(--f-display);font-weight:600;color:var(--blue)}
+.take{font-family:var(--f-display);font-weight:500;font-size:19px;border-left:5px solid var(--green);padding:6px 0 6px 14px}
+.pic{background:var(--paper);border:1.5px solid var(--rule);border-radius:14px;padding:14px;overflow-x:auto;margin:0}
+.pic svg{display:block;width:100%;min-width:600px;height:auto}
+.pic figcaption{font-size:15px;color:var(--muted);margin-top:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--paper);border:1.5px solid var(--rule);border-radius:12px;padding:14px 16px;min-width:0;display:grid;gap:6px;align-content:start}
+.card p,.card li{font-size:16.5px}
+.card ul{margin:0;padding-left:20px}
+.toy{background:var(--paper);border:2px solid var(--blue);border-radius:14px;padding:16px;display:grid;gap:12px}
+.toy .tt{font-family:var(--f-display);font-weight:600;color:var(--blue);font-size:15px;text-transform:uppercase;letter-spacing:.05em}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{font-family:var(--f-display);font-size:14px;color:var(--muted);display:grid;gap:4px}
+input,select{font-family:var(--f-mono);font-size:17px;padding:8px 10px;border:1.5px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);min-width:0}
+input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
+button{font-family:var(--f-display);font-weight:600;font-size:15px;padding:8px 14px;border-radius:9px;border:1.5px solid var(--blue);background:var(--blue);color:var(--paper);cursor:pointer}
+button.ghost{background:transparent;color:var(--blue)}
+button:hover{filter:brightness(1.08)}
+button:focus-visible{outline:3px solid var(--note);outline-offset:2px}
+.result{border-radius:10px;padding:12px 14px;font-size:17px;background:var(--bg);display:grid;gap:4px}
+.result.ok{background:var(--green-soft)} .result.bad{background:var(--coral-soft)}
+.result .big{font-family:var(--f-display);font-weight:600;font-size:24px}
+.split{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.split div{border-radius:10px;padding:8px 12px;display:grid;font-family:var(--f-mono);font-size:13px}
+.split b{font-size:22px;font-family:var(--f-display)}
+.s-page{background:var(--violet-soft);color:var(--violet)} .s-off{background:var(--green-soft);color:var(--green)}
+.tbl{overflow-x:auto;border:1.5px solid var(--rule);border-radius:12px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:16px;min-width:420px}
+th,td{padding:7px 12px;border-bottom:1px solid var(--rule);text-align:left}
+th{font-family:var(--f-display);font-weight:600;font-size:14px;color:var(--muted);background:var(--bg)}
+td.m{font-family:var(--f-mono);font-size:14.5px;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.hl td{background:var(--note-soft)}
+.notes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.notes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sticky{background:var(--note-soft);border:1.5px solid var(--note);border-radius:4px 4px 14px 4px;padding:10px;min-height:74px;font-family:var(--f-mono);font-size:14px;display:grid;align-content:center;text-align:center;transition:transform .2s}
+.sticky.empty{background:transparent;border-style:dashed;color:var(--muted)}
+.sticky.flash{transform:rotate(-3deg) scale(1.05)}
+.pagebtns{display:flex;flex-wrap:wrap;gap:6px}
+.pagebtns button{min-width:48px}
+.score{font-family:var(--f-display);font-size:17px;display:flex;gap:18px;flex-wrap:wrap}
+.score b{font-size:24px}
+.steps{display:grid;gap:8px;counter-reset:s}
+.steps div{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;font-size:17px}
+.steps div::before{counter-increment:s;content:counter(s);font-family:var(--f-display);font-weight:600;background:var(--blue);color:var(--paper);border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:15px}
+.gloss{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);border:1.5px solid var(--rule);border-radius:12px;background:var(--paper);overflow:hidden}
+.gloss dt,.gloss dd{margin:0;padding:9px 14px;border-bottom:1px solid var(--rule);font-size:16px}
+.gloss dt{font-family:var(--f-display);font-weight:600;background:var(--bg)}
+@media (max-width:520px){.gloss{grid-template-columns:minmax(0,1fr)}.gloss dt{border-bottom:0;padding-bottom:0}}
+.quiz{display:grid;gap:12px}
+.q{background:var(--paper);border:1.5px solid var(--rule);border-radius:12px;padding:14px 16px;display:grid;gap:8px}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px}
+.q .opts button{background:var(--bg);color:var(--ink);border-color:var(--rule);font-weight:500}
+.q .opts button.right{background:var(--green-soft);border-color:var(--green)}
+.q .opts button.wrong{background:var(--coral-soft);border-color:var(--coral)}
+.q .why{font-size:16px;color:var(--muted)}
+.next{background:var(--violet-soft);border-radius:14px;padding:18px;display:grid;gap:8px}
+.next a{color:var(--violet);font-family:var(--f-display);font-weight:600}
+/* svg */
+.k-box{fill:var(--paper);stroke:var(--ink);stroke-width:1.5}
+.k-blue{fill:var(--blue-soft);stroke:var(--blue);stroke-width:1.5}
+.k-green{fill:var(--green-soft);stroke:var(--green);stroke-width:1.5}
+.k-note{fill:var(--note-soft);stroke:var(--note);stroke-width:1.5}
+.k-coral{fill:var(--coral-soft);stroke:var(--coral);stroke-width:1.5}
+.k-violet{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.5}
+.k-line{stroke:var(--ink);stroke-width:1.6;fill:none}
+.k-dash{stroke:var(--muted);stroke-width:1.4;fill:none;stroke-dasharray:5 5}
+.k-red{stroke:var(--coral);stroke-width:2.2;fill:none}
+.t{fill:var(--ink);font-family:var(--f-body);font-size:14px}
+.tb{fill:var(--ink);font-family:var(--f-display);font-size:16px;font-weight:600}
+.tm{fill:var(--muted);font-family:var(--f-mono);font-size:12px}
+.tc{fill:var(--coral);font-family:var(--f-display);font-size:15px;font-weight:600}
+.tg{fill:var(--green);font-family:var(--f-display);font-size:15px;font-weight:600}
+.ah{fill:var(--ink)}
+@media (prefers-reduced-motion:reduce){.sticky{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+  <div class="lvl">A learning path for freshers · from zero to SMMU</div>
+  <h1>MMU From Zero</h1>
+  <p class="lede">No background needed. We start with "what is an address" and climb one small step at a time until you can explain how a System MMU protects memory, and how a verification engineer tests it.</p>
+  <p>Each level has the same four parts: <b>a story</b> you already know, <b>the real thing</b> it stands for, <b>a toy</b> you can play with, and <b>one sentence</b> to remember.</p>
+  <nav class="path" aria-label="Levels">
+    <a href="#l1">1 · Addresses</a><a href="#l2">2 · The problem</a><a href="#l3">3 · Pretend addresses</a><a href="#l4">4 · Pages</a><a href="#l5">5 · Page table</a><a href="#l6">6 · Levels</a><a href="#l7">7 · TLB</a><a href="#l8">8 · Faults</a><a href="#l9">9 · Name tags &amp; cleanup</a><a href="#l10">10 · Two translators</a><a href="#l11">11 · Devices</a><a href="#l12">12 · SMMU rules</a><a href="#l13">13 · Mailboxes</a><a href="#l14">14 · Verification</a><a href="#words">Words</a><a href="#quiz">Quiz</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section class="level" id="l1">
+  <div class="lvl">Level 1</div>
+  <h2>Memory is a long street of numbered houses</h2>
+  <div class="like"><b class="k">The story</b><p>Picture a very long street. Every house has a number: 0, 1, 2, 3… Each house holds exactly one small thing. To fetch something, you just say the house number.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 760 150" role="img" aria-label="A row of numbered memory boxes">
+      <g>
+        <rect x="20" y="40" width="80" height="60" class="k-box"/><rect x="100" y="40" width="80" height="60" class="k-box"/><rect x="180" y="40" width="80" height="60" class="k-green"/><rect x="260" y="40" width="80" height="60" class="k-box"/><rect x="340" y="40" width="80" height="60" class="k-box"/><rect x="420" y="40" width="80" height="60" class="k-box"/><rect x="500" y="40" width="80" height="60" class="k-box"/><rect x="580" y="40" width="80" height="60" class="k-box"/>
+        <text x="52" y="76" class="t">7</text><text x="130" y="76" class="t">42</text><text x="210" y="76" class="t">99</text><text x="290" y="76" class="t">0</text><text x="370" y="76" class="t">13</text><text x="450" y="76" class="t">5</text><text x="530" y="76" class="t">88</text><text x="610" y="76" class="t">21</text>
+        <text x="50" y="122" class="tm">0</text><text x="130" y="122" class="tm">1</text><text x="210" y="122" class="tm">2</text><text x="290" y="122" class="tm">3</text><text x="370" y="122" class="tm">4</text><text x="450" y="122" class="tm">5</text><text x="530" y="122" class="tm">6</text><text x="610" y="122" class="tm">7</text>
+        <text x="680" y="76" class="t">… billions</text>
+        <text x="20" y="28" class="tb">Memory (RAM)</text><text x="180" y="142" class="tg">"Read address 2" → 99</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p>RAM is a huge list of bytes. Each byte has a number called its <b>address</b>. The CPU says "read address 2" or "write 13 into address 4". A real machine has billions of addresses.</p></div>
+  <p class="take">An address is just a house number for one byte of memory.</p>
+</section>
+
+<!-- 2 -->
+<section class="level" id="l2">
+  <div class="lvl">Level 2</div>
+  <h2>The problem: many programs, one street</h2>
+  <div class="like"><b class="k">The story</b><p>Now imagine a game, a browser and a music app all living on the same street. The game writes its score to house 500. The browser also picks house 500 for a password. Now they overwrite each other. Worse, a bad app could walk over and read the password.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Problem 1: collisions</h3><p>Two programs choose the same address by accident and break each other.</p></div>
+    <div class="card"><h3>Problem 2: snooping</h3><p>A program reads or changes memory that belongs to someone else.</p></div>
+    <div class="card"><h3>Problem 3: messy space</h3><p>Free memory ends up in scattered little holes, so a program needing a big block can't find one.</p></div>
+  </div>
+  <p class="take">If everyone uses real addresses directly, nobody is safe.</p>
+</section>
+
+<!-- 3 -->
+<section class="level" id="l3">
+  <div class="lvl">Level 3</div>
+  <h2>The fix: pretend addresses and a translator at the gate</h2>
+  <div class="like"><b class="k">The story</b><p>A hotel. Every guest's key card says "Room 1". Guests never see the real room numbers. When you tap your card, the front desk looks you up and sends you to the real room, say 714. Two guests can both hold "Room 1" and still land in different real rooms. And the desk refuses if you try a room that isn't yours.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 760 220" role="img" aria-label="Two programs use the same virtual address but the MMU maps them to different physical addresses">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+      <rect x="20" y="30" width="170" height="60" class="k-blue"/><text x="36" y="56" class="tb">Game</text><text x="36" y="76" class="tm">"address 500"</text>
+      <rect x="20" y="130" width="170" height="60" class="k-violet"/><text x="36" y="156" class="tb">Browser</text><text x="36" y="176" class="tm">"address 500"</text>
+      <rect x="290" y="70" width="170" height="80" class="k-note"/><text x="306" y="100" class="tb">MMU</text><text x="306" y="122" class="t">the front desk</text>
+      <rect x="560" y="30" width="180" height="60" class="k-green"/><text x="576" y="56" class="tb">Real 8 500</text><text x="576" y="76" class="tm">game's real spot</text>
+      <rect x="560" y="130" width="180" height="60" class="k-green"/><text x="576" y="156" class="tb">Real 3 500</text><text x="576" y="176" class="tm">browser's real spot</text>
+      <path d="M190 60 L288 95" class="k-line" marker-end="url(#a1)"/><path d="M190 160 L288 125" class="k-line" marker-end="url(#a1)"/>
+      <path d="M460 95 L558 60" class="k-line" marker-end="url(#a1)"/><path d="M460 125 L558 160" class="k-line" marker-end="url(#a1)"/>
+      <text x="200" y="210" class="tm">virtual address (pretend)</text><text x="560" y="210" class="tm">physical address (real)</text>
+    </svg>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p>Programs use <b>virtual addresses</b> (VA). Hardware called the <b>MMU</b> (Memory Management Unit) sits between the CPU and memory and turns each VA into a <b>physical address</b> (PA). The operating system (OS) tells the MMU the rules.</p></div>
+  <p class="take">MMU = a translator plus a security guard: it changes pretend addresses into real ones and blocks anything not allowed.</p>
+</section>
+
+<!-- 4 -->
+<section class="level" id="l4">
+  <div class="lvl">Level 4</div>
+  <h2>Pages: translate in boxes, not one house at a time</h2>
+  <div class="like"><b class="k">The story</b><p>Writing down where every single house goes would take a gigantic notebook. So we group houses into blocks of 100. Address <b>523</b> means "block <b>5</b>, house <b>23</b> inside it". We only remember where each <em>block</em> moved. The position inside the block never changes.</p></div>
+  <div class="toy" aria-label="Address splitter">
+    <div class="tt">Toy 1 · split an address</div>
+    <div class="row">
+      <label for="addr">Address<input id="addr" type="number" min="0" value="523" style="width:150px"></label>
+      <label for="psize">Block (page) size<select id="psize"><option value="100">100 (easy decimal)</option><option value="4096">4096 (real 4KB page)</option></select></label>
+    </div>
+    <div class="split" id="splitOut" aria-live="polite"></div>
+    <p id="splitNote" style="font-size:16px;color:var(--muted)"></p>
+  </div>
+  <div class="real"><b class="k">The real thing</b><p>Memory is cut into <b>pages</b>, usually 4096 bytes (4KB). Because 4096 = 2<sup>12</sup>, the lowest 12 bits of an address are the <b>offset</b> (position inside the page) and the rest is the <b>page number</b>. Only the page number gets translated.</p></div>
+  <p class="take">Address = page number + offset. Translate the page number, keep the offset.</p>
+</section>
+
+<!-- 5 -->
+<section class="level" id="l5">
+  <div class="lvl">Level 5</div>
+  <h2>The page table: the front desk's notebook</h2>
+  <div class="like"><b class="k">The story</b><p>The front desk keeps a notebook. Each line says: "pretend block 3 → real block 1, guests may read and write". Some lines have a sticker: "read only". Some lines are blank: "no such room".</p></div>
+  <div class="toy" aria-label="Translator toy">
+    <div class="tt">Toy 2 · be the MMU (pages of 100)</div>
+    <div class="tbl"><table id="ptable">
+      <thead><tr><th>Virtual page</th><th>→ Physical page</th><th>Allowed</th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="row">
+      <label for="vaddr">Virtual address<input id="vaddr" type="number" min="0" value="345" style="width:140px"></label>
+      <label for="act">Action<select id="act"><option value="R">Read</option><option value="W">Write</option></select></label>
+      <button type="button" id="go">Translate</button>
+    </div>
+    <div class="result" id="tout" aria-live="polite"></div>
+    <p style="font-size:15px;color:var(--muted)">Try 345 read, 345 write, 120 write, 250 read, 999 read.</p>
+  </div>
+  <div class="real"><b class="k">The real thing</b><p>The OS builds a <b>page table</b> in memory. Each line is a <b>page table entry</b> (PTE) holding the physical page plus permission bits (read, write, execute, user or kernel). The MMU reads it on its own; this reading is called a <b>page table walk</b>.</p></div>
+  <p class="take">Page table = the rule book. One line per page: where it really lives and who may touch it.</p>
+</section>
+
+<!-- 6 -->
+<section class="level" id="l6">
+  <div class="lvl">Level 6</div>
+  <h2>Levels: a notebook with an index</h2>
+  <div class="like"><b class="k">The story</b><p>With billions of pages, a flat notebook would be enormous and mostly blank. So we use a book with an index: the first page says "rooms 0–999 are in chapter A", chapter A says "rooms 300–399 are on page 12", page 12 has the actual line. If a whole chapter is empty, we don't even print it.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 780 250" role="img" aria-label="Multi-level page table walk from base register through levels to the data page">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+      <rect x="10" y="100" width="110" height="50" class="k-note"/><text x="22" y="122" class="tb">TTBR</text><text x="22" y="140" class="tm">where book starts</text>
+      <rect x="160" y="40" width="120" height="170" class="k-blue"/><text x="174" y="64" class="tb">Level 0</text><text x="174" y="84" class="tm">the big index</text>
+      <rect x="320" y="40" width="120" height="170" class="k-blue"/><text x="334" y="64" class="tb">Level 1</text><text x="334" y="84" class="tm">chapter</text>
+      <rect x="480" y="40" width="120" height="170" class="k-blue"/><text x="494" y="64" class="tb">Level 2</text><text x="494" y="84" class="tm">section</text>
+      <rect x="640" y="40" width="120" height="170" class="k-green"/><text x="654" y="64" class="tb">Level 3</text><text x="654" y="84" class="tm">the real line</text>
+      <rect x="170" y="130" width="100" height="22" class="k-note"/><rect x="330" y="110" width="100" height="22" class="k-note"/><rect x="490" y="160" width="100" height="22" class="k-note"/><rect x="650" y="140" width="100" height="22" class="k-note"/>
+      <path d="M120 125 L168 140" class="k-line" marker-end="url(#a2)"/><path d="M270 141 L328 121" class="k-line" marker-end="url(#a2)"/><path d="M430 121 L488 171" class="k-line" marker-end="url(#a2)"/><path d="M590 171 L648 151" class="k-line" marker-end="url(#a2)"/>
+      <text x="160" y="236" class="tm">VA bits 47–39</text><text x="320" y="236" class="tm">bits 38–30</text><text x="480" y="236" class="tm">bits 29–21</text><text x="640" y="236" class="tm">bits 20–12 → page</text>
+    </svg>
+    <figcaption>Each level uses a slice of the virtual address as its line number. Four reads of memory to translate one address. That is slow, which leads to Level 7.</figcaption>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p>Arm uses up to 4 levels (0–3) for a 48-bit address with 4KB pages. Each level is a 4KB table of 512 entries. An entry either points to the next table or says "this whole block maps here" (a 2MB or 1GB <b>block</b>, a shortcut that skips the remaining levels).</p></div>
+  <p class="take">Multi-level tables save space; the price is several memory reads per translation.</p>
+</section>
+
+<!-- 7 -->
+<section class="level" id="l7">
+  <div class="lvl">Level 7</div>
+  <h2>The TLB: sticky notes for answers you just looked up</h2>
+  <div class="like"><b class="k">The story</b><p>The desk clerk is tired of flipping through the index book. So she sticks a few notes on the desk: "page 3 → 1". Next time someone asks for page 3 she reads the sticky note instantly. The desk only has room for 4 notes, so the oldest-used note gets thrown away when a new one is needed.</p></div>
+  <div class="toy" aria-label="TLB simulator">
+    <div class="tt">Toy 3 · TLB with 4 sticky notes</div>
+    <p style="font-size:16px">Click page numbers to make the program touch that page. A <b>hit</b> is instant. A <b>miss</b> costs a 4-step walk and adds a note.</p>
+    <div class="notes" id="notes"></div>
+    <div class="pagebtns" id="pbtns"></div>
+    <div class="row"><button type="button" class="ghost" id="playseq">Play a loop: 1 3 1 3 1 5 1 3</button><button type="button" class="ghost" id="reset">Clear all notes</button></div>
+    <div class="score"><span>Hits <b id="hits">0</b></span><span>Misses <b id="miss">0</b></span><span>Memory reads spent on walks <b id="reads">0</b></span></div>
+    <div class="result" id="tlbmsg" aria-live="polite">Touch a page to start.</div>
+  </div>
+  <div class="real"><b class="k">The real thing</b><p>The <b>TLB</b> (Translation Lookaside Buffer) is a small, very fast cache of recent translations inside the MMU. Programs touch the same pages over and over, so most lookups hit. Real CPUs have small L1 TLBs and bigger L2 TLBs.</p></div>
+  <p class="take">TLB = a cache of translations. Hit = fast; miss = walk the tables.</p>
+</section>
+
+<!-- 8 -->
+<section class="level" id="l8">
+  <div class="lvl">Level 8</div>
+  <h2>Faults: when the desk says "no"</h2>
+  <div class="like"><b class="k">The story</b><p>Sometimes the notebook has no line for your room, or your card says "read only" and you try to write. The clerk does not guess. She stops you and calls the manager (the OS). The manager might fix the notebook (load the page) and let you try again, or throw you out.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Translation fault</h3><p>No valid line. Common and often normal: the OS loads the page, then retries.</p></div>
+    <div class="card"><h3>Permission fault</h3><p>Line exists, but you lack the right: writing a read-only page, running code from a data page.</p></div>
+    <div class="card"><h3>Access flag fault</h3><p>Page is mapped but marked "not yet used", so the OS can track which pages are busy.</p></div>
+    <div class="card"><h3>Address size fault</h3><p>The address is bigger than the system supports.</p></div>
+  </div>
+  <p class="take">A fault is the MMU refusing and asking the OS to decide. It is how protection is enforced.</p>
+</section>
+
+<!-- 9 -->
+<section class="level" id="l9">
+  <div class="lvl">Level 9</div>
+  <h2>Name tags and cleaning up old notes</h2>
+  <div class="like"><b class="k">The story</b><p>The game and the browser both have a "page 3", going to different real pages. If the sticky notes don't say whose note it is, the browser could use the game's note. So each note gets a name tag. And when the manager changes the notebook ("page 3 moved"), she must tear off the old sticky notes, or the clerk will keep sending people to the old room.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>ASID = the program's name tag</h3><p>Each TLB entry carries an Address Space ID, so programs never use each other's entries. A <b>VMID</b> is the same idea for whole virtual machines.</p></div>
+    <div class="card"><h3>TLB invalidation = tearing off notes</h3><p>After changing a page table, software sends a <b>TLBI</b> ("forget page 3 for ASID 7"), then waits until it is finished. Forgetting this step is one of the most common real bugs.</p></div>
+  </div>
+  <p class="take">Tag every cached answer with its owner, and throw away stale answers whenever the rules change.</p>
+</section>
+
+<!-- 10 -->
+<section class="level" id="l10">
+  <div class="lvl">Level 10</div>
+  <h2>Two translators: virtual machines</h2>
+  <div class="like"><b class="k">The story</b><p>A hotel inside a hotel. A small hotel rents a whole floor of a big hotel. The small hotel's desk says "Room 1 → my room 20". But "my room 20" is itself pretend; the big hotel's desk turns it into real room 714. Two desks, one after another.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 760 140" role="img" aria-label="Stage 1 then stage 2 translation">
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+      <rect x="10" y="40" width="130" height="56" class="k-box"/><text x="24" y="64" class="tb">VA</text><text x="24" y="84" class="tm">app's address</text>
+      <rect x="190" y="30" width="160" height="76" class="k-blue"/><text x="204" y="56" class="tb">Stage 1</text><text x="204" y="76" class="t">guest OS rules</text><text x="204" y="94" class="tm">ASID</text>
+      <rect x="400" y="40" width="110" height="56" class="k-box"/><text x="414" y="64" class="tb">IPA</text><text x="414" y="84" class="tm">"middle" address</text>
+      <rect x="560" y="30" width="190" height="76" class="k-violet"/><text x="574" y="56" class="tb">Stage 2 → PA</text><text x="574" y="76" class="t">hypervisor rules</text><text x="574" y="94" class="tm">VMID</text>
+      <path d="M140 68H188" class="k-line" marker-end="url(#a3)"/><path d="M350 68H398" class="k-line" marker-end="url(#a3)"/><path d="M510 68H558" class="k-line" marker-end="url(#a3)"/>
+    </svg>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p><b>Stage 1</b> (VA → IPA) is controlled by the guest OS. <b>Stage 2</b> (IPA → PA) is controlled by the hypervisor, which keeps VMs apart. Even the guest's page tables live at IPA addresses, so every stage-1 step needs a stage-2 lookup too. A full cold lookup can take 24 memory reads.</p></div>
+  <p class="take">Virtual machines add a second translation stage owned by the hypervisor.</p>
+</section>
+
+<!-- 11 -->
+<section class="level" id="l11">
+  <div class="lvl">Level 11</div>
+  <h2>Devices need a guard too: the SMMU</h2>
+  <div class="like"><b class="k">The story</b><p>So far only guests at the front desk (CPU programs) got checked. But delivery trucks (the GPU, the network card, the SSD) drive straight onto the street to drop off and pick up boxes. Without a gate, one buggy or hacked truck could drive into any house. So we put a second guard on the truck road. Each truck shows a badge.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 780 230" role="img" aria-label="CPU uses MMU; devices use SMMU; both reach memory">
+      <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+      <rect x="20" y="20" width="140" height="56" class="k-blue"/><text x="34" y="54" class="tb">CPU</text>
+      <rect x="220" y="20" width="140" height="56" class="k-note"/><text x="234" y="54" class="tb">MMU</text>
+      <rect x="20" y="120" width="140" height="40" class="k-violet"/><text x="34" y="145" class="tb">GPU  · badge 7</text>
+      <rect x="20" y="170" width="140" height="40" class="k-violet"/><text x="34" y="195" class="tb">NIC  · badge 12</text>
+      <rect x="220" y="130" width="140" height="70" class="k-note"/><text x="234" y="160" class="tb">SMMU</text><text x="234" y="180" class="tm">guard for devices</text>
+      <rect x="480" y="60" width="140" height="110" class="k-green"/><text x="496" y="120" class="tb">Memory</text>
+      <path d="M160 48H218" class="k-line" marker-end="url(#a4)"/><path d="M360 48 L478 90" class="k-line" marker-end="url(#a4)"/>
+      <path d="M160 140 L218 155" class="k-line" marker-end="url(#a4)"/><path d="M160 190 L218 178" class="k-line" marker-end="url(#a4)"/><path d="M360 165 L478 140" class="k-line" marker-end="url(#a4)"/>
+      <path d="M640 200 L700 200" class="k-red"/><text x="640" y="190" class="tc">blocked</text>
+      <path d="M380 200 C 520 220, 600 210, 640 200" class="k-dash"/>
+      <text x="380" y="222" class="tm">a bad DMA outside its pages never reaches memory</text>
+    </svg>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p>Devices read and write memory directly (<b>DMA</b>, Direct Memory Access). The <b>SMMU</b> (System MMU, Arm's IOMMU) is an MMU for those devices. It uses the same page-table format as the CPU. Every device transaction carries a <b>StreamID</b> (which device, the badge) and optionally a <b>SubstreamID</b> (which job or process inside that device, also called PASID on PCIe).</p></div>
+  <p class="take">SMMU = the MMU for devices. StreamID tells it who is asking.</p>
+</section>
+
+<!-- 12 -->
+<section class="level" id="l12">
+  <div class="lvl">Level 12</div>
+  <h2>How the SMMU finds each device's rules</h2>
+  <div class="like"><b class="k">The story</b><p>The truck guard has a filing cabinet. Badge 7 → drawer 7 → a <b>device card</b>: "this truck belongs to VM 2, use these rules". If the truck runs several jobs, the card points to a stack of <b>job cards</b>, one per job number, each saying which notebook (page table) to use.</p></div>
+  <figure class="pic">
+    <svg viewBox="0 0 780 170" role="img" aria-label="StreamID indexes stream table to STE, SubstreamID indexes CD table to CD, CD points to page tables">
+      <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+      <rect x="10" y="50" width="130" height="60" class="k-box"/><text x="22" y="76" class="tb">StreamID 7</text><text x="22" y="96" class="tm">the badge</text>
+      <rect x="180" y="40" width="150" height="80" class="k-blue"/><text x="194" y="66" class="tb">Stream Table</text><text x="194" y="86" class="t">→ STE (device card)</text><text x="194" y="104" class="tm">bypass / translate / VM</text>
+      <rect x="370" y="40" width="160" height="80" class="k-violet"/><text x="384" y="66" class="tb">CD table</text><text x="384" y="86" class="t">→ CD (job card)</text><text x="384" y="104" class="tm">picked by SubstreamID</text>
+      <rect x="570" y="40" width="190" height="80" class="k-green"/><text x="584" y="66" class="tb">Page tables</text><text x="584" y="86" class="t">same as CPU's</text><text x="584" y="104" class="tm">walk → real address</text>
+      <path d="M140 80H178" class="k-line" marker-end="url(#a5)"/><path d="M330 80H368" class="k-line" marker-end="url(#a5)"/><path d="M530 80H568" class="k-line" marker-end="url(#a5)"/>
+      <text x="180" y="150" class="tm">All of these live in normal memory. The SMMU keeps copies in caches, so software must say "forget" after editing them.</text>
+    </svg>
+  </figure>
+  <div class="real"><b class="k">The real thing</b><p><b>STE</b> = Stream Table Entry (64 bytes, one per device). It says whether to block, pass through, or translate, and points to stage-2 tables and the CD table. <b>CD</b> = Context Descriptor (64 bytes, one per process context). It holds the stage-1 page table pointer and ASID.</p></div>
+  <p class="take">StreamID → STE → (SubstreamID) → CD → page tables → real address.</p>
+</section>
+
+<!-- 13 -->
+<section class="level" id="l13">
+  <div class="lvl">Level 13</div>
+  <h2>Talking to the SMMU: mailboxes</h2>
+  <div class="like"><b class="k">The story</b><p>The manager and the guard don't phone each other for every small thing. The manager drops orders into an <b>in-tray</b> ("forget the note for page 3", "re-read device card 7"). The guard drops problem reports into an <b>out-tray</b> ("truck 12 tried a locked house"). Each tray is a ring: when you reach the end, you start again at the top.</p></div>
+  <div class="steps">
+    <div><p><b>Command queue</b> (software → SMMU): orders like invalidate TLB, invalidate STE/CD, and <code>CMD_SYNC</code>, which means "tell me when everything before this is done".</p></div>
+    <div><p><b>Event queue</b> (SMMU → software): fault reports such as "bad STE" or "translation fault for StreamID 12 at address X".</p></div>
+    <div><p><b>PRI queue</b> (SMMU → software): PCIe devices asking "please bring this page into memory for me".</p></div>
+    <div><p>Each ring has a <b>PROD</b> pointer (where the writer puts the next item) and a <b>CONS</b> pointer (where the reader takes the next item). PROD = CONS means empty.</p></div>
+  </div>
+  <p class="take">Software sends commands through a ring buffer; the SMMU reports problems through another.</p>
+</section>
+
+<!-- 14 -->
+<section class="level" id="l14">
+  <div class="lvl">Level 14</div>
+  <h2>What a verification engineer does here</h2>
+  <div class="like"><b class="k">The story</b><p>Before the hotel opens, someone has to try to break it. They send fake guests with wrong keys, change rooms in the middle of check-in, fill the mailbox until it overflows, and check every single time that the clerk sent people to the right room. That person is the verification engineer. Their job is to find the bug before a customer does.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>1. Predict</h3><p>Write a <b>reference model</b>: a simple program that knows what the correct answer should be ("VA 345 for ASID 7 must go to PA 145").</p></div>
+    <div class="card"><h3>2. Poke</h3><p>Build <b>stimulus</b>: random and planned traffic from fake devices, random page tables, random commands.</p></div>
+    <div class="card"><h3>3. Compare</h3><p>A <b>scoreboard</b> checks the chip's real output against the prediction, every time.</p></div>
+    <div class="card"><h3>4. Count</h3><p><b>Coverage</b> records which situations you have actually tried (every fault type, every page size, full queue…) so you know when you are done.</p></div>
+  </div>
+  <h3>Starter test ideas (try to think of why each one could fail)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Try this</th><th>What could go wrong in the chip</th></tr></thead>
+    <tbody>
+      <tr><td>Change a page table entry, invalidate, then send traffic</td><td>The TLB still uses the old answer (stale sticky note).</td></tr>
+      <tr><td>Write to a read-only page</td><td>The write goes through instead of faulting.</td></tr>
+      <tr><td>Two programs with the same VA, different ASIDs</td><td>One program gets the other's translation.</td></tr>
+      <tr><td>Fill the event queue completely</td><td>Reports are lost or overwrite each other.</td></tr>
+      <tr><td>Send traffic with a StreamID that has no STE</td><td>The device is let through instead of being blocked.</td></tr>
+      <tr><td>Invalidate while a table walk is still running</td><td>The walk finishes late and puts a stale note back.</td></tr>
+    </tbody></table></div>
+  <p class="take">Verification = predict the right answer, poke the design hard, compare every result, and measure what you have covered.</p>
+</section>
+
+<!-- words -->
+<section class="level" id="words">
+  <div class="lvl">Word list</div>
+  <h2>Words in one line each</h2>
+  <dl class="gloss">
+    <dt>Address</dt><dd>House number of one byte.</dd>
+    <dt>VA / PA</dt><dd>Virtual (pretend) address vs physical (real) address.</dd>
+    <dt>MMU</dt><dd>Hardware that translates VA → PA and checks permissions for the CPU.</dd>
+    <dt>Page</dt><dd>Fixed-size block of memory, usually 4KB.</dd>
+    <dt>Offset</dt><dd>Position inside a page. Never translated.</dd>
+    <dt>Page table / PTE</dt><dd>The rule book in memory / one line of it.</dd>
+    <dt>Table walk</dt><dd>MMU reading the page table, level by level.</dd>
+    <dt>TLB</dt><dd>Small fast cache of recent translations.</dd>
+    <dt>Fault</dt><dd>MMU says no and reports it.</dd>
+    <dt>ASID / VMID</dt><dd>Name tags for a program / a virtual machine.</dd>
+    <dt>TLBI</dt><dd>Command to throw away stale TLB entries.</dd>
+    <dt>Stage 1 / Stage 2</dt><dd>Guest OS translation / hypervisor translation.</dd>
+    <dt>IPA</dt><dd>Intermediate address between stage 1 and stage 2.</dd>
+    <dt>DMA</dt><dd>A device reading or writing memory by itself.</dd>
+    <dt>SMMU</dt><dd>MMU for devices.</dd>
+    <dt>StreamID</dt><dd>The device's badge number.</dd>
+    <dt>SubstreamID / PASID</dt><dd>Which job or process inside the device.</dd>
+    <dt>STE / CD</dt><dd>Device card / job card holding the rules.</dd>
+    <dt>Command / Event queue</dt><dd>In-tray of orders / out-tray of problem reports.</dd>
+    <dt>CMD_SYNC</dt><dd>"Tell me when everything before this is finished."</dd>
+    <dt>Reference model</dt><dd>Program that predicts the correct answer.</dd>
+    <dt>Scoreboard</dt><dd>Compares the chip's answer with the prediction.</dd>
+    <dt>Coverage</dt><dd>Record of which situations you have tested.</dd>
+  </dl>
+</section>
+
+<!-- quiz -->
+<section class="level" id="quiz">
+  <div class="lvl">Check yourself</div>
+  <h2>Six quick questions</h2>
+  <div class="quiz" id="qz"></div>
+  <div class="score"><span>Score <b id="qscore">0</b> / 6</span></div>
+</section>
+
+<section class="level">
+  <div class="next">
+    <h3>Ready for the next step?</h3>
+    <p>Once these 14 levels feel easy, move to the senior-level guide. It covers the real STE and CD fields, every command and event, PCIe ATS/PRI, security and RME, design internals, and an interview drill.</p>
+    <a href="smmuv3-field-guide.html">Open the SMMUv3 Field Guide →</a>
+    <p style="font-size:14px;color:var(--muted)">Based on Arm IHI 0070 H.a. The stories are simplified on purpose; small details like exact sizes come from the spec.</p>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+  // Toy 1: splitter
+  var a=document.getElementById('addr'),ps=document.getElementById('psize'),so=document.getElementById('splitOut'),sn=document.getElementById('splitNote');
+  function split(){
+    var v=Math.max(0,Math.floor(+a.value||0)),s=+ps.value,pg=Math.floor(v/s),off=v%s;
+    so.innerHTML='<div class="s-page"><span>page number</span><b>'+pg+'</b></div><div class="s-off"><span>offset</span><b>'+off+'</b></div>';
+    if(s===100){sn.textContent=v+' = page '+pg+' × 100 + '+off+'. The last two digits are the offset.';}
+    else{var hex=v.toString(16).toUpperCase();sn.textContent='In hex: 0x'+hex+'. The last 3 hex digits (12 bits) are the offset: 0x'+off.toString(16).toUpperCase()+'. The rest, 0x'+pg.toString(16).toUpperCase()+', is the page number.';}
+  }
+  a.addEventListener('input',split);ps.addEventListener('change',split);split();
+
+  // Toy 2: page table
+  var PT=[{p:3,r:'RW'},{p:7,r:'R'},{p:null},{p:1,r:'RW'},{p:5,r:'R'},{p:null},{p:2,r:'RW'},{p:null}];
+  var tb=document.querySelector('#ptable tbody'),h='';
+  PT.forEach(function(e,i){h+='<tr id="pt'+i+'"><td class="m">'+i+'</td><td class="m">'+(e.p===null?'— (empty)':e.p)+'</td><td>'+(e.p===null?'nothing':(e.r==='RW'?'read + write':'read only'))+'</td></tr>';});
+  tb.innerHTML=h;
+  var vi=document.getElementById('vaddr'),ac=document.getElementById('act'),to=document.getElementById('tout');
+  function tr(){
+    PT.forEach(function(_,i){document.getElementById('pt'+i).className='';});
+    var v=Math.floor(+vi.value),vp=Math.floor(v/100),off=v%100;
+    if(!(v>=0)){to.className='result bad';to.innerHTML='<span class="big">Enter a number</span>';return;}
+    if(vp>=PT.length){to.className='result bad';to.innerHTML='<span class="big">Fault: address too big</span><span>Page '+vp+' is past the end of the table. (Like an address size or translation fault.)</span>';return;}
+    document.getElementById('pt'+vp).className='hl';
+    var e=PT[vp];
+    if(e.p===null){to.className='result bad';to.innerHTML='<span class="big">Translation fault</span><span>Virtual page '+vp+' has no line in the notebook. The OS is called.</span>';return;}
+    if(ac.value==='W'&&e.r==='R'){to.className='result bad';to.innerHTML='<span class="big">Permission fault</span><span>Page '+vp+' is read only, and you tried to write.</span>';return;}
+    var pa=e.p*100+off;
+    to.className='result ok';to.innerHTML='<span class="big">Physical address '+pa+'</span><span>Page '+vp+' → page '+e.p+', offset '+off+' kept the same: '+e.p+'×100 + '+off+' = '+pa+'.</span>';
+  }
+  document.getElementById('go').addEventListener('click',tr);tr();
+
+  // Toy 3: TLB
+  var N=4,tlb=[],hits=0,miss=0,reads=0;
+  var notes=document.getElementById('notes'),msg=document.getElementById('tlbmsg');
+  var MAP={0:3,1:7,2:4,3:1,4:5,5:6,6:2,7:0};
+  function draw(flash){
+    var h='';for(var i=0;i<N;i++){var e=tlb[i];h+= e===undefined?'<div class="sticky empty">empty</div>':'<div class="sticky'+(e===flash?' flash':'')+'">page '+e+'<br>→ '+MAP[e]+'</div>';}
+    notes.innerHTML=h;
+    document.getElementById('hits').textContent=hits;document.getElementById('miss').textContent=miss;document.getElementById('reads').textContent=reads;
+  }
+  function touch(p){
+    var i=tlb.indexOf(p);
+    if(i>=0){hits++;tlb.splice(i,1);tlb.unshift(p);msg.className='result ok';msg.textContent='Hit! Page '+p+' was on a sticky note. Answer: real page '+MAP[p]+', zero memory reads.';}
+    else{miss++;reads+=4;var out='';if(tlb.length>=N){out=' Desk full, so the least recently used note (page '+tlb[N-1]+') was thrown away.';tlb.pop();}tlb.unshift(p);msg.className='result bad';msg.textContent='Miss. Walked 4 levels of the page table to find page '+p+' → '+MAP[p]+'.'+out;}
+    draw(p);
+  }
+  var pb=document.getElementById('pbtns'),bh='';for(var k=0;k<8;k++)bh+='<button type="button" data-p="'+k+'">'+k+'</button>';pb.innerHTML=bh;
+  pb.addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)touch(+b.dataset.p);});
+  document.getElementById('reset').addEventListener('click',function(){tlb=[];msg.className='result';msg.textContent='All notes torn off (like a full TLB invalidate). The next touches will all miss.';draw();});
+  var playing=false;
+  document.getElementById('playseq').addEventListener('click',function(){
+    if(playing)return;playing=true;var seq=[1,3,1,3,1,5,1,3],j=0;
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    (function step(){touch(seq[j++]);if(j<seq.length)setTimeout(step,reduce?60:650);else{playing=false;msg.textContent+='  Loop done: programs reuse pages, so most touches hit.';}})();
+  });
+  draw();
+
+  // Quiz
+  var Q=[
+    {q:'Address 734 with pages of 100. What is the offset?',o:['7','34','734'],a:1,w:'The offset is the position inside the page: the last two digits, 34.'},
+    {q:'What does the MMU translate?',o:['Only the page number','Only the offset','Both'],a:0,w:'The offset stays the same. Only the page number changes.'},
+    {q:'Why do we have a TLB?',o:['To store data','To skip slow page table walks','To hold the OS'],a:1,w:'It caches recent translations so most lookups need no memory reads.'},
+    {q:'After changing a page table entry, software must…',o:['Do nothing','Invalidate the TLB entry','Reboot'],a:1,w:'Otherwise the old sticky note keeps being used.'},
+    {q:'What tells the SMMU which device is asking?',o:['ASID','StreamID','Offset'],a:1,w:'StreamID is the device badge. ASID tags a process address space.'},
+    {q:'In verification, what predicts the correct answer?',o:['Coverage','Reference model','The chip itself'],a:1,w:'The reference model predicts; the scoreboard compares; coverage measures what was tried.'}
+  ];
+  var qz=document.getElementById('qz'),score=0,qh='';
+  Q.forEach(function(x,i){qh+='<div class="q" data-i="'+i+'"><b>'+(i+1)+'. '+x.q+'</b><div class="opts">'+x.o.map(function(t,j){return '<button type="button" data-j="'+j+'">'+t+'</button>';}).join('')+'</div><div class="why" hidden></div></div>';});
+  qz.innerHTML=qh;
+  qz.addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b)return;var box=b.closest('.q');if(box.dataset.done)return;
+    var i=+box.dataset.i,j=+b.dataset.j,x=Q[i];box.dataset.done='1';
+    box.querySelectorAll('button')[x.a].classList.add('right');
+    if(j===x.a){score++;}else{b.classList.add('wrong');}
+    var w=box.querySelector('.why');w.hidden=false;w.textContent=(j===x.a?'Correct. ':'Not quite. ')+x.w;
+    document.getElementById('qscore').textContent=score;
+  });
+})();
+</script>
+
+</body>
+</html>

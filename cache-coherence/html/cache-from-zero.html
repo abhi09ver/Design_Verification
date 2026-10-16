@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Caches from Zero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,800;1,6..12,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one learning path, 14 numbered levels stacked; each level = story (analogy) → real term → picture/experiment → self-check. Sticky progress strip. */
+:root{
+  --bg:#eef4fb; --paper:#ffffff; --ink:#172433; --muted:#566578; --rule:#cfdbe8; --soft:#e3ecf6;
+  --accent:#1e5bd8; --accent-soft:#dce7fc;
+  --story:#fff6d6; --story-ink:#5b4a10; --story-rule:#ecd57a;
+  --M:#d9480f; --E:#7048e8; --S:#1c7ed6; --I:#7d8a99; --O:#c08a12;
+  --ok:#2b8a3e; --bad:#c92a2a;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+  --f-body:"Nunito Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1722; --paper:#16212f; --ink:#e4ecf5; --muted:#9aabbf; --rule:#2b3b4f; --soft:#1d2a3a;
+  --accent:#6fa1ff; --accent-soft:#1b2c4a; --story:#2a2614; --story-ink:#f1dc8a; --story-rule:#5c5122;
+  --M:#ff8a5c; --E:#a48cff; --S:#5cabff; --I:#8e9bab; --O:#f0bd48; --ok:#5fd27a; --bad:#ff7070; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1722; --paper:#16212f; --ink:#e4ecf5; --muted:#9aabbf; --rule:#2b3b4f; --soft:#1d2a3a;
+  --accent:#6fa1ff; --accent-soft:#1b2c4a; --story:#2a2614; --story-ink:#f1dc8a; --story-rule:#5c5122;
+  --M:#ff8a5c; --E:#a48cff; --S:#5cabff; --I:#8e9bab; --O:#f0bd48; --ok:#5fd27a; --bad:#ff7070; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:900px;margin:0 auto;padding-block:30px 70px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(34px,6vw,56px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.6vw,32px);font-weight:800}
+h3{font-size:18px;font-weight:600}
+p{margin:0;max-width:66ch}
+b,strong{font-weight:800}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+a{color:var(--accent)}
+
+header.hero{display:grid;gap:14px;padding-bottom:26px}
+header.hero .lede{font-size:19px;color:var(--muted);max-width:60ch}
+.path{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.path span{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;background:var(--paper);border:1px solid var(--rule)}
+
+nav.prog{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-block:1px solid var(--rule);
+  margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px));overflow-x:auto}
+nav.prog .in{max-width:900px;margin:0 auto;display:flex;gap:5px;align-items:center}
+nav.prog a{flex:0 0 auto;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-family:var(--f-mono);font-size:12.5px;font-weight:600;
+  text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--rule)}
+nav.prog a.done{background:var(--ok);border-color:var(--ok);color:var(--paper)}
+nav.prog a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+nav.prog .count{margin-left:auto;padding-left:10px;font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+
+section.level{padding-top:46px;display:grid;gap:16px;scroll-margin-top:56px}
+.lvhead{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.num{width:52px;height:52px;border-radius:14px;background:var(--accent);color:var(--paper);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:24px}
+.lvhead>div{min-width:0;display:grid;gap:2px}
+.story{background:var(--story);color:var(--story-ink);border:1px dashed var(--story-rule);border-radius:12px;padding:14px 18px;display:grid;gap:6px}
+.story .eyebrow{color:var(--story-ink);opacity:.8}
+.real{display:grid;gap:8px}
+.term{display:inline;background:var(--accent-soft);color:var(--ink);padding:0 5px;border-radius:4px;font-weight:800}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;display:grid;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.grid2>*{min-width:0}
+figure{margin:0;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px;display:grid;gap:8px}
+.svgbox{overflow-x:auto}
+figcaption{font-size:14px;color:var(--muted)}
+svg text{font-family:var(--f-body)}
+ul.clean{margin:0;padding-left:20px}
+ul.clean li{margin:4px 0}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+tr:last-child td{border-bottom:none}
+.st{display:inline-block;min-width:24px;text-align:center;font-family:var(--f-mono);font-weight:600;font-size:13px;color:var(--paper);border-radius:4px;padding:1px 6px}
+.st.M{background:var(--M)}.st.E{background:var(--E)}.st.S{background:var(--S)}.st.I{background:var(--I)}.st.O{background:var(--O)}
+
+.check{border-top:1px solid var(--rule);padding-top:12px;display:grid;gap:10px}
+.q{font-weight:800}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+button{font-family:var(--f-body);font-size:14.5px;font-weight:600;border:1px solid var(--rule);background:var(--paper);color:var(--ink);padding:7px 13px;border-radius:9px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+button.right{background:var(--ok);border-color:var(--ok);color:var(--paper)}
+button.wrong{border-color:var(--bad);color:var(--bad)}
+.fb{font-size:15px}
+.donebtn{justify-self:start}
+
+/* playgrounds */
+.play{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;display:grid;gap:12px}
+.memrow{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.memrow button{padding:8px 0;font-family:var(--f-mono);font-size:13px}
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.slot{border:2px solid var(--rule);border-radius:10px;padding:8px;text-align:center;display:grid;gap:2px;min-width:0}
+.slot .lab{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.slot .v{font-family:var(--f-display);font-size:22px;font-weight:800}
+.slot.hit{border-color:var(--ok)}.slot.miss{border-color:var(--bad)}
+.stats{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--f-mono);font-size:13px}
+.msg{font-size:15px;min-height:1.6em}
+.friends{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.friend{border:1px solid var(--rule);border-radius:12px;padding:10px;display:grid;gap:8px;min-width:0}
+.friend .big{font-family:var(--f-display);font-size:34px;font-weight:800;line-height:1}
+.friend .row{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btns button{padding:6px 10px;font-size:13.5px}
+.log{font-size:14.5px;background:var(--soft);border-radius:10px;padding:10px 12px;max-height:200px;overflow-y:auto;display:grid;gap:4px}
+.rules{display:flex;flex-wrap:wrap;gap:8px;font-family:var(--f-mono);font-size:13px}
+.rules span{padding:3px 9px;border-radius:999px;border:1px solid var(--rule)}
+.addr{display:grid;gap:10px}
+.addr label{font-weight:700}
+.addr input{font-family:var(--f-mono);font-size:16px;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);width:140px}
+.bits{display:flex;flex-wrap:wrap;gap:3px;font-family:var(--f-mono);font-size:15px}
+.bits span{width:26px;text-align:center;padding:4px 0;border-radius:5px}
+.b-tag{background:var(--soft)}.b-idx{background:var(--accent-soft);color:var(--accent);font-weight:600}.b-off{background:var(--story);color:var(--story-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.next{background:var(--accent);color:var(--paper);border-radius:14px;padding:20px 22px;display:grid;gap:8px}
+.next a{color:var(--paper);font-weight:800}
+.next p{color:var(--paper)}
+dl.gl{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:6px 16px;margin:0}
+dl.gl dt{font-weight:800;font-family:var(--f-mono);font-size:14px}
+dl.gl dd{margin:0}
+@media (max-width:520px){dl.gl{grid-template-columns:1fr}dl.gl dd{margin-bottom:6px}.memrow{grid-template-columns:repeat(4,minmax(0,1fr))}}
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.pop{animation:pop .35s ease}@keyframes pop{from{transform:scale(.94)}to{transform:none}}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">A learning path for freshers · no background needed</div>
+  <h1>Caches from Zero</h1>
+  <p class="lede">We start with a kitchen, a school desk and a group of friends sharing notes, and end at MESI, memory ordering and how verification engineers test it all. Each level tells a small story, gives you the real word for it, lets you play with it, then asks one question.</p>
+  <div class="path"><span>Why caches</span><span>→ How a cache works</span><span>→ Many cores share data</span><span>→ The rules (MSI/MESI)</span><span>→ Order of events</span><span>→ How we test it</span></div>
+</header>
+
+<nav class="prog" aria-label="Levels"><div class="in" id="prog"></div></nav>
+
+<!-- 1 -->
+<section class="level" id="l1" data-title="Memory is slow">
+  <div class="lvhead"><div class="num">1</div><div><div class="eyebrow">Level 1 · Why caches exist</div><h2>The processor is fast, memory is slow</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>You are cooking. The <b>counter</b> next to you holds a few things and you can grab them instantly. The <b>fridge</b> is a few steps away. The <b>supermarket</b> is a 30-minute drive. A good cook keeps what they’re using right now on the counter.</p></div>
+  <div class="real"><p>A CPU core can do an operation in well under a nanosecond. Fetching from main memory (DRAM) takes around 80–100 ns: hundreds of wasted cycles. So chips keep small, fast memories close to the core. These are <span class="term">caches</span>.</p></div>
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 760 210" width="100%" style="min-width:560px" role="img" aria-label="Memory hierarchy from registers to DRAM with sizes and latencies">
+      <style>.tx{fill:var(--ink);font-size:14px;font-weight:700}.sx{fill:var(--muted);font-size:12.5px}</style>
+      <rect x="10" y="30" width="110" height="70" rx="10" style="fill:var(--accent);"/><text x="65" y="60" text-anchor="middle" style="fill:var(--paper);font-size:14px;font-weight:700">Registers</text><text x="65" y="80" text-anchor="middle" style="fill:var(--paper);font-size:12px">hand</text>
+      <rect x="140" y="30" width="130" height="70" rx="10" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="205" y="60" text-anchor="middle" class="tx">L1 cache</text><text x="205" y="80" text-anchor="middle" class="sx">counter</text>
+      <rect x="290" y="30" width="140" height="70" rx="10" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="360" y="60" text-anchor="middle" class="tx">L2 cache</text><text x="360" y="80" text-anchor="middle" class="sx">shelf</text>
+      <rect x="450" y="30" width="140" height="70" rx="10" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="520" y="60" text-anchor="middle" class="tx">L3 / LLC</text><text x="520" y="80" text-anchor="middle" class="sx">fridge</text>
+      <rect x="610" y="30" width="140" height="70" rx="10" style="fill:var(--soft);stroke:var(--rule)"/><text x="680" y="60" text-anchor="middle" class="tx">DRAM</text><text x="680" y="80" text-anchor="middle" class="sx">supermarket</text>
+      <text x="65" y="128" text-anchor="middle" class="sx">~1 KB</text><text x="205" y="128" text-anchor="middle" class="sx">32–64 KB</text><text x="360" y="128" text-anchor="middle" class="sx">0.5–2 MB</text><text x="520" y="128" text-anchor="middle" class="sx">tens of MB</text><text x="680" y="128" text-anchor="middle" class="sx">GBs</text>
+      <text x="65" y="148" text-anchor="middle" class="sx">0 cycles</text><text x="205" y="148" text-anchor="middle" class="sx">~4 cycles</text><text x="360" y="148" text-anchor="middle" class="sx">~12 cycles</text><text x="520" y="148" text-anchor="middle" class="sx">~40 cycles</text><text x="680" y="148" text-anchor="middle" class="sx">~300 cycles</text>
+      <path d="M20 178 H740" style="stroke:var(--muted);stroke-width:1.5"/><path d="M732 172 L742 178 L732 184" style="fill:none;stroke:var(--muted);stroke-width:1.5"/>
+      <text x="20" y="200" class="sx">bigger, slower, cheaper per byte →</text>
+    </svg></div>
+    <figcaption>Typical ballpark numbers for a modern CPU; exact values vary by chip.</figcaption>
+  </figure>
+  <div class="card"><h3>Why does a small cache help so much?</h3><p>Programs are predictable in two ways. <span class="term">Temporal locality</span>: if you used something just now, you’ll likely use it again soon (the salt). <span class="term">Spatial locality</span>: if you used one thing, you’ll likely use its neighbours (the next item in an array). Caches exploit both.</p></div>
+  <div class="check" data-ans="b"><div class="q">Check: a loop reads <code>a[0], a[1], a[2] …</code> in order. Which locality does that show most?</div>
+    <div class="opts"><button data-o="a">Temporal</button><button data-o="b">Spatial</button><button data-o="c">Neither</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 2 -->
+<section class="level" id="l2" data-title="Hits, misses, lines">
+  <div class="lvhead"><div class="num">2</div><div><div class="eyebrow">Level 2 · Basic words</div><h2>Hit, miss and the cache line</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>You need one egg. You don’t drive to the shop for one egg; you bring home a whole tray of 12. Next time you need an egg it’s already at home.</p></div>
+  <div class="real">
+    <p>When the core asks for data and it’s in the cache, that’s a <span class="term">hit</span> (fast). If it isn’t, that’s a <span class="term">miss</span>: the cache fetches it from the next level and keeps a copy.</p>
+    <p>Caches never fetch one byte. They fetch a fixed chunk called a <span class="term">cache line</span> (or <span class="term">block</span>), usually <b>64 bytes</b>. That’s the egg tray. It is also the unit that everything later in this guide is about.</p>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Three reasons for a miss (the “3 C’s”)</h3><ul class="clean">
+      <li><b>Compulsory</b>: first time ever touching it.</li>
+      <li><b>Capacity</b>: the cache is too small to hold everything you’re using.</li>
+      <li><b>Conflict</b>: two lines fight for the same spot (Level 3).</li></ul>
+      <p class="muted">Later we add a 4th: <b>coherence</b> misses, when another core took your copy away.</p></div>
+    <div class="card"><h3>Hit rate is everything</h3><p>Average time = hit time + miss rate × miss penalty.</p><p class="mono">4 + 0.05 × 300 = 19 cycles</p><p class="muted">Even a 5% miss rate makes memory look ~5× slower than a hit. Small improvements in hit rate matter a lot.</p></div>
+  </div>
+  <div class="check" data-ans="c"><div class="q">Check: line size is 64 bytes. The core reads 1 byte at address 100. How many bytes come into the cache?</div>
+    <div class="opts"><button data-o="a">1</button><button data-o="b">8</button><button data-o="c">64</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 3 -->
+<section class="level" id="l3" data-title="Where does it go?">
+  <div class="lvhead"><div class="num">3</div><div><div class="eyebrow">Level 3 · Organization</div><h2>Where does a line go? Tag, index, offset</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>A school has lockers numbered 0–3. Rule: your locker = <b>remainder when your roll number is divided by 4</b>. Roll 5 and roll 9 both get locker 1. To know <i>whose</i> stuff is in locker 1, a name tag is stuck on it.</p></div>
+  <div class="real">
+    <p>The memory address is split into three pieces:</p>
+    <ul class="clean">
+      <li><span class="term">Offset</span>: which byte inside the 64-byte line (6 bits, because 2<sup>6</sup> = 64).</li>
+      <li><span class="term">Index</span>: which <b>set</b> (locker row) to look in.</li>
+      <li><span class="term">Tag</span>: the name tag, stored next to the data, to check that the line there is really ours.</li>
+    </ul>
+    <p>A <span class="term">set</span> can hold several lines; each slot is a <span class="term">way</span>. 1 way = <b>direct-mapped</b>. N ways = <b>N-way set-associative</b>. One set with all lines = <b>fully associative</b>. More ways means fewer conflict misses but more tags to compare.</p>
+  </div>
+  <div class="play addr" aria-label="Address splitter">
+    <div class="eyebrow">Try it · split an address</div>
+    <p class="muted">Example cache: 16 bit address, 64 B lines, 16 sets. Type any number 0–65535.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><label for="addrIn">Address</label><input id="addrIn" type="number" min="0" max="65535" value="4660"></div>
+    <div class="bits" id="bits"></div>
+    <div class="legend"><span><i class="b-tag"></i>tag (6 bits)</span><span><i class="b-idx"></i>index (4 bits) → set</span><span><i class="b-off"></i>offset (6 bits) → byte in line</span></div>
+    <div class="msg" id="addrOut"></div>
+  </div>
+  <div class="card"><h3>The formula freshers get asked</h3>
+    <p class="mono">sets = cache size ÷ (ways × line size)<br>index bits = log2(sets) &nbsp;·&nbsp; offset bits = log2(line size)<br>tag bits = address bits − index − offset</p>
+    <p class="muted">Example: 32 KB, 8-way, 64 B → 32768 ÷ (8×64) = 64 sets → 6 index bits, 6 offset bits.</p></div>
+  <div class="check" data-ans="a"><div class="q">Check: 16 KB cache, 4-way, 64 B lines. How many sets?</div>
+    <div class="opts"><button data-o="a">64</button><button data-o="b">256</button><button data-o="c">16</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 4 -->
+<section class="level" id="l4" data-title="Cache is full">
+  <div class="lvhead"><div class="num">4</div><div><div class="eyebrow">Level 4 · Replacement</div><h2>When the cache is full, someone leaves</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>Your desk holds 4 books. You need a 5th. Which book goes back to the shelf? Usually the one you haven’t opened for the longest time.</p></div>
+  <div class="real"><p>Choosing which line to kick out is <span class="term">replacement</span>; the line kicked out is the <span class="term">victim</span>, and kicking it out is an <span class="term">eviction</span>. Common policy: <b>LRU</b> (least recently used), or a cheaper approximation called <b>pseudo-LRU</b>.</p></div>
+  <div class="play" aria-label="Direct mapped cache playground">
+    <div class="eyebrow">Try it · a tiny direct-mapped cache</div>
+    <p class="muted">Memory has 16 lines (0–15). The cache has 4 slots. Rule: slot = line mod 4. Click memory lines to read them. Try 1, 5, 1, 5 to see conflict misses.</p>
+    <div class="memrow" id="memrow"></div>
+    <div class="slots" id="slots"></div>
+    <div class="msg" id="cmsg" aria-live="polite">Click a memory line to read it.</div>
+    <div class="stats"><span id="hits">Hits 0</span><span id="misses">Misses 0</span><span id="rate">Hit rate —</span><button type="button" id="creset">Clear cache</button></div>
+  </div>
+  <div class="check" data-ans="b"><div class="q">Check: in the toy above, why do lines 1 and 5 keep missing even though 3 slots are empty?</div>
+    <div class="opts"><button data-o="a">Cache is too small</button><button data-o="b">They map to the same slot</button><button data-o="c">First-time access</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 5 -->
+<section class="level" id="l5" data-title="Writing">
+  <div class="lvhead"><div class="num">5</div><div><div class="eyebrow">Level 5 · Write policy</div><h2>What happens when you write?</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>You change a phone number in your pocket notebook. Do you also phone home <i>every time</i> to update the family diary (<b>write-through</b>)? Or do you update the diary only when the notebook page is torn out (<b>write-back</b>)? Then the page needs a small mark saying “changed, copy me before throwing away”: the <b>dirty bit</b>.</p></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th></th><th>Write-through</th><th>Write-back</th></tr></thead>
+    <tbody>
+      <tr><td>On a write</td><td>Update cache and next level</td><td>Update cache only, mark line <b>dirty</b></td></tr>
+      <tr><td>On eviction</td><td>Nothing to do</td><td>If dirty, write the line back</td></tr>
+      <tr><td>Traffic</td><td>High</td><td>Low</td></tr>
+      <tr><td>Where used</td><td>Many GPU L1 caches, simple designs</td><td>CPU caches</td></tr>
+    </tbody></table></div>
+  <div class="card"><h3>The store buffer (remember this for Level 11)</h3><p>A core doesn’t want to wait for a write to finish. It drops the write into a small queue, the <span class="term">store buffer</span> (an outbox tray), and carries on. The store reaches the cache a bit later. This one tiny trick causes most of the “weird ordering” behaviour you’ll meet later.</p></div>
+  <div class="check" data-ans="a"><div class="q">Check: in a write-back cache, which line needs to be written to memory when evicted?</div>
+    <div class="opts"><button data-o="a">A dirty line</button><button data-o="b">Every line</button><button data-o="c">A clean line</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 6 -->
+<section class="level" id="l6" data-title="Many cores">
+  <div class="lvhead"><div class="num">6</div><div><div class="eyebrow">Level 6 · The problem</div><h2>Many cores, many copies, one truth</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>The class timetable says Physics is in Room 152. Three friends copy it into their own notebooks. The teacher moves the class to Room 252 and only one friend updates her notebook. The other two go to the wrong room. Nobody did anything wrong individually; the problem is <b>stale copies</b>.</p></div>
+  <div class="real"><p>Modern chips have many cores, each with its own private L1 (and often L2). If two cores cache the same line and one writes, the other’s copy is now out of date. Keeping all copies in agreement is <span class="term">cache coherence</span>. The set of rules that does it is a <span class="term">coherence protocol</span>.</p></div>
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 700 220" width="100%" style="min-width:520px" role="img" aria-label="Two cores with stale copies">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.3}.tx{fill:var(--ink);font-size:14px;font-weight:700}.sx{fill:var(--muted);font-size:12.5px}</style>
+      <rect x="40" y="20" width="160" height="44" rx="8" class="bx"/><text x="120" y="47" text-anchor="middle" class="tx">Core 0</text>
+      <rect x="500" y="20" width="160" height="44" rx="8" class="bx"/><text x="580" y="47" text-anchor="middle" class="tx">Core 1</text>
+      <rect x="40" y="84" width="160" height="50" rx="8" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="120" y="106" text-anchor="middle" class="sx">L1 copy of A</text><text x="120" y="125" text-anchor="middle" class="tx">A = 252 (new)</text>
+      <rect x="500" y="84" width="160" height="50" rx="8" style="fill:var(--accent-soft);stroke:var(--bad)"/><text x="580" y="106" text-anchor="middle" class="sx">L1 copy of A</text><text x="580" y="125" text-anchor="middle" style="fill:var(--bad);font-size:14px;font-weight:700">A = 152 (stale!)</text>
+      <rect x="220" y="160" width="260" height="46" rx="8" style="fill:var(--soft);stroke:var(--rule)"/><text x="350" y="188" text-anchor="middle" class="tx">Shared memory: A = 152</text>
+      <path d="M120 134 L260 160 M580 134 L440 160" style="stroke:var(--muted);stroke-width:1.3"/>
+      <text x="270" y="60" class="sx">Core 0 wrote 252 in its own cache.</text><text x="270" y="78" class="sx">Core 1 still reads 152 forever.</text>
+    </svg></div>
+  </figure>
+  <div class="check" data-ans="c"><div class="q">Check: when can incoherence happen?</div>
+    <div class="opts"><button data-o="a">Only one core, many reads</button><button data-o="b">Many cores, only reads</button><button data-o="c">Many copies and at least one write</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 7 -->
+<section class="level" id="l7" data-title="The golden rule">
+  <div class="lvhead"><div class="num">7</div><div><div class="eyebrow">Level 7 · The rules</div><h2>The golden rule: one writer or many readers</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>The class has one <b>pen</b> for the shared timetable. Anyone can <i>look</i> at the timetable together. But to <i>write</i> on it, you must hold the pen, and while you hold it, everyone else must close their copies and wait. When you finish, others re-copy the latest version.</p></div>
+  <div class="grid2">
+    <div class="card" style="border-top:4px solid var(--accent)"><div class="eyebrow">Rule 1 · SWMR</div><h3>Single Writer or Multiple Readers</h3><p>For any line, at any moment: <b>either</b> exactly one core may write it, <b>or</b> any number of cores may only read it. Never a writer plus anyone else.</p></div>
+    <div class="card" style="border-top:4px solid var(--accent)"><div class="eyebrow">Rule 2 · Data value</div><h3>Readers see the latest write</h3><p>When a new reading period begins, everyone must get the value left by the last writer. Correct permissions with old data is still a bug.</p></div>
+  </div>
+  <div class="card"><p>Almost every real protocol (called an <span class="term">invalidation protocol</span>) works like the pen: before writing, a core asks everyone else to <b>invalidate</b> (throw away) their copies. Coherence is tracked per <b>cache line</b>, not per byte, which matters in Level 9.</p></div>
+  <div class="check" data-ans="b"><div class="q">Check: Core 0 is writing line A. Can Core 1 read line A from its own cache at the same moment?</div>
+    <div class="opts"><button data-o="a">Yes, reads are always fine</button><button data-o="b">No, that breaks the golden rule</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 8 -->
+<section class="level" id="l8" data-title="MSI stickers">
+  <div class="lvhead"><div class="num">8</div><div><div class="eyebrow">Level 8 · States</div><h2>MSI: three stickers on every line</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>Every notebook copy gets a sticker. <b style="color:var(--M)">M</b> = “I hold the pen, my copy is the newest”. <b style="color:var(--S)">S</b> = “read-only copy, others may have it too”. <b style="color:var(--I)">I</b> = “torn out, don’t trust it”.</p></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Sticker</th><th>Name</th><th>Can read?</th><th>Can write?</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="st M">M</span></td><td>Modified</td><td>Yes</td><td>Yes</td><td>Only copy, newer than memory (dirty)</td></tr>
+      <tr><td><span class="st S">S</span></td><td>Shared</td><td>Yes</td><td>No</td><td>Clean read-only copy, maybe others too</td></tr>
+      <tr><td><span class="st I">I</span></td><td>Invalid</td><td>No</td><td>No</td><td>Not usable, must ask again</td></tr>
+    </tbody></table></div>
+  <div class="card"><h3>The two requests</h3><p><span class="term">GetS</span> “I want to read” → you end in S (others in M drop to S and share their newest data).<br><span class="term">GetM</span> “I want to write” → everyone else goes to I, you end in M.</p></div>
+
+  <div class="play" id="sim" aria-label="MSI classroom simulator">
+    <div class="eyebrow">Try it · three friends, one line A</div>
+    <p class="muted">Press buttons and read the story in the log. Watch the two rule-checks stay green. Try: Asha reads, Ben reads, Ben writes, Asha reads.</p>
+    <div class="friends" id="friends"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center"><div class="rules" id="rules"></div><div style="display:flex;gap:8px;align-items:center"><span class="mono muted" id="memv"></span><button type="button" id="sreset">Start over</button></div></div>
+    <div class="log" id="slog" aria-live="polite"></div>
+  </div>
+  <div class="check" data-ans="a"><div class="q">Check: Asha is in M. Ben does GetS. What are their stickers after?</div>
+    <div class="opts"><button data-o="a">Asha S, Ben S</button><button data-o="b">Asha M, Ben S</button><button data-o="c">Asha I, Ben M</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 9 -->
+<section class="level" id="l9" data-title="MESI, MOESI">
+  <div class="lvhead"><div class="num">9</div><div><div class="eyebrow">Level 9 · Upgrades</div><h2>Extra stickers: E and O</h2></div></div>
+  <div class="grid2">
+    <div class="card"><div class="eyebrow">MESI adds</div><h3><span class="st E">E</span> Exclusive</h3><p><b>Story:</b> you borrowed the timetable and you notice nobody else has a copy. If you later want to write, you don’t need to ask anyone: just switch your sticker to M quietly.</p><p class="muted">Saves a message for data only one core uses, which is very common.</p></div>
+    <div class="card"><div class="eyebrow">MOESI adds</div><h3><span class="st O">O</span> Owned</h3><p><b>Story:</b> you changed the timetable and friends want to read it. Instead of first walking it back to the office, you let them copy from you and you stay responsible for returning it later.</p><p class="muted">Shares dirty data without writing memory first.</p></div>
+  </div>
+  <div class="card"><h3>False sharing</h3><p><b>Story:</b> two friends write in different corners of the <i>same page</i>. They only own whole pages, so they keep passing the page back and forth, even though they never touch each other’s writing. In hardware: two variables on the same 64-byte line, written by different cores, make the line bounce. Fix: put them on different lines.</p></div>
+  <div class="card"><h3>Transient states (a peek at real life)</h3><p>Asking for the pen isn’t instant. Between “I asked” and “I got it”, a cache is <i>in between</i> states, like <code>IS</code> (asked to read, waiting for data) or <code>IM</code> (asked to write, waiting for data and everyone’s “OK, I threw mine away”). Messages from others can arrive during this wait. Most real coherence bugs are hidden here.</p></div>
+  <div class="check" data-ans="b"><div class="q">Check: a line is in E. The core writes to it. What messages are sent?</div>
+    <div class="opts"><button data-o="a">GetM to everyone</button><button data-o="b">None, E→M silently</button><button data-o="c">A writeback to memory</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 10 -->
+<section class="level" id="l10" data-title="How caches talk">
+  <div class="lvhead"><div class="num">10</div><div><div class="eyebrow">Level 10 · Communication</div><h2>How caches talk: shout or ask the teacher</h2></div></div>
+  <div class="grid2">
+    <figure>
+      <svg viewBox="0 0 340 200" width="100%" role="img" aria-label="Snooping: one shouts, all listen">
+        <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.3}.tx{fill:var(--ink);font-size:13px;font-weight:700}.sx{fill:var(--muted);font-size:12px}</style>
+        <rect x="10" y="90" width="320" height="18" rx="9" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="170" y="103" text-anchor="middle" class="sx">shared bus: everyone hears, same order</text>
+        <rect x="20" y="20" width="70" height="40" rx="8" class="bx"/><text x="55" y="45" text-anchor="middle" class="tx">C0</text>
+        <rect x="135" y="20" width="70" height="40" rx="8" class="bx"/><text x="170" y="45" text-anchor="middle" class="tx">C1</text>
+        <rect x="250" y="20" width="70" height="40" rx="8" class="bx"/><text x="285" y="45" text-anchor="middle" class="tx">C2</text>
+        <path d="M55 60 V88 M170 88 V60 M285 88 V60" style="stroke:var(--accent);stroke-width:2"/>
+        <text x="10" y="140" class="tx">Snooping</text><text x="10" y="160" class="sx">“I want to write A!” shouted to all.</text><text x="10" y="178" class="sx">Simple, fast for few cores; noisy for many.</text>
+      </svg>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 340 200" width="100%" role="img" aria-label="Directory: ask the teacher who has it">
+        <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.3}.tx{fill:var(--ink);font-size:13px;font-weight:700}.sx{fill:var(--muted);font-size:12px}</style>
+        <rect x="120" y="70" width="100" height="50" rx="8" style="fill:var(--accent-soft);stroke:var(--accent)"/><text x="170" y="92" text-anchor="middle" class="tx">Directory</text><text x="170" y="110" text-anchor="middle" class="sx">“who has A?”</text>
+        <rect x="10" y="14" width="70" height="40" rx="8" class="bx"/><text x="45" y="39" text-anchor="middle" class="tx">C0</text>
+        <rect x="260" y="14" width="70" height="40" rx="8" class="bx"/><text x="295" y="39" text-anchor="middle" class="tx">C2</text>
+        <path d="M70 54 L130 72" style="stroke:var(--M);stroke-width:2"/><text x="62" y="76" class="sx">1 ask</text>
+        <path d="M210 72 L275 54" style="stroke:var(--M);stroke-width:2"/><text x="236" y="80" class="sx">2 forward</text>
+        <path d="M260 30 H82" style="stroke:var(--M);stroke-width:2;stroke-dasharray:5 3"/><text x="140" y="24" class="sx">3 data</text>
+        <text x="10" y="150" class="tx">Directory</text><text x="10" y="170" class="sx">A register tracks who has each line.</text><text x="10" y="188" class="sx">Messages go only where needed; scales.</text>
+      </svg>
+    </figure>
+  </div>
+  <div class="card"><p>Both follow the same golden rule; they differ in how everyone learns about requests. Big chips (many cores, multiple sockets, CPU + GPU) mostly use directories, often called the <span class="term">home node</span> in protocols like Arm CHI.</p></div>
+  <div class="check" data-ans="b"><div class="q">Check: a 128-core server chip. Snooping or directory?</div>
+    <div class="opts"><button data-o="a">Snooping</button><button data-o="b">Directory</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 11 -->
+<section class="level" id="l11" data-title="Order matters">
+  <div class="lvhead"><div class="num">11</div><div><div class="eyebrow">Level 11 · Consistency</div><h2>Coherence isn’t enough: order matters</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>The teacher <b>(1)</b> emails the web admin to update the room, then <b>(2)</b> texts students “check the website”. The text arrives first, a student checks the website, still sees the old room. Each message was correct; the <b>order</b> they arrived in was the problem.</p></div>
+  <div class="real"><p>Coherence is about <b>one</b> line. A <span class="term">memory consistency model</span> is the rule for the order in which loads and stores to <b>different</b> addresses can appear to other cores. It is part of the ISA spec (x86, Arm, RISC-V each have one).</p></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Model</th><th>In plain words</th><th>Who uses it</th></tr></thead>
+    <tbody>
+      <tr><td><b>SC</b> Sequential Consistency</td><td>As if all cores took turns on one memory, each in its own program order. The easiest to reason about.</td><td>Reference model, textbooks</td></tr>
+      <tr><td><b>TSO</b> Total Store Order</td><td>Like SC, but your own writes may sit in your store buffer while your later reads go ahead.</td><td>x86 (Intel, AMD)</td></tr>
+      <tr><td><b>Relaxed / weak</b></td><td>Almost any reordering allowed unless you add a <b>fence</b> (a “wait until earlier stuff is done” instruction).</td><td>Arm, RISC-V, Power, GPUs</td></tr>
+    </tbody></table></div>
+  <figure>
+    <div class="svgbox">
+    <svg viewBox="0 0 720 230" width="100%" style="min-width:540px" role="img" aria-label="Store buffering example">
+      <style>.bx{fill:var(--paper);stroke:var(--ink);stroke-width:1.3}.tx{fill:var(--ink);font-size:13.5px;font-weight:700}.sx{fill:var(--muted);font-size:12.5px}.mn{font-family:'JetBrains Mono',monospace;fill:var(--ink);font-size:13px}</style>
+      <text x="10" y="20" class="sx">Both x and y start at 0. Each core writes one, then reads the other.</text>
+      <rect x="10" y="34" width="200" height="64" rx="8" class="bx"/><text x="22" y="56" class="tx">Core 0</text><text x="22" y="76" class="mn">x = 1</text><text x="22" y="92" class="mn">r1 = y</text>
+      <rect x="510" y="34" width="200" height="64" rx="8" class="bx"/><text x="522" y="56" class="tx">Core 1</text><text x="522" y="76" class="mn">y = 1</text><text x="522" y="92" class="mn">r2 = x</text>
+      <rect x="40" y="114" width="140" height="40" rx="8" style="fill:var(--story);stroke:var(--story-rule)"/><text x="110" y="132" text-anchor="middle" class="sx">store buffer</text><text x="110" y="148" text-anchor="middle" class="mn">x=1 waiting</text>
+      <rect x="540" y="114" width="140" height="40" rx="8" style="fill:var(--story);stroke:var(--story-rule)"/><text x="610" y="132" text-anchor="middle" class="sx">store buffer</text><text x="610" y="148" text-anchor="middle" class="mn">y=1 waiting</text>
+      <rect x="230" y="170" width="260" height="44" rx="8" style="fill:var(--soft);stroke:var(--rule)"/><text x="360" y="197" text-anchor="middle" class="mn">memory: x=0, y=0</text>
+      <path d="M200 92 Q 260 140 260 168" style="fill:none;stroke:var(--bad);stroke-width:1.6;stroke-dasharray:5 3"/><path d="M520 92 Q 460 140 460 168" style="fill:none;stroke:var(--bad);stroke-width:1.6;stroke-dasharray:5 3"/>
+      <text x="236" y="60" class="sx">Reads skip ahead to memory</text><text x="236" y="78" class="sx">→ r1 = 0 and r2 = 0</text><text x="236" y="96" class="sx">Impossible under SC, allowed on x86.</text>
+    </svg></div>
+    <figcaption>This tiny program is a <b>litmus test</b>, named “SB” (store buffering). Verification engineers run thousands of these to check a chip obeys its memory model.</figcaption>
+  </figure>
+  <div class="check" data-ans="c"><div class="q">Check: a chip is perfectly coherent. Does that guarantee SC?</div>
+    <div class="opts"><button data-o="a">Yes, always</button><button data-o="b">Only if it uses MESI</button><button data-o="c">No, the core’s store buffer can still reorder</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 12 -->
+<section class="level" id="l12" data-title="GPUs">
+  <div class="lvhead"><div class="num">12</div><div><div class="eyebrow">Level 12 · GPUs</div><h2>GPUs do it differently</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>A school with 5,000 students can’t have the teacher run around tearing pages out of everyone’s notebook. Instead the rule is: <b>before</b> you start using shared notes, you throw away your old copy and fetch fresh; <b>after</b> you finish writing, you hand your updates to the office. No one chases you.</p></div>
+  <div class="real"><p>GPUs have thousands of threads, so classic invalidation messages are too costly. Many GPU L1 caches are write-through and keep no strict coherence. Correctness comes from synchronization:</p>
+    <ul class="clean"><li><span class="term">Acquire</span> (start of sharing): throw away possibly old L1 data.</li>
+    <li><span class="term">Release</span> (end of sharing): push your writes to the shared L2.</li>
+    <li><span class="term">Scope</span>: how far the sync must reach: just my thread block, the whole GPU, or the whole system including the CPU.</li></ul>
+    <p>If programs synchronize properly, the result looks just like SC. This is called <b>SC for data-race-free programs</b>.</p></div>
+  <div class="check" data-ans="b"><div class="q">Check: on a GPU, when does a thread drop its possibly stale L1 data?</div>
+    <div class="opts"><button data-o="a">Whenever another SM writes</button><button data-o="b">At an acquire</button><button data-o="c">Never</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 13 -->
+<section class="level" id="l13" data-title="Testing it">
+  <div class="lvhead"><div class="num">13</div><div><div class="eyebrow">Level 13 · Verification</div><h2>How do we test all this?</h2></div></div>
+  <div class="story"><div class="eyebrow">Story</div><p>To test the classroom pen rule, you’d hire a <b>hall monitor</b> who watches every notebook at all times, keep a <b>master copy</b> of the timetable to compare against, make students fight over the <b>same page</b> as often as possible, and set an <b>alarm</b> if anyone waits too long.</p></div>
+  <div class="grid2">
+    <div class="card"><div class="eyebrow">Hall monitor</div><h3>SWMR checker</h3><p>Watches every cache’s state for every line. Fires an error if there’s ever a writer plus anyone else.</p></div>
+    <div class="card"><div class="eyebrow">Master copy</div><h3>Scoreboard</h3><p>A reference memory that records every write in order. Every read is compared: did the core get a value it was allowed to see?</p></div>
+    <div class="card"><div class="eyebrow">Same page fights</div><h3>Stimulus</h3><p>Random tests with only a few addresses, tiny caches and lots of evictions, so races happen often. Plus litmus tests and directed race scenarios.</p></div>
+    <div class="card"><div class="eyebrow">Alarm</div><h3>Hang watchdogs</h3><p>Timeouts on every request so a deadlock (everyone waiting on each other) or starvation (one core never gets the line) is caught.</p></div>
+  </div>
+  <div class="card"><h3>And how do we know we tested enough?</h3><p><span class="term">Coverage</span>: a checklist the testbench fills in automatically. Did we see every state receive every kind of message? Did two cores ever race to write the same line? Did an eviction ever cross paths with a request? Unfilled boxes tell you which tests to write next.</p></div>
+  <div class="check" data-ans="a"><div class="q">Check: random tests use the full 48-bit address range and all pass. Why is that weak evidence?</div>
+    <div class="opts"><button data-o="a">Cores rarely touch the same line, so races never happen</button><button data-o="b">Random tests can’t find bugs</button><button data-o="c">Addresses must be even</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</section>
+
+<!-- 14 -->
+<section class="level" id="l14" data-title="Cheat sheet">
+  <div class="lvhead"><div class="num">14</div><div><div class="eyebrow">Level 14 · Revise</div><h2>One-page cheat sheet</h2></div></div>
+  <div class="card"><dl class="gl">
+    <dt>Cache line</dt><dd>64-byte chunk moved and tracked as one unit.</dd>
+    <dt>Hit / miss</dt><dd>Found in cache / had to fetch from further away.</dd>
+    <dt>Tag·Index·Offset</dt><dd>Name tag · which set · which byte in the line.</dd>
+    <dt>Ways</dt><dd>Slots per set. More ways, fewer conflict misses.</dd>
+    <dt>LRU</dt><dd>Evict the least recently used line.</dd>
+    <dt>Write-back</dt><dd>Write cache only; mark dirty; write memory on eviction.</dd>
+    <dt>Store buffer</dt><dd>Core’s outbox for pending writes; source of reordering.</dd>
+    <dt>Coherence</dt><dd>All copies of one line agree (SWMR + latest value).</dd>
+    <dt>M / E / S / I / O</dt><dd>Modified · Exclusive clean · Shared · Invalid · Owned dirty-shared.</dd>
+    <dt>GetS / GetM</dt><dd>Request to read / request to write.</dd>
+    <dt>Snoop / Directory</dt><dd>Broadcast to all / central register of who has what.</dd>
+    <dt>Consistency</dt><dd>Allowed ordering of accesses to different addresses.</dd>
+    <dt>SC / TSO / weak</dt><dd>Strict turns / x86 with store buffer / reorder unless fenced.</dd>
+    <dt>Fence</dt><dd>Instruction that forces earlier memory ops to finish first.</dd>
+    <dt>Litmus test</dt><dd>Tiny multi-core program with allowed/forbidden results.</dd>
+    <dt>Scoreboard</dt><dd>Reference model that checks every read value.</dd>
+  </dl></div>
+  <div class="next"><div class="eyebrow" style="color:var(--paper);opacity:.85">Ready for more</div><h2 style="color:var(--paper)">Next step: the senior field guide</h2>
+    <p>Once all 13 checks are green, move to the <a href="cache-coherence-field-guide.html">Cache Coherence Field Guide</a>: transient states, directory races, litmus tables, bug catalog and interview answers.</p></div>
+</section>
+
+<footer>Built on the ideas in Nagarajan, Sorin, Hill and Wood, <em>A Primer on Memory Consistency and Cache Coherence</em>, 2nd ed., 2020 (<a href="https://pages.cs.wisc.edu/~markhill/papers/primer2020_2nd_edition.pdf" target="_blank" rel="noopener">free PDF</a>). The timetable and registrar stories are adapted from the Primer’s own examples. Latency numbers are typical ballparks, not for a specific chip.</footer>
+</div>
+
+<script>
+(function(){
+  /* ---------- progress ---------- */
+  const KEY='cfz-done';
+  let done={}; try{done=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){done={};}
+  const levels=[...document.querySelectorAll('section.level')];
+  const prog=document.getElementById('prog');
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(done));}catch(e){}}
+  function drawProg(){
+    prog.innerHTML='';
+    levels.forEach((s,i)=>{const a=document.createElement('a');a.href='#'+s.id;a.textContent=i+1;a.title=s.dataset.title;if(done[s.id])a.className='done';prog.appendChild(a);});
+    const n=levels.filter(s=>s.querySelector('.check')).length, d=levels.filter(s=>done[s.id]).length;
+    const c=document.createElement('span');c.className='count';c.textContent=d+' / '+n+' checks passed';prog.appendChild(c);
+  }
+  const why={
+    l1:{b:'Right. Neighbouring elements are used one after another.',x:'Think about neighbours: a[1] sits right after a[0] in memory.'},
+    l2:{c:'Right. The whole 64-byte line containing address 100 (bytes 64–127) comes in.',x:'Caches always move a full line, never a single byte.'},
+    l3:{a:'Right. 16384 ÷ (4 × 64) = 64 sets → 6 index bits.',x:'Use sets = size ÷ (ways × line). 16384 ÷ 256 = ?'},
+    l4:{b:'Right. 1 mod 4 = 1 and 5 mod 4 = 1, so they keep kicking each other out: conflict misses.',x:'Look at which slot each line goes to.'},
+    l5:{a:'Right. Only dirty lines hold data that memory doesn’t have yet.',x:'Clean lines match memory already; nothing to save.'},
+    l6:{c:'Right. Reads alone never create disagreement; a write does.',x:'If nobody writes, every copy stays the same.'},
+    l7:{b:'Right. A writer must be alone. Core 1 must be in I while Core 0 writes.',x:'Remember the pen: while someone writes, others close their copy.'},
+    l8:{a:'Right. Asha shares her newest data and drops to S; Ben gets S.',x:'GetS means “read”: the writer stops being the only one, but nobody is thrown out.'},
+    l9:{b:'Right. E already means “nobody else has it”, so no one needs to be told.',x:'What does Exclusive already guarantee about other copies?'},
+    l10:{b:'Right. Broadcasting every miss to 128 cores costs too much bandwidth and power.',x:'Imagine shouting to 128 people for every question.'},
+    l11:{c:'Right. Coherence covers one address; the store buffer reorders a write with a later read to a different address.',x:'Look at the SB example: both loads read 0 on a coherent x86.'},
+    l12:{b:'Right. Acquire = drop stale data and start fresh.',x:'GPUs avoid chasing invalidations; the thread cleans up itself at sync points.'},
+    l13:{a:'Right. Races need collisions; shrink the address pool to force them.',x:'Bugs live in races. How often do two random 48-bit addresses share a line?'}
+  };
+  document.querySelectorAll('.check').forEach(ch=>{
+    const sec=ch.closest('section'), ans=ch.dataset.ans, fb=ch.querySelector('.fb');
+    ch.querySelectorAll('button[data-o]').forEach(b=>b.addEventListener('click',()=>{
+      ch.querySelectorAll('button[data-o]').forEach(x=>x.classList.remove('right','wrong'));
+      if(b.dataset.o===ans){b.classList.add('right');fb.style.color='var(--ok)';fb.textContent=why[sec.id][ans];done[sec.id]=1;save();drawProg();}
+      else{b.classList.add('wrong');fb.style.color='var(--bad)';fb.textContent='Not quite. '+why[sec.id].x;}
+    }));
+    if(done[sec.id]){const r=ch.querySelector('button[data-o="'+ans+'"]');r.classList.add('right');fb.style.color='var(--ok)';fb.textContent=why[sec.id][ans];}
+  });
+  drawProg();
+
+  /* ---------- address splitter ---------- */
+  const ai=document.getElementById('addrIn'), bits=document.getElementById('bits'), ao=document.getElementById('addrOut');
+  function split(){
+    let v=parseInt(ai.value,10); if(isNaN(v)||v<0)v=0; if(v>65535)v=65535;
+    const s=v.toString(2).padStart(16,'0'); bits.innerHTML='';
+    [...s].forEach((c,i)=>{const sp=document.createElement('span');sp.textContent=c;sp.className=i<6?'b-tag':i<10?'b-idx':'b-off';bits.appendChild(sp);});
+    const tag=v>>10, idx=(v>>6)&15, off=v&63;
+    ao.innerHTML=`Address ${v} → look in <b>set ${idx}</b>, compare stored tag with <b>${tag}</b>, then pick <b>byte ${off}</b> of the 64-byte line.`;
+  }
+  ai.addEventListener('input',split); split();
+
+  /* ---------- direct-mapped playground ---------- */
+  const memrow=document.getElementById('memrow'), slotsEl=document.getElementById('slots'), cmsg=document.getElementById('cmsg');
+  let slots=[null,null,null,null], h=0, m=0, last=-1, lastHit=false;
+  for(let i=0;i<16;i++){const b=document.createElement('button');b.type='button';b.textContent='L'+i;b.addEventListener('click',()=>access(i));memrow.appendChild(b);}
+  function access(i){
+    const s=i%4; last=s;
+    if(slots[s]===i){h++;lastHit=true;cmsg.innerHTML=`Read L${i} → slot ${s} has tag L${i}: <b style="color:var(--ok)">HIT</b>. Fast.`;}
+    else{m++;lastHit=false;const old=slots[s];slots[s]=i;
+      cmsg.innerHTML=`Read L${i} → slot ${s} ${old===null?'is empty':'holds L'+old}: <b style="color:var(--bad)">MISS</b>. Fetched L${i} from memory${old===null?'':', evicted L'+old}.`;}
+    drawSlots();
+  }
+  function drawSlots(){
+    slotsEl.innerHTML='';
+    slots.forEach((v,i)=>{const d=document.createElement('div');d.className='slot'+(i===last?(lastHit?' hit pop':' miss pop'):'');
+      d.innerHTML=`<span class="lab">slot ${i}</span><span class="v">${v===null?'—':'L'+v}</span>`;slotsEl.appendChild(d);});
+    document.getElementById('hits').textContent='Hits '+h; document.getElementById('misses').textContent='Misses '+m;
+    document.getElementById('rate').textContent='Hit rate '+(h+m?Math.round(100*h/(h+m))+'%':'—');
+  }
+  document.getElementById('creset').addEventListener('click',()=>{slots=[null,null,null,null];h=0;m=0;last=-1;cmsg.textContent='Cache cleared. Click a memory line to read it.';drawSlots();});
+  drawSlots();
+
+  /* ---------- MSI classroom ---------- */
+  const names=['Asha','Ben','Chen'], N=3;
+  let st,val,mem,latest;
+  const fr=document.getElementById('friends'), lg=document.getElementById('slog'), ru=document.getElementById('rules'), mv=document.getElementById('memv');
+  function say(t,c){const d=document.createElement('div');d.textContent=t;if(c)d.style.color='var(--'+c+')';lg.prepend(d);}
+  function reset(){st=['I','I','I'];val=[null,null,null];mem=152;latest=152;lg.innerHTML='';say('Everyone starts with no copy (I). Memory says Room 152.');draw();}
+  function read(i){
+    const n=names[i];
+    if(st[i]!=='I'){say(`${n} reads her own copy (${st[i]}): Room ${val[i]}. Hit, no messages.`);return;}
+    const w=[0,1,2].find(j=>j!==i&&st[j]==='M');
+    if(w!==undefined){mem=val[w];st[w]='S';say(`${n} sends GetS. ${names[w]} has the newest copy (M), shares Room ${val[w]} and drops to S. Memory updated.`);}
+    else say(`${n} sends GetS. No writer around, copy comes from memory.`);
+    st[i]='S';val[i]=w!==undefined?val[w]:mem;say(`${n}: I → S, reads Room ${val[i]}.`,'ok');draw();
+  }
+  function write(i){
+    const n=names[i], nv=latest===152?252:latest+100;
+    if(st[i]==='M'){say(`${n} already holds the pen (M). Writes Room ${nv}, no messages.`);}
+    else{
+      const others=[0,1,2].filter(j=>j!==i&&st[j]!=='I');
+      say(`${n} sends GetM: “I want the pen.”${others.length?' '+others.map(j=>names[j]).join(' and ')+' throw away their copy → I.':' Nobody else has a copy.'}`);
+      [0,1,2].forEach(j=>{if(j!==i){if(st[j]==='M')mem=val[j];st[j]='I';val[j]=null;}});
+      say(`${n}: ${st[i]} → M.`,'ok');
+    }
+    st[i]='M';val[i]=nv;latest=nv;say(`${n} writes Room ${nv}. Memory still says ${mem} (that’s fine, ${n} is responsible).`);draw();
+  }
+  function evict(i){
+    const n=names[i];
+    if(st[i]==='I'){say(`${n} has nothing to throw away.`);return;}
+    if(st[i]==='M'){mem=val[i];say(`${n} evicts a dirty (M) copy → writes Room ${mem} back to memory, → I.`);}
+    else say(`${n} quietly throws away her S copy → I.`);
+    st[i]='I';val[i]=null;draw();
+  }
+  function draw(){
+    fr.innerHTML='';
+    for(let i=0;i<N;i++){const d=document.createElement('div');d.className='friend';
+      d.innerHTML=`<div class="row"><b>${names[i]}</b><span class="mono muted">${val[i]===null?'no copy':'Room '+val[i]}</span></div>
+      <div class="big" style="color:var(--${st[i]})">${st[i]}</div>
+      <div class="btns"><button type="button" data-a="r">Read</button><button type="button" class="primary" data-a="w">Write</button><button type="button" data-a="e">Evict</button></div>`;
+      d.querySelector('[data-a=r]').onclick=()=>read(i);d.querySelector('[data-a=w]').onclick=()=>write(i);d.querySelector('[data-a=e]').onclick=()=>evict(i);
+      fr.appendChild(d);}
+    const nM=st.filter(s=>s==='M').length,nS=st.filter(s=>s==='S').length;
+    const r1=nM===0||(nM===1&&nS===0);
+    const r2=st.every((s,i)=>s==='I'||val[i]===latest);
+    ru.innerHTML=`<span style="color:var(--${r1?'ok':'bad'})">${r1?'✓':'✗'} One writer or many readers</span><span style="color:var(--${r2?'ok':'bad'})">${r2?'✓':'✗'} Everyone sees latest</span>`;
+    mv.textContent='Memory: Room '+mem+(st.includes('M')?' (old)':'');
+  }
+  document.getElementById('sreset').onclick=reset; reset();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+--- rtl/branch_predictor.sv	2026-10-15 23:41:13.586037582 +0000
++++ solutions/branch_predictor.sv	2026-10-15 23:41:13.588916945 +0000
+@@ -42,13 +42,19 @@
+     btb_entry_t btb_table [BTB_SETS][BTB_WAYS];      // Main BTB storage: sets x ways
+     logic [2:0] plru [BTB_SETS];                     // 3-bit PLRU state per set (for 4-way associativity)
+ 
++    // FIX-14: tree-PLRU must point AWAY from the way just used, and must update the ROOT.
++    //   state[2] = root (0: victim on left pair, 1: victim on right pair)
++    //   state[1] = left pair  (0: victim way0, 1: victim way1)
++    //   state[0] = right pair (0: victim way2, 1: victim way3)
++    //   Original: never touched state[2] and pointed the pair bit AT the used way, so the
++    //   'victim' was always the MOST recently used entry (way 0 thrashed, ways 2/3 never used).
+     function [2:0] plru_update(input [2:0] old, input logic [1:0] way);
+         plru_update = old;
+         case (way)
+-            2'd0: plru_update = {old[2], old[1], 1'b0}; // left-left
+-            2'd1: plru_update = {old[2], old[1], 1'b1}; // left-right
+-            2'd2: plru_update = {old[2], 1'b0, old[0]}; // right-left
+-            2'd3: plru_update = {old[2], 1'b1, old[0]}; // right-right
++            2'd0: plru_update = {1'b1, 1'b1, old[0]};  // used left/way0  -> victim right, way1
++            2'd1: plru_update = {1'b1, 1'b0, old[0]};  // used left/way1  -> victim right, way0
++            2'd2: plru_update = {1'b0, old[1], 1'b1};  // used right/way2 -> victim left,  way3
++            2'd3: plru_update = {1'b0, old[1], 1'b0};  // used right/way3 -> victim left,  way2
+         endcase
+     endfunction
+ 
+@@ -119,14 +125,21 @@
+                 logic [TAG_BITS-1:0]     tag;
+                 logic [1:0] way_to_use;
+                 logic [1:0] free_way;
++                logic       free_found;
+                 set_idx = update_pc[SET_IDX_BITS+1:2];
+                 tag     = update_pc[XLEN-1:SET_IDX_BITS+2];
+-                free_way = 2'b11;
++                // FIX-15: '2'b11' was used as the "no free way" sentinel - but 3 is a REAL way.
++                //         A free way 3 looked like "set full", so a valid entry was evicted
++                //         while way 3 stayed empty. Never use an in-band sentinel: add a flag.
++                free_way = 2'b00;
++                free_found = 1'b0;
+                 for (w = 0; w < BTB_WAYS; w = w + 1) begin
+-                    if (!btb_table[set_idx][w].valid && free_way == 2'b11)
++                    if (!btb_table[set_idx][w].valid && !free_found) begin
+                         free_way = w[1:0];
++                        free_found = 1'b1;
++                    end
+                 end
+-                if (free_way != 2'b11) begin
++                if (free_found) begin
+                     way_to_use = free_way;
+                 end else begin
+                     way_to_use = plru_victim(plru[set_idx]);

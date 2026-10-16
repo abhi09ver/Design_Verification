@@ -1,0 +1,5 @@
+obj_*/
+obj/
+build/
+__pycache__/
+*.vcd
