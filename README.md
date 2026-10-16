@@ -50,6 +50,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 29 | [Pipelined In-Order CPU (Pequeno-style 5-stage)](29-pipelined-in-order-cpu-hazards.md) | RV32I formats, valid/stall/flush, forwarding distances 1–3, load-use interlock, static prediction, cycles = 4 + N + stalls + 2×flushes |
 | 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
+| 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
 
 ## CPU Lab (code for challenges 26–31)
 
