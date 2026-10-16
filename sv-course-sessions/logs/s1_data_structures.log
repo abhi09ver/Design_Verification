@@ -1,0 +1,28 @@
+Q1 ascending      : '{'h1, 'h2, 'h5, 'h7, 'h9}
+Q2 descending     : '{'h9, 'h7, 'h5, 'h2, 'h1}
+Q1 built-in sort  : '{'h1, 'h2, 'h5, 'h7, 'h9}
+Q2 built-in rsort : '{'h9, 'h7, 'h5, 'h2, 'h1}
+Q3 dedup (ordered): '{'h4, 'h1, 'h2, 'h3}
+Q4 in-order  a==b:1 a==c:0
+Q5 unordered a~c:1 a~d:0 (d has wrong duplicate count)
+Q6/Q7 FIFO:
+  [FIFO] OVERFLOW  : push(40) dropped, size=3
+  pop -> 10
+  pop -> 20
+  pop -> 30
+  [FIFO] UNDERFLOW : pop on empty FIFO
+  overflows=1 underflows=1
+Q8 sparse mem entries=3 over a 2^64 address space
+  mem[0000000000000000] = deadbeef
+  mem[0000000100000000] = cafef00d
+  mem[fffffffffffffff0] = 12345678
+Q9 key 0x1_0000_0000 exists : 1
+Q9 key 0x42 exists          : 0
+Q9 value CAFEF00D found at  : '{'h100000000}
+Q11 concat        : Hello World
+Q11 sformatf      : Hello_7
+Q12 reverse       : golireVmetsyS
+Q13 icompare==0   : 1
+Q13 tolower ==    : 1
+Q14 keep  : size=250 A[199]=199 A[249]=0
+Q14 wipe  : size=250 A[199]=0
