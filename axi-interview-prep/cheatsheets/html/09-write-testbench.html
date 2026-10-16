@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Writing to the RAM from a Testbench</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.bad{background:#B91C1C}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 6px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;min-height:28px;box-sizing:border-box}
+.hi{background:#0F766E;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.xf{background:#C2410C;color:#FFFFFF}
+.dt{background:#D7EEEA;color:#0B4A44}
+.wv{display:grid;grid-template-columns:110px repeat(8,minmax(0,1fr));gap:4px;align-items:center}
+.sig{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16202B}
+.cyc{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5B6670;text-align:center}
+.blk{border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:13px;line-height:1.3;box-sizing:border-box}
+.dk{background:#16202B;color:#FFFFFF}
+.tl{background:#0F766E;color:#FFFFFF}
+.og{background:#C2410C;color:#FFFFFF}
+.lane{display:inline-flex;align-items:center;justify-content:center;width:44px;height:30px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="08-axi-slave-ram-verilog.html">← Building an AXI Slave RAM in Verilog</a><a href="../../README.md">Index</a><a href="10-read-testbench.html">Reading the RAM Back over AXI →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 9 · project part 2</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">Writing to the RAM from a Testbench</h1>
+    <div style="font-size: 17px; color: #C9D2D8">The testbench plays AXI master: it drives AW and W, waits for the handshakes, collects B, then checks memory.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 330px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">drive with &lt;= right after posedge</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">sample READY at the next posedge</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #7FD1C7">AW ∥ W in fork…join, then B</div>
+  </div>
+</div>
+
+<!-- ROW 1: structure -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">1</span>Testbench structure &amp; the AXI wrapper</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1.3fr); gap: 10px; align-items: stretch">
+      <div class="blk dk" style="min-height: 200px">
+        <b style="font-size: 17px">tb_top</b>
+        <span style="color: #C9D2D8">clock &amp; reset<br>axi_write() task<br>test sequence<br>checker</span>
+        <span style="font-size: 12px; color: #7FD1C7; margin-top: 4px">acts as AXI master</span>
+      </div>
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5B6670; text-align: center">AW ▶<br>W ▶<br>◀ B<br>AR ▶<br>◀ R</div>
+      <div class="blk tl" style="min-height: 200px; align-items: stretch">
+        <b style="font-size: 17px; text-align: center">axi_wrapper (DUT top)</b>
+        <span style="color: #E2F3F0; text-align: center">exposes the 5 AXI channels as one clean port list</span>
+        <div class="blk og" style="margin-top: 6px"><b>axi_slave_ram</b>write FSM · read FSM · next_addr · mem[]</div>
+      </div>
+    </div>
+    <ul class="ul">
+      <li><b>Wrapper</b> = a thin top module that groups the AXI ports and instantiates the RAM slave. The TB only ever talks to the wrapper, so the core can change without touching the TB.</li>
+      <li>Same idea in UVM: the wrapper's ports bind to an <b>AXI interface</b>, and drivers/monitors use that interface.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>Clock, reset &amp; idle values</h2>
+    <pre class="code">initial ACLK = 0;
+always #5 ACLK = ~ACLK;          // 100 MHz
+
+initial begin
+  ARESETn = 0;
+  AWVALID = 0; WVALID = 0; WLAST = 0;
+  BREADY  = 0; ARVALID = 0; RREADY = 0;
+  repeat (5) @(posedge ACLK);
+  ARESETn &lt;= 1;                  // de-assert on an edge
+  @(posedge ACLK);
+  run_write_tests();
+  $finish;
+end</pre>
+    <div class="tip">All master VALIDs must be LOW during reset and stay LOW until after ARESETn goes HIGH — the TB is the master, so this is <b>your</b> responsibility.</div>
+  </div>
+</div>
+
+<!-- ROW 2: the task -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">3</span>The reusable <span class="m" style="font-size: 20px">axi_write</span> task (SystemVerilog)</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px">
+    <pre class="code">logic [DATA_W-1:0] wdata_q[$];   // filled by the test before calling
+logic [STRB_W-1:0] wstrb_q[$];
+
+task automatic axi_write(input [ID_W-1:0] id, input [ADDR_W-1:0] addr,
+                         input [7:0] len, input [2:0] size, input [1:0] burst);
+  fork
+    begin : aw_ch                                  // ---- address channel
+      AWID &lt;= id;  AWADDR &lt;= addr;  AWLEN &lt;= len;
+      AWSIZE &lt;= size;  AWBURST &lt;= burst;  AWVALID &lt;= 1;
+      do @(posedge ACLK); while (!AWREADY);      // handshake edge
+      AWVALID &lt;= 0;
+    end
+    begin : w_ch                                   // ---- data channel
+      for (int i = 0; i &lt;= len; i++) begin
+        WDATA &lt;= wdata_q[i];  WSTRB &lt;= wstrb_q[i];
+        WLAST &lt;= (i == len);  WVALID &lt;= 1;
+        do @(posedge ACLK); while (!WREADY);     // one beat accepted
+      end
+      WVALID &lt;= 0;  WLAST &lt;= 0;
+    end
+  join
+
+  BREADY &lt;= 1;                                     // ---- response channel
+  do @(posedge ACLK); while (!BVALID);
+  BREADY &lt;= 0;
+  if (BID !== id)      $error("BID %0h != AWID %0h", BID, id);
+  if (BRESP !== 2'b00) $error("BRESP = %b at addr %h", BRESP, addr);
+endtask</pre>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div class="key"><b>fork…join</b> runs AW and W at the same time. The TB raises WVALID without waiting for AWREADY — exactly what the protocol requires of a master (no "wait for READY before VALID").</div>
+      <div class="key"><b>do @(posedge) while(!READY)</b> — after the edge, READY still shows the value the DUT had <i>at</i> that edge (the DUT's registers update later via NBA), so this samples the handshake correctly.</div>
+      <div class="key"><b>Non-blocking <span class="m">&lt;=</span> for every drive</b> avoids races with the DUT on the same clock edge.</div>
+      <div class="key"><b>Payload is held</b> automatically: nothing changes until the loop sees READY, so VALID-stable / data-stable rules hold.</div>
+      <div class="tip">Add a <b>timeout</b> around each wait (e.g. a parallel <span class="m">repeat(1000) @(posedge ACLK)</span> + <span class="m">$fatal</span>) so a stuck READY doesn't hang the sim forever.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 3: waveform + test cases -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>What a 2-beat write looks like (with the Part-1 slave)</h2>
+    <div class="wv">
+      <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div><div class="cyc">T7</div><div class="cyc">T8</div>
+      <div class="sig">AWVALID</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">AWREADY</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip hi">1</span>
+      <div class="sig">WVALID</div><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">WREADY</div><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">WDATA</div><span class="chip dt">D0</span><span class="chip dt">D0</span><span class="chip dt">D1</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      <div class="sig">WLAST</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">BVALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">BREADY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    </div>
+    <ul class="ul">
+      <li><b>T1</b> AW accepted (slave idle). W is already offered but WREADY is LOW — slave waits for AW first.</li>
+      <li><b>T2, T3</b> two beats; WLAST with D1.</li>
+      <li><b>T4</b> B handshake → slave back to IDLE, AWREADY HIGH again at T5.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Write tests &amp; expected memory (32-bit RAM)</h2>
+    <table class="t">
+      <tr><th>Test</th><th>Call</th><th>Expect</th></tr>
+      <tr><td><b>Single</b></td><td><span class="m">addr 0x00, len 0, size 2, INCR</span>, D = 0xCAFE_F00D</td><td>mem[0] = CAFEF00D</td></tr>
+      <tr><td><b>INCR ×4</b></td><td><span class="m">addr 0x10, len 3</span>, D = 1,2,3,4</td><td>mem[4..7] = 1,2,3,4</td></tr>
+      <tr><td><b>WRAP ×4</b></td><td><span class="m">addr 0x38, len 3, WRAP</span>, D = A,B,C,D</td><td>mem[14]=A, [15]=B, [12]=C, [13]=D</td></tr>
+      <tr><td><b>FIXED ×3</b></td><td><span class="m">addr 0x40, len 2, FIXED</span>, D = X,Y,Z</td><td>mem[16] = Z (last wins)</td></tr>
+      <tr><td><b>Unaligned</b></td><td><span class="m">addr 0x51, len 1</span>, strb 1110, 1111</td><td>mem[20] bytes 1–3, mem[21] all</td></tr>
+      <tr><td><b>BREADY delay</b></td><td>hold BREADY LOW 5 cycles</td><td>BVALID stays HIGH, no lost response</td></tr>
+    </table>
+    <div class="lbl">Partial-strobe example</div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; gap: 4px; align-items: center"><span class="p" style="width: 120px">mem before</span><span class="lane lo">11</span><span class="lane lo">22</span><span class="lane lo">33</span><span class="lane lo">44</span></div>
+      <div style="display: flex; gap: 4px; align-items: center"><span class="p" style="width: 120px">WDATA</span><span class="lane dt">AA</span><span class="lane dt">BB</span><span class="lane dt">CC</span><span class="lane dt">DD</span><span class="m" style="margin-left: 8px">WSTRB = 0101</span></div>
+      <div style="display: flex; gap: 4px; align-items: center"><span class="p" style="width: 120px">mem after</span><span class="lane lo">11</span><span class="lane hi">BB</span><span class="lane lo">33</span><span class="lane hi">DD</span><span class="m" style="margin-left: 8px">= 0x11BB33DD</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 4: checking + mistakes + QA -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>Checking the write</h2>
+    <div class="lbl">Option A · peek memory (quick)</div>
+    <pre class="code">if (tb_top.dut.u_ram.mem[addr &gt;&gt; 2] !== exp)
+  $error("mem[%h] = %h, exp %h",
+         addr, tb_top.dut.u_ram.mem[addr &gt;&gt; 2], exp);</pre>
+    <div class="lbl">Option B · read back over AXI (better)</div>
+    <div class="p">Write, then <span class="m">axi_read()</span> the same address and compare — tests the read path too and doesn't depend on internal names.</div>
+    <div class="lbl">Option C · reference model</div>
+    <div class="p">Keep a byte-array model in the TB; apply every write with WSTRB; compare on every read. This is the scoreboard idea, scaled up in UVM.</div>
+    <div class="key">Always check <b>BRESP</b> and <b>BID</b> too — a "passing" write with SLVERR is a bug.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num bad">!</span>Common testbench mistakes</h2>
+    <ul class="ul">
+      <li>Waiting for AWREADY/WREADY <b>before</b> raising VALID → can deadlock with some slaves.</li>
+      <li>Using blocking <span class="m">=</span> on DUT inputs at posedge → race conditions.</li>
+      <li>Checking READY with <span class="m">wait(AWREADY)</span> (level) instead of at a clock edge → miscounted beats.</li>
+      <li>Forgetting WLAST, or setting it on every beat.</li>
+      <li>Driving AW and W strictly in sequence only — never exercises W-before-AW.</li>
+      <li>Leaving BREADY LOW forever → write never completes.</li>
+      <li>Not filling <span class="m">wdata_q</span> with LEN+1 entries.</li>
+      <li>No timeout → hung simulation instead of a clear failure.</li>
+      <li>Checking memory before B handshake has completed.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 50%">Question</th><th>Answer</th></tr>
+      <tr><td>Why fork AW and W?</td><td>Channels are independent; a master mustn't serialize them.</td></tr>
+      <tr><td>Why NBA in the TB?</td><td>Avoids races with DUT flops at the same edge.</td></tr>
+      <tr><td>How do you know a beat was taken?</td><td>VALID &amp;&amp; READY sampled at posedge.</td></tr>
+      <tr><td>What's an AXI wrapper?</td><td>Top that exposes AXI ports around the core.</td></tr>
+      <tr><td>How to check the write?</td><td>Read back / reference model + BRESP.</td></tr>
+      <tr><td>Next step to UVM?</td><td>Task → driver, checks → monitor + scoreboard, tests → sequences.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

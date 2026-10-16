@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>AXI Protocol: Channels, Handshake & Ordering</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:16px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.hi{background:#0F766E;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.xf{background:#C2410C;color:#FFFFFF}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><span></span><a href="../../README.md">Index</a><a href="02-axi-signals-by-channel.html">AXI Signals, Channel by Channel →</a></nav>
+<div style="width: 1600px; height: 3620px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">AXI Protocol: Channels, Handshake &amp; Ordering</h1>
+    <div style="font-size: 17px; color: #C9D2D8">AMBA Advanced eXtensible Interface — 5 independent channels, burst-based, ID-tagged, multiple outstanding transactions.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 300px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C9D2D8; text-align: right">Topic: Intro to AXI · AXI channels ·<br>In-order vs out-of-order transactions</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7FD1C7; text-align: right">Golden rule → transfer happens only when VALID &amp; READY are both HIGH at a rising clock edge</div>
+  </div>
+</div>
+
+<!-- ROW 1 -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">1</span>Where AXI sits in AMBA</h2>
+    <table class="t">
+      <tr><th>Bus</th><th>Use</th><th>Traits</th></tr>
+      <tr><td><b>APB</b></td><td>Slow peripherals (UART, GPIO, timers)</td><td>No pipelining, no burst, simple setup→access</td></tr>
+      <tr><td><b>AHB</b></td><td>Mid-performance system bus</td><td>Single shared channel, pipelined addr/data, one master at a time</td></tr>
+      <tr><td><b>AXI</b></td><td>High-performance SoC fabric (CPU, DDR, DMA, GPU)</td><td>5 separate channels, bursts, IDs, outstanding &amp; out-of-order</td></tr>
+      <tr><td><b>AXI-Lite</b></td><td>Register / control access</td><td>Single-beat only, no IDs, no bursts</td></tr>
+      <tr><td><b>AXI-Stream</b></td><td>Data pipes (video, DSP, network)</td><td>No address; TVALID/TREADY/TDATA/TLAST</td></tr>
+    </table>
+    <div class="p">Terminology: <b>Master / Manager</b> initiates, <b>Slave / Subordinate</b> responds. An interconnect connects many of each.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>Why AXI is fast</h2>
+    <ul class="ul">
+      <li><b>Separate address/control and data phases</b> — address can be sent ahead of data.</li>
+      <li><b>Separate read and write channels</b> — reads and writes run simultaneously (full duplex).</li>
+      <li><b>Burst transactions</b> — only the <i>start address</i> is sent; slave computes the rest.</li>
+      <li><b>Multiple outstanding transactions</b> — issue new addresses before earlier ones complete.</li>
+      <li><b>Out-of-order completion</b> using transaction IDs.</li>
+      <li><b>Unaligned transfers &amp; byte lanes</b> via <span class="m">WSTRB</span>.</li>
+      <li><b>Register slices</b> can be inserted on any channel for timing closure (channels are independent).</li>
+    </ul>
+    <div class="key"><b>One-liner:</b> AXI decouples address, data and response so latency is hidden by pipelining and parallelism.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">3</span>AXI3 vs AXI4 (asked a lot)</h2>
+    <table class="t">
+      <tr><th>Feature</th><th>AXI3</th><th>AXI4</th></tr>
+      <tr><td>INCR burst length</td><td>1–16</td><td><b>1–256</b></td></tr>
+      <tr><td>AxLEN width</td><td>4 bits</td><td>8 bits</td></tr>
+      <tr><td>Write interleaving</td><td>Allowed (has <span class="m">WID</span>)</td><td><b>Not allowed</b> — WID removed</td></tr>
+      <tr><td>Locked transfers</td><td>Locked + exclusive</td><td>Exclusive only (AxLOCK 1 bit)</td></tr>
+      <tr><td>New signals</td><td>—</td><td><span class="m">AxQOS</span>, <span class="m">AxREGION</span>, <span class="m">xUSER</span></td></tr>
+      <tr><td>WRAP / FIXED length</td><td>WRAP 2/4/8/16; FIXED ≤16</td><td>Same (only INCR grew)</td></tr>
+    </table>
+    <div class="tip">AXI4 write response may only come after <b>both</b> AW and the last W beat are handshaken.</div>
+  </div>
+</div>
+
+<!-- ROW 2: CHANNELS -->
+<div class="card" style="gap: 16px">
+  <h2 class="h2"><span class="num">4</span>The 5 channels — each has its own VALID / READY</h2>
+  <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 200px minmax(0, 1.25fr); gap: 22px; align-items: stretch">
+    <div style="background: #16202B; color: #FFFFFF; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 16px">
+      <div style="font-family: 'IBM Plex Sans Condensed', sans-serif; font-size: 30px; font-weight: 700">MASTER</div>
+      <div style="font-size: 13px; color: #C9D2D8; text-align: center">CPU / DMA<br>initiates</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="chip hi" style="min-width: 54px">AW</span><div style="flex: 1; height: 3px; background: #0F766E"></div><span style="font-size: 22px; color: #0F766E">▶</span><span class="p" style="min-width: 150px">Write address</span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span class="chip hi" style="min-width: 54px">W</span><div style="flex: 1; height: 3px; background: #0F766E"></div><span style="font-size: 22px; color: #0F766E">▶</span><span class="p" style="min-width: 150px">Write data</span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span class="chip xf" style="min-width: 54px">B</span><span style="font-size: 22px; color: #C2410C">◀</span><div style="flex: 1; height: 3px; background: #C2410C"></div><span class="p" style="min-width: 150px">Write response</span></div>
+      <div style="height: 1px; background: #D3D8D2; margin: 4px 0"></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span class="chip hi" style="min-width: 54px">AR</span><div style="flex: 1; height: 3px; background: #0F766E"></div><span style="font-size: 22px; color: #0F766E">▶</span><span class="p" style="min-width: 150px">Read address</span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span class="chip xf" style="min-width: 54px">R</span><span style="font-size: 22px; color: #C2410C">◀</span><div style="flex: 1; height: 3px; background: #C2410C"></div><span class="p" style="min-width: 150px">Read data + response</span></div>
+    </div>
+    <div style="background: #16202B; color: #FFFFFF; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 16px">
+      <div style="font-family: 'IBM Plex Sans Condensed', sans-serif; font-size: 30px; font-weight: 700">SLAVE</div>
+      <div style="font-size: 13px; color: #C9D2D8; text-align: center">Memory / peripheral<br>responds</div>
+    </div>
+    <table class="t">
+      <tr><th>Ch</th><th>Key signals</th><th>Note</th></tr>
+      <tr><td><b>AW</b></td><td><span class="m">AWID AWADDR AWLEN AWSIZE AWBURST</span></td><td>One per burst</td></tr>
+      <tr><td><b>W</b></td><td><span class="m">WDATA WSTRB WLAST</span></td><td>One per beat; WLAST on final beat</td></tr>
+      <tr><td><b>B</b></td><td><span class="m">BID BRESP</span></td><td>One per <i>burst</i>, not per beat</td></tr>
+      <tr><td><b>AR</b></td><td><span class="m">ARID ARADDR ARLEN ARSIZE ARBURST</span></td><td>One per burst</td></tr>
+      <tr><td><b>R</b></td><td><span class="m">RID RDATA RRESP RLAST</span></td><td>RRESP on <i>every</i> beat</td></tr>
+    </table>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <div class="key"><b>Write = 3 channels</b> (AW, W, B). <b>Read = 2 channels</b> (AR, R) — read response rides on the R channel, so there's no separate read-response channel.</div>
+    <div class="key"><b>Direction:</b> AW, W, AR driven by master; B and R driven by slave. READY always flows opposite to VALID.</div>
+    <div class="key"><b>Why no separate read response?</b> Data already returns slave→master, so RRESP is attached to each R beat for free.</div>
+  </div>
+</div>
+
+<!-- ROW 3: HANDSHAKE + DEPENDENCIES -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>VALID / READY handshake</h2>
+    <ul class="ul">
+      <li><b>Source</b> drives VALID (info available); <b>destination</b> drives READY (can accept).</li>
+      <li>Transfer occurs on the rising edge where <b>VALID = 1 and READY = 1</b>.</li>
+      <li><b>Once VALID is asserted it must stay HIGH</b>, with data/control stable, until the handshake completes.</li>
+      <li><b>Source must NOT wait for READY</b> before asserting VALID (else deadlock).</li>
+      <li><b>Destination MAY wait for VALID</b> before asserting READY; READY may also be asserted early and de-asserted before VALID.</li>
+    </ul>
+    <div class="lbl">Three legal orderings (transfer cycle in orange)</div>
+    <div style="display: grid; grid-template-columns: 170px repeat(5, minmax(0, 1fr)); gap: 4px; align-items: center">
+      <div class="lbl">Clock</div><div class="lbl" style="text-align: center">T1</div><div class="lbl" style="text-align: center">T2</div><div class="lbl" style="text-align: center">T3</div><div class="lbl" style="text-align: center">T4</div><div class="lbl" style="text-align: center">T5</div>
+      <div class="p"><b>a)</b> VALID first · VALID</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">1</span><span class="chip lo">0</span>
+      <div class="p" style="padding-left: 22px">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">1</span><span class="chip lo">0</span>
+      <div class="p"><b>b)</b> READY first · VALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">1</span><span class="chip lo">0</span>
+      <div class="p" style="padding-left: 22px">READY</div><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span><span class="chip xf">1</span><span class="chip lo">0</span>
+      <div class="p"><b>c)</b> Same cycle · VALID</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">1</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="p" style="padding-left: 22px">READY</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip xf">1</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    </div>
+    <div class="tip"><b>Interview trap:</b> "Can VALID drop before READY comes?" → No, that's a protocol violation. "Can READY drop without VALID?" → Yes.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>Channel dependencies</h2>
+    <div class="lbl">Write transaction</div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+      <span class="chip hi">AW handshake</span><span class="p">+</span><span class="chip hi">W … WLAST handshake</span><span class="p">→</span><span class="chip xf">B response</span>
+    </div>
+    <ul class="ul">
+      <li>W data <b>may arrive before</b> AW (slave may wait for both).</li>
+      <li>Slave must wait for <b>WLAST</b> (and in AXI4, AW too) before asserting BVALID.</li>
+    </ul>
+    <div class="lbl">Read transaction</div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+      <span class="chip hi">AR handshake</span><span class="p">→</span><span class="chip xf">R beats … RLAST</span>
+    </div>
+    <ul class="ul">
+      <li>Slave must wait for <b>ARVALID &amp; ARREADY</b> before asserting RVALID.</li>
+    </ul>
+    <div class="lbl">Deadlock-avoidance rules</div>
+    <ul class="ul">
+      <li>Slave may wait for AWVALID/WVALID before AWREADY/WREADY.</li>
+      <li>Master must <b>not</b> wait for AWREADY/WREADY before driving W/AW VALID.</li>
+      <li>Master may wait for BVALID before BREADY (but it's good practice to keep BREADY/RREADY high).</li>
+    </ul>
+    <div class="key"><b>Count rule:</b> #W beats per burst = AWLEN + 1, WLAST exactly on the last one. #R beats = ARLEN + 1, RLAST on the last.</div>
+  </div>
+</div>
+
+<!-- ROW 4: BURST + RESPONSES -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">7</span>Bursts: LEN · SIZE · TYPE</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+      <div class="key"><b>AxLEN</b><br>beats − 1<br><span class="m">beats = LEN + 1</span></div>
+      <div class="key"><b>AxSIZE</b><br>bytes per beat<br><span class="m">bytes = 2^SIZE</span> (≤ bus width)</div>
+      <div class="key"><b>Total bytes</b><br><span class="m">(LEN+1) × 2^SIZE</span></div>
+    </div>
+    <table class="t">
+      <tr><th>AxBURST</th><th>Type</th><th>Address behaviour</th><th>Typical use</th></tr>
+      <tr><td><span class="m">2'b00</span></td><td><b>FIXED</b></td><td>Same address every beat</td><td>FIFO / peripheral register</td></tr>
+      <tr><td><span class="m">2'b01</span></td><td><b>INCR</b></td><td>Address += 2^SIZE each beat</td><td>Normal memory access</td></tr>
+      <tr><td><span class="m">2'b10</span></td><td><b>WRAP</b></td><td>Increments, then wraps at boundary</td><td>Cache-line fill (critical word first)</td></tr>
+      <tr><td><span class="m">2'b11</span></td><td>Reserved</td><td>—</td><td>Flag as error in checker</td></tr>
+    </table>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <div class="tip"><b>4 KB rule:</b> a burst must never cross a 4 KB address boundary (a slave region is ≥ 4 KB, so a burst stays in one slave).</div>
+      <div class="tip"><b>WRAP rules:</b> length 2, 4, 8 or 16 only; start address must be aligned to transfer size.</div>
+    </div>
+    <div class="lbl">Worked WRAP example</div>
+    <div class="p">WRAP, 4 beats, 4 bytes/beat, start <span class="m">0x38</span> → container = 4 × 4 = 16 B → lower boundary = <span class="m">INT(0x38/16)×16 = 0x30</span>, upper = 0x40</div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <span class="chip hi">0x38</span><span class="p">→</span><span class="chip hi">0x3C</span><span class="p">→ wrap →</span><span class="chip xf">0x30</span><span class="p">→</span><span class="chip xf">0x34</span>
+    </div>
+    <div class="p">Same with <b>INCR</b>: 0x38 → 0x3C → 0x40 → 0x44. With <b>FIXED</b>: 0x38 ×4.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">8</span>Responses &amp; side-band signals</h2>
+    <table class="t">
+      <tr><th>xRESP</th><th>Name</th><th>Meaning</th></tr>
+      <tr><td><span class="m">00</span></td><td><b>OKAY</b></td><td>Normal success (or exclusive access failed)</td></tr>
+      <tr><td><span class="m">01</span></td><td><b>EXOKAY</b></td><td>Exclusive access succeeded</td></tr>
+      <tr><td><span class="m">10</span></td><td><b>SLVERR</b></td><td>Slave reached, but it reported an error</td></tr>
+      <tr><td><span class="m">11</span></td><td><b>DECERR</b></td><td>Decode error — no slave at that address (interconnect default slave)</td></tr>
+    </table>
+    <table class="t">
+      <tr><th>Signal</th><th>Purpose</th></tr>
+      <tr><td><span class="m">WSTRB</span></td><td>1 bit per data byte; which lanes are valid (narrow/unaligned writes)</td></tr>
+      <tr><td><span class="m">AxLOCK</span></td><td>Exclusive access (atomic read-modify-write semaphores)</td></tr>
+      <tr><td><span class="m">AxCACHE</span></td><td>Bufferable, modifiable, allocate hints</td></tr>
+      <tr><td><span class="m">AxPROT</span></td><td>Privileged / secure / instruction vs data</td></tr>
+      <tr><td><span class="m">AxQOS</span></td><td>Priority hint for arbitration (AXI4)</td></tr>
+      <tr><td><span class="m">AxREGION</span></td><td>Multiple logical regions in one slave (AXI4)</td></tr>
+      <tr><td><span class="m">xUSER</span></td><td>User-defined side-band (AXI4)</td></tr>
+    </table>
+    <div class="key"><b>WSTRB example (32-bit bus):</b> write 1 byte at 0x1002 → <span class="m">WSTRB = 4'b0100</span>. Narrow transfer: SIZE &lt; bus width, active lanes rotate each beat.</div>
+  </div>
+</div>
+
+<!-- ROW 5: ORDERING -->
+<div class="card" style="gap: 16px">
+  <h2 class="h2"><span class="num">9</span>Transaction IDs: in-order vs out-of-order</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">The rule</div>
+      <div class="key" style="font-size: 16px"><b>Same ID → must complete in issue order.</b><br><b>Different IDs → may complete in any order.</b></div>
+      <ul class="ul">
+        <li>ID = "ordering tag", typically one per master thread / stream.</li>
+        <li>The interconnect <b>extends the ID</b> with master-port bits so responses route back to the right master.</li>
+        <li>No ordering between reads and writes, even with the same ID — master must wait for a response if it needs that.</li>
+      </ul>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Example — master issues 3 reads</div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span class="p" style="width: 70px">Issued:</span><span class="chip hi">A · ID0</span><span class="chip" style="background: #2F4B7C; color: #FFFFFF">B · ID1</span><span class="chip hi">C · ID0</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span class="p" style="width: 70px">Legal:</span><span class="chip" style="background: #2F4B7C; color: #FFFFFF">B</span><span class="chip hi">A</span><span class="chip hi">C</span><span class="p">✓ B overtakes (diff ID)</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span class="p" style="width: 70px">Legal:</span><span class="chip hi">A</span><span class="chip" style="background: #2F4B7C; color: #FFFFFF">B</span><span class="chip hi">C</span><span class="p">✓ in-order</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span class="p" style="width: 70px">Illegal:</span><span class="chip xf">C</span><span class="chip hi">A</span><span class="chip" style="background: #2F4B7C; color: #FFFFFF">B</span><span class="p">✗ C before A (same ID0)</span>
+      </div>
+      <div class="tip">Why out-of-order? A fast slave (SRAM) shouldn't be blocked by a slow slave (DDR). Different IDs let the fast response return first.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Outstanding &amp; interleaving</div>
+      <ul class="ul">
+        <li><b>Outstanding:</b> master sends next AR/AW before previous data/response returns. Depth = how many in flight (read/write acceptance capability).</li>
+        <li><b>Read data interleaving:</b> beats of bursts with <i>different</i> RIDs may be mixed; within one burst, beats stay in order.</li>
+        <li><b>Write data interleaving:</b> AXI3 only (WID). <b>AXI4: W beats must follow AW order</b>, no interleaving.</li>
+        <li>In-order slaves simply return everything in issue order — always legal.</li>
+      </ul>
+      <table class="t">
+        <tr><th>Mode</th><th>Pros</th><th>Cons</th></tr>
+        <tr><td>In-order</td><td>Simple slave &amp; master</td><td>Head-of-line blocking</td></tr>
+        <tr><td>Out-of-order</td><td>Higher throughput, lower latency</td><td>Reorder buffers, ID tracking</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 6: DV -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">10</span>How a DV engineer verifies AXI</h2>
+    <div class="lbl">Testbench (UVM AXI VIP)</div>
+    <ul class="ul">
+      <li>Agent per interface: <b>sequencer · driver · monitor</b>; separate drivers/threads per channel so channels stay independent.</li>
+      <li>Monitor rebuilds bursts from beats; sends to scoreboard via analysis port.</li>
+      <li><b>Scoreboard:</b> reference memory model + <b>per-ID queues</b> (assoc array keyed by ID) → checks same-ID order, allows cross-ID reordering.</li>
+      <li>Randomize READY delays (back-pressure) and VALID delays.</li>
+    </ul>
+    <div class="lbl">SVA protocol checks</div>
+    <ul class="ul">
+      <li>VALID stays high &amp; payload stable until READY: <span class="m">valid &amp;&amp; !ready |=&gt; valid &amp;&amp; $stable(payload)</span></li>
+      <li>No X on VALID after reset; VALIDs low during reset.</li>
+      <li>WLAST/RLAST on beat LEN+1 exactly; no beat after LAST.</li>
+      <li>No 4 KB crossing; WRAP len ∈ {2,4,8,16}; WRAP addr aligned; BURST ≠ 2'b11.</li>
+      <li>BVALID only after AW + WLAST; RVALID only after AR; BID/RID match an outstanding ID.</li>
+    </ul>
+    <div class="lbl">Functional coverage</div>
+    <ul class="ul">
+      <li>Cross <b>BURST × LEN × SIZE</b>, aligned vs unaligned, all WSTRB patterns.</li>
+      <li>All 4 responses, outstanding depth (0 … max), same-ID vs diff-ID reorder seen.</li>
+      <li>Handshake orderings a/b/c, back-to-back transfers, reads &amp; writes concurrently.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">11</span>Rapid-fire interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Crisp answer</th></tr>
+      <tr><td>How many channels? Why separate?</td><td>5 (AW, W, B, AR, R); independent = parallel R/W, pipelining, register slices.</td></tr>
+      <tr><td>Why no read-response channel?</td><td>RRESP travels with each R beat.</td></tr>
+      <tr><td>Max burst length?</td><td>AXI4 INCR 256; AXI3 16; WRAP 16; FIXED 16.</td></tr>
+      <tr><td>Why the 4 KB boundary?</td><td>Min slave address region; keeps a burst inside one slave &amp; one page.</td></tr>
+      <tr><td>Can W come before AW?</td><td>Yes; slave may buffer it.</td></tr>
+      <tr><td>Purpose of WLAST if LEN is known?</td><td>Slave needn't count beats; simplifies logic &amp; checking.</td></tr>
+      <tr><td>Why was WID removed in AXI4?</td><td>Write interleaving was rarely used and complicated slaves.</td></tr>
+      <tr><td>How is out-of-order achieved?</td><td>Different IDs; same-ID responses stay in order.</td></tr>
+      <tr><td>SLVERR vs DECERR?</td><td>SLVERR from the slave; DECERR from interconnect when no slave decodes.</td></tr>
+      <tr><td>Who can deadlock and how?</td><td>Source waiting for READY before VALID — forbidden.</td></tr>
+      <tr><td>AXI vs AHB in one line?</td><td>AHB: one shared pipelined bus; AXI: split channels, outstanding, OoO.</td></tr>
+      <tr><td>Bytes in LEN=7, SIZE=3?</td><td>8 beats × 8 B = 64 B.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

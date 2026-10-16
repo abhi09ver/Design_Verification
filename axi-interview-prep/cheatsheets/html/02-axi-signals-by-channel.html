@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>AXI Signals, Channel by Channel</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.mst{background:#0F766E}
+.slv{background:#C2410C}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.t td:first-child{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13.5px;color:#16202B;white-space:nowrap}
+.src{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.sm{background:#D7EEEA;color:#0B4A44}
+.ss{background:#FBE1D1;color:#7A2C08}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.hi{background:#0F766E;color:#FFFFFF}
+.xf{background:#C2410C;color:#FFFFFF}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="01-axi-overview.html">← AXI Protocol: Channels, Handshake & Ordering</a><a href="../../README.md">Index</a><a href="03-write-read-transfers.html">AXI Write & Read Transfers, Cycle by Cycle →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 2</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">AXI Signals, Channel by Channel</h1>
+    <div style="font-size: 17px; color: #C9D2D8">Every signal on the read and write channels: who drives it, how wide it is, and what it means.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 320px">
+    <div style="display: flex; gap: 8px; align-items: center"><span class="src sm">M→S</span><span style="font-size: 14px; color: #C9D2D8">driven by master</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="src ss">S→M</span><span style="font-size: 14px; color: #C9D2D8">driven by slave</span></div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7FD1C7; text-align: right">Naming trick: prefix = channel (AW, W, B, AR, R)<br>Ax* = same signal on both AW and AR</div>
+  </div>
+</div>
+
+<!-- ROW 1: global + naming -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">G</span>Global signals &amp; reset rules</h2>
+    <table class="t">
+      <tr><th>Signal</th><th>Source</th><th>Description</th></tr>
+      <tr><td>ACLK</td><td><span class="src">Clock</span></td><td>Single global clock; all inputs sampled and outputs changed on its <b>rising edge</b>.</td></tr>
+      <tr><td>ARESETn</td><td><span class="src">Reset</span></td><td>Global reset, <b>active LOW</b>. Can assert asynchronously; must de-assert synchronously to ACLK.</td></tr>
+    </table>
+    <ul class="ul">
+      <li>During reset: master drives <span class="m">ARVALID</span>, <span class="m">AWVALID</span>, <span class="m">WVALID</span> LOW; slave drives <span class="m">RVALID</span>, <span class="m">BVALID</span> LOW.</li>
+      <li>VALIDs may go HIGH only at a rising edge <b>after</b> ARESETn is HIGH.</li>
+      <li>All other signals can be any value during reset.</li>
+    </ul>
+    <div class="tip"><b>No combinational path</b> allowed from input to output on a master or slave interface (avoids loops across the interconnect).</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">⇄</span>Signal groups on every address channel</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <div class="key"><b>Identity</b><br><span class="m">AxID</span> — ordering tag</div>
+      <div class="key"><b>Where</b><br><span class="m">AxADDR</span> — start byte address</div>
+      <div class="key"><b>How much</b><br><span class="m">AxLEN</span> beats, <span class="m">AxSIZE</span> bytes/beat</div>
+      <div class="key"><b>Pattern</b><br><span class="m">AxBURST</span> — FIXED / INCR / WRAP</div>
+      <div class="key"><b>Attributes</b><br><span class="m">AxLOCK AxCACHE AxPROT</span></div>
+      <div class="key"><b>AXI4 extras</b><br><span class="m">AxQOS AxREGION AxUSER</span></div>
+    </div>
+    <div class="p">Then the handshake pair: <span class="m">AxVALID</span> (M→S) and <span class="m">AxREADY</span> (S→M). Learn the AW list once — <b>AR is an exact mirror</b>.</div>
+  </div>
+</div>
+
+<!-- ROW 2: AW + W -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num mst">AW</span>Write address channel</h2>
+    <table class="t">
+      <tr><th>Signal</th><th>Width</th><th>Src</th><th>Description</th></tr>
+      <tr><td>AWID</td><td>impl.</td><td><span class="src sm">M→S</span></td><td>ID tag for the write transaction</td></tr>
+      <tr><td>AWADDR</td><td>32/64…</td><td><span class="src sm">M→S</span></td><td>Address of the first transfer in the burst</td></tr>
+      <tr><td>AWLEN</td><td>8 (AXI3: 4)</td><td><span class="src sm">M→S</span></td><td>Number of beats − 1</td></tr>
+      <tr><td>AWSIZE</td><td>3</td><td><span class="src sm">M→S</span></td><td>Bytes per beat = 2^AWSIZE</td></tr>
+      <tr><td>AWBURST</td><td>2</td><td><span class="src sm">M→S</span></td><td>Burst type: FIXED / INCR / WRAP</td></tr>
+      <tr><td>AWLOCK</td><td>1 (AXI3: 2)</td><td><span class="src sm">M→S</span></td><td>Normal or exclusive access</td></tr>
+      <tr><td>AWCACHE</td><td>4</td><td><span class="src sm">M→S</span></td><td>Bufferable / cacheable / allocate attributes</td></tr>
+      <tr><td>AWPROT</td><td>3</td><td><span class="src sm">M→S</span></td><td>Privilege, security, instruction/data</td></tr>
+      <tr><td>AWQOS</td><td>4</td><td><span class="src sm">M→S</span></td><td>Quality-of-service priority (AXI4)</td></tr>
+      <tr><td>AWREGION</td><td>4</td><td><span class="src sm">M→S</span></td><td>Region selector within a slave (AXI4)</td></tr>
+      <tr><td>AWUSER</td><td>impl.</td><td><span class="src sm">M→S</span></td><td>User-defined sideband (AXI4)</td></tr>
+      <tr><td>AWVALID</td><td>1</td><td><span class="src sm">M→S</span></td><td>Address &amp; control are valid</td></tr>
+      <tr><td>AWREADY</td><td>1</td><td><span class="src ss">S→M</span></td><td>Slave can accept the address</td></tr>
+    </table>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 22px">
+    <div class="card">
+      <h2 class="h2"><span class="num mst">W</span>Write data channel</h2>
+      <table class="t">
+        <tr><th>Signal</th><th>Width</th><th>Src</th><th>Description</th></tr>
+        <tr><td>WID</td><td>impl.</td><td><span class="src sm">M→S</span></td><td><b>AXI3 only</b> — ID of the write data (enables interleaving)</td></tr>
+        <tr><td>WDATA</td><td>8…1024</td><td><span class="src sm">M→S</span></td><td>Write data; width = 8, 16, 32 … 1024 bits</td></tr>
+        <tr><td>WSTRB</td><td>DATA/8</td><td><span class="src sm">M→S</span></td><td>Byte strobes — 1 bit per byte lane, HIGH = lane valid</td></tr>
+        <tr><td>WLAST</td><td>1</td><td><span class="src sm">M→S</span></td><td>Marks the last beat of the burst</td></tr>
+        <tr><td>WUSER</td><td>impl.</td><td><span class="src sm">M→S</span></td><td>User sideband (AXI4)</td></tr>
+        <tr><td>WVALID</td><td>1</td><td><span class="src sm">M→S</span></td><td>Write data &amp; strobes are valid</td></tr>
+        <tr><td>WREADY</td><td>1</td><td><span class="src ss">S→M</span></td><td>Slave can accept the data</td></tr>
+      </table>
+      <div class="tip">No address on W — the slave links data to the address by <b>order</b> (AXI4) or by <b>WID</b> (AXI3).</div>
+    </div>
+
+    <div class="card">
+      <h2 class="h2"><span class="num slv">B</span>Write response channel</h2>
+      <table class="t">
+        <tr><th>Signal</th><th>Width</th><th>Src</th><th>Description</th></tr>
+        <tr><td>BID</td><td>impl.</td><td><span class="src ss">S→M</span></td><td>Must equal AWID of the transaction being answered</td></tr>
+        <tr><td>BRESP</td><td>2</td><td><span class="src ss">S→M</span></td><td>Status of the whole write burst</td></tr>
+        <tr><td>BUSER</td><td>impl.</td><td><span class="src ss">S→M</span></td><td>User sideband (AXI4)</td></tr>
+        <tr><td>BVALID</td><td>1</td><td><span class="src ss">S→M</span></td><td>Write response is valid</td></tr>
+        <tr><td>BREADY</td><td>1</td><td><span class="src sm">M→S</span></td><td>Master can accept the response</td></tr>
+      </table>
+      <div class="key">One B per burst, not per beat. Slave sends it only after the last W beat (WLAST).</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 3: AR + R -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num mst">AR</span>Read address channel</h2>
+    <table class="t">
+      <tr><th>Signal</th><th>Width</th><th>Src</th><th>Description</th></tr>
+      <tr><td>ARID</td><td>impl.</td><td><span class="src sm">M→S</span></td><td>ID tag for the read transaction</td></tr>
+      <tr><td>ARADDR</td><td>32/64…</td><td><span class="src sm">M→S</span></td><td>Start address of the read burst</td></tr>
+      <tr><td>ARLEN</td><td>8 (AXI3: 4)</td><td><span class="src sm">M→S</span></td><td>Number of beats − 1</td></tr>
+      <tr><td>ARSIZE</td><td>3</td><td><span class="src sm">M→S</span></td><td>Bytes per beat = 2^ARSIZE</td></tr>
+      <tr><td>ARBURST</td><td>2</td><td><span class="src sm">M→S</span></td><td>FIXED / INCR / WRAP</td></tr>
+      <tr><td>ARLOCK</td><td>1 (AXI3: 2)</td><td><span class="src sm">M→S</span></td><td>Normal or exclusive</td></tr>
+      <tr><td>ARCACHE · ARPROT</td><td>4 · 3</td><td><span class="src sm">M→S</span></td><td>Memory &amp; protection attributes</td></tr>
+      <tr><td>ARQOS · ARREGION · ARUSER</td><td>4 · 4 · impl.</td><td><span class="src sm">M→S</span></td><td>AXI4 additions</td></tr>
+      <tr><td>ARVALID</td><td>1</td><td><span class="src sm">M→S</span></td><td>Read address &amp; control valid</td></tr>
+      <tr><td>ARREADY</td><td>1</td><td><span class="src ss">S→M</span></td><td>Slave can accept the address</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num slv">R</span>Read data channel</h2>
+    <table class="t">
+      <tr><th>Signal</th><th>Width</th><th>Src</th><th>Description</th></tr>
+      <tr><td>RID</td><td>impl.</td><td><span class="src ss">S→M</span></td><td>Must equal the ARID it is answering</td></tr>
+      <tr><td>RDATA</td><td>8…1024</td><td><span class="src ss">S→M</span></td><td>Read data</td></tr>
+      <tr><td>RRESP</td><td>2</td><td><span class="src ss">S→M</span></td><td>Status of <b>this beat</b> (can differ beat to beat)</td></tr>
+      <tr><td>RLAST</td><td>1</td><td><span class="src ss">S→M</span></td><td>Last beat of the read burst</td></tr>
+      <tr><td>RUSER</td><td>impl.</td><td><span class="src ss">S→M</span></td><td>User sideband (AXI4)</td></tr>
+      <tr><td>RVALID</td><td>1</td><td><span class="src ss">S→M</span></td><td>Read data is valid</td></tr>
+      <tr><td>RREADY</td><td>1</td><td><span class="src sm">M→S</span></td><td>Master can accept the data</td></tr>
+    </table>
+    <div class="tip">Read has <b>no strobe</b> — the master just ignores bytes it doesn't need. Slave must return all LEN+1 beats even if an error occurs.</div>
+  </div>
+</div>
+
+<!-- ROW 4: encodings -->
+<div class="card" style="gap: 16px">
+  <h2 class="h2"><span class="num">E</span>Encodings to memorise</h2>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px">
+    <table class="t">
+      <tr><th>AxSIZE</th><th>Bytes/beat</th></tr>
+      <tr><td>3'b000</td><td>1</td></tr>
+      <tr><td>3'b001</td><td>2</td></tr>
+      <tr><td>3'b010</td><td>4</td></tr>
+      <tr><td>3'b011</td><td>8</td></tr>
+      <tr><td>3'b100</td><td>16</td></tr>
+      <tr><td>3'b101</td><td>32</td></tr>
+      <tr><td>3'b110</td><td>64</td></tr>
+      <tr><td>3'b111</td><td>128</td></tr>
+    </table>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <table class="t">
+        <tr><th>AxBURST</th><th>Type</th></tr>
+        <tr><td>2'b00</td><td>FIXED</td></tr>
+        <tr><td>2'b01</td><td>INCR</td></tr>
+        <tr><td>2'b10</td><td>WRAP</td></tr>
+        <tr><td>2'b11</td><td>Reserved</td></tr>
+      </table>
+      <table class="t">
+        <tr><th>xRESP</th><th>Meaning</th></tr>
+        <tr><td>2'b00</td><td>OKAY</td></tr>
+        <tr><td>2'b01</td><td>EXOKAY</td></tr>
+        <tr><td>2'b10</td><td>SLVERR</td></tr>
+        <tr><td>2'b11</td><td>DECERR</td></tr>
+      </table>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <table class="t">
+        <tr><th>AxPROT bit</th><th>0 / 1</th></tr>
+        <tr><td>[0]</td><td>Unprivileged / Privileged</td></tr>
+        <tr><td>[1]</td><td>Secure / Non-secure</td></tr>
+        <tr><td>[2]</td><td>Data / Instruction</td></tr>
+      </table>
+      <table class="t">
+        <tr><th>AxLOCK</th><th>Access</th></tr>
+        <tr><td>0</td><td>Normal</td></tr>
+        <tr><td>1</td><td>Exclusive</td></tr>
+        <tr><td>AXI3 2'b10</td><td>Locked (dropped in AXI4)</td></tr>
+      </table>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <table class="t">
+        <tr><th>AxCACHE bit</th><th>Meaning</th></tr>
+        <tr><td>[0]</td><td>Bufferable</td></tr>
+        <tr><td>[1]</td><td>Modifiable (AXI3: Cacheable)</td></tr>
+        <tr><td>[2]</td><td>Read-allocate</td></tr>
+        <tr><td>[3]</td><td>Write-allocate</td></tr>
+      </table>
+      <div class="key"><b>Quick math:</b> AxSIZE must not exceed the data bus width. 64-bit bus → max SIZE = 3'b011 (8 bytes).</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 5: flows + Q&A -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">→</span>Read &amp; write flows, step by step</h2>
+    <div class="lbl">Write (3 channels)</div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <span class="chip hi">1 · AWVALID/AWREADY</span><span class="p">→</span><span class="chip hi">2 · WVALID/WREADY × (LEN+1), WLAST</span><span class="p">→</span><span class="chip xf">3 · BVALID/BREADY + BRESP</span>
+    </div>
+    <ul class="ul">
+      <li>Master puts address/control on AW and raises AWVALID; slave takes it with AWREADY.</li>
+      <li>Master sends each beat with WDATA + WSTRB; WLAST on the final one.</li>
+      <li>Slave returns one BRESP with BID = AWID.</li>
+    </ul>
+    <div class="lbl">Read (2 channels)</div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+      <span class="chip hi">1 · ARVALID/ARREADY</span><span class="p">→</span><span class="chip xf">2 · RVALID/RREADY × (LEN+1), RLAST, RRESP each beat</span>
+    </div>
+    <ul class="ul">
+      <li>Master puts address on AR; slave accepts with ARREADY.</li>
+      <li>Slave returns data beats with RID = ARID, RRESP per beat, RLAST on the last.</li>
+    </ul>
+    <div class="tip"><b>Example:</b> 32-bit bus, read 16 bytes from 0x100 INCR → ARLEN = 3, ARSIZE = 3'b010, ARBURST = 2'b01 → beats at 0x100, 0x104, 0x108, 0x10C.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Signal-level interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Crisp answer</th></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Which signals does the slave drive?</td><td>All READYs on AW/W/AR, plus everything on B and R except BREADY/RREADY.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Why does W have no address?</td><td>Address was already sent on AW; slave matches by order (or WID in AXI3).</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Why no RSTRB?</td><td>Master simply discards unused read bytes; reads have no side effect on lanes.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">WSTRB width for 128-bit data?</td><td>16 bits (one per byte).</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Is RRESP per burst or per beat?</td><td>Per beat. BRESP is per burst.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">What must BID / RID equal?</td><td>The AWID / ARID of the transaction being answered.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Can WSTRB be all zeros?</td><td>Yes — a legal beat that writes no bytes.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Reset value of VALIDs?</td><td>LOW; raised only after ARESETn goes HIGH.</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Signals removed in AXI4?</td><td>WID; locked transfers (AxLOCK reduced to 1 bit).</td></tr>
+      <tr><td style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; white-space: normal">Signals added in AXI4?</td><td>AxQOS, AxREGION, xUSER; AxLEN widened to 8 bits.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
