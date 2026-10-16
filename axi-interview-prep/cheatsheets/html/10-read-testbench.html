@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Reading the RAM Back over AXI</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.bad{background:#B91C1C}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 6px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;min-height:28px;box-sizing:border-box}
+.hi{background:#0F766E;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.xf{background:#C2410C;color:#FFFFFF}
+.dt{background:#D7EEEA;color:#0B4A44}
+.wv{display:grid;grid-template-columns:110px repeat(8,minmax(0,1fr));gap:4px;align-items:center}
+.sig{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16202B}
+.cyc{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5B6670;text-align:center}
+.step{display:flex;flex-direction:column;gap:4px;border-radius:8px;padding:12px 14px;color:#FFFFFF;min-height:96px;box-sizing:border-box}
+.lane{display:inline-flex;align-items:center;justify-content:center;width:44px;height:30px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="09-write-testbench.html">← Writing to the RAM from a Testbench</a><a href="../../README.md">Index</a><a href="11-verification-environment.html">Verifying the AXI RAM: Full Testbench →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 10 · project part 3</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">Reading the RAM Back over AXI</h1>
+    <div style="font-size: 17px; color: #C9D2D8">Issue AR, collect LEN+1 beats on R, check RID / RRESP / RLAST on every beat, and compare against what was written.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 330px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">AR handshake → R beats × (LEN+1)</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">RLAST only on beat LEN</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #7FD1C7">write → read → compare = self-checking</div>
+  </div>
+</div>
+
+<!-- ROW 1: flow -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">1</span>End-to-end flow of the project</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr) 30px minmax(0, 1fr) 30px minmax(0, 1fr) 30px minmax(0, 1fr); gap: 6px; align-items: center">
+    <div class="step" style="background: #16202B"><b>1 · Reset</b><span style="font-size: 13px; color: #C9D2D8">all VALIDs LOW, ARESETn released on an edge</span></div>
+    <div style="text-align: center; color: #5B6670">▶</div>
+    <div class="step" style="background: #0F766E"><b>2 · axi_write()</b><span style="font-size: 13px; color: #E2F3F0">AW ∥ W, then B · BRESP = OKAY</span></div>
+    <div style="text-align: center; color: #5B6670">▶</div>
+    <div class="step" style="background: #2F4B7C"><b>3 · axi_read()</b><span style="font-size: 13px; color: #E3EAF6">AR, then LEN+1 R beats into a queue</span></div>
+    <div style="text-align: center; color: #5B6670">▶</div>
+    <div class="step" style="background: #C2410C"><b>4 · Compare</b><span style="font-size: 13px; color: #FDE8DC">each beat vs expected (model or write data)</span></div>
+    <div style="text-align: center; color: #5B6670">▶</div>
+    <div class="step" style="background: #16202B"><b>5 · Report</b><span style="font-size: 13px; color: #C9D2D8">error count → PASS / FAIL</span></div>
+  </div>
+  <div class="key">The read must start <b>after the B handshake</b> of the write it depends on. AXI gives no ordering between reads and writes, even to the same address — waiting for BRESP is how the master guarantees it reads the new data.</div>
+</div>
+
+<!-- ROW 2: task + waveform -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>The <span class="m" style="font-size: 20px">axi_read</span> task</h2>
+    <pre class="code">task automatic axi_read(input  [ID_W-1:0]   id,
+                        input  [ADDR_W-1:0] addr,
+                        input  [7:0] len, input [2:0] size,
+                        input  [1:0] burst,
+                        output logic [DATA_W-1:0] rd_q[$]);
+  rd_q.delete();
+  // ---- read address channel
+  ARID &lt;= id;  ARADDR &lt;= addr;  ARLEN &lt;= len;
+  ARSIZE &lt;= size;  ARBURST &lt;= burst;  ARVALID &lt;= 1;
+  do @(posedge ACLK); while (!ARREADY);
+  ARVALID &lt;= 0;
+
+  // ---- read data channel
+  for (int i = 0; i &lt;= len; i++) begin
+    do begin
+      RREADY &lt;= rand_bp ? $urandom_range(0, 1) : 1;
+      @(posedge ACLK);
+    end while (!(RVALID &amp;&amp; RREADY));          // beat accepted
+    rd_q.push_back(RDATA);
+    if (RID   !== id)       $error("RID %0h != ARID %0h", RID, id);
+    if (RRESP !== 2'b00)    $error("RRESP %b beat %0d", RRESP, i);
+    if (RLAST !== (i == len)) $error("RLAST wrong at beat %0d", i);
+  end
+  RREADY &lt;= 0;
+endtask</pre>
+    <ul class="ul">
+      <li><b>Every beat</b> is checked for RID, RRESP and RLAST — RRESP is per beat, unlike BRESP.</li>
+      <li><span class="m">rand_bp</span> = 1 randomly drops RREADY to exercise slave back-pressure handling.</li>
+      <li>RDATA is captured on the same edge as the handshake, so it's the data the slave was holding.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">3</span>4-beat read with one RREADY stall</h2>
+    <div class="p"><span class="m">ARADDR 0x10 · ARLEN 3 · ARSIZE 010 · INCR</span> against the Part-1 slave.</div>
+    <div class="wv">
+      <div class="sig">ACLK</div><div class="cyc">T1</div><div class="cyc">T2</div><div class="cyc">T3</div><div class="cyc">T4</div><div class="cyc">T5</div><div class="cyc">T6</div><div class="cyc">T7</div><div class="cyc">T8</div>
+      <div class="sig">ARVALID</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">ARREADY</div><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip hi">1</span>
+      <div class="sig">RVALID</div><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip hi">1</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">RREADY</div><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip xf">⇄</span><span class="chip lo">0</span><span class="chip lo">0</span>
+      <div class="sig">RDATA</div><span class="chip lo">–</span><span class="chip dt">D0</span><span class="chip dt">D1</span><span class="chip dt">D1</span><span class="chip dt">D2</span><span class="chip dt">D3</span><span class="chip lo">–</span><span class="chip lo">–</span>
+      <div class="sig">RLAST</div><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip lo">0</span><span class="chip hi">1</span><span class="chip lo">0</span><span class="chip lo">0</span>
+    </div>
+    <ul class="ul">
+      <li><b>T1</b> AR accepted; slave moves to R_DATA.</li>
+      <li><b>T2</b> D0 (mem[4]). <b>T3</b> TB drops RREADY → slave <b>holds D1</b> (address only moves on handshake).</li>
+      <li><b>T4, T5, T6</b> D1, D2, D3; RLAST with D3 → slave back to R_IDLE, ARREADY HIGH at T7.</li>
+    </ul>
+    <div class="tip">With RREADY always HIGH the same read finishes one cycle earlier (T5). Run both — the stall case is where slave bugs hide.</div>
+  </div>
+</div>
+
+<!-- ROW 3: read-after-write tests -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">4</span>Read-after-write tests &amp; expected data (32-bit RAM)</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px">
+    <table class="t">
+      <tr><th>#</th><th>Write</th><th>Read</th><th>Expected read data</th></tr>
+      <tr><td>1</td><td>INCR 0x10, 4 beats: 1, 2, 3, 4</td><td>INCR 0x10, LEN 3</td><td>1, 2, 3, 4</td></tr>
+      <tr><td>2</td><td>WRAP 0x38, 4 beats: A, B, C, D</td><td>INCR 0x30, LEN 3</td><td><b>C, D, A, B</b> (wrap order un-rotated)</td></tr>
+      <tr><td>3</td><td>INCR 0x30, 4 beats: P, Q, R, S</td><td>WRAP 0x38, LEN 3</td><td><b>R, S, P, Q</b> (rotated on read)</td></tr>
+      <tr><td>4</td><td>FIXED 0x40, 3 beats: X, Y, Z</td><td>FIXED 0x40, LEN 2</td><td>Z, Z, Z</td></tr>
+      <tr><td>5</td><td>0x11223344, then 0xAABBCCDD with WSTRB 0101</td><td>single 0x20</td><td>0x11BB33DD</td></tr>
+      <tr><td>6</td><td>INCR 0x00 × 16 beats (pattern i)</td><td>INCR 0x00 × 16, random RREADY</td><td>0 … 15, every RLAST correct</td></tr>
+      <tr><td>7</td><td>nothing written</td><td>any address</td><td>X — initialise mem or <span class="m">$readmemh</span> first</td></tr>
+    </table>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Test 1 in code</div>
+      <pre class="code">wdata_q = '{32'h1, 32'h2, 32'h3, 32'h4};
+wstrb_q = '{4'hF, 4'hF, 4'hF, 4'hF};
+axi_write(0, 32'h10, 3, 3'b010, INCR);
+axi_read (0, 32'h10, 3, 3'b010, INCR, rd_q);
+foreach (rd_q[i])
+  if (rd_q[i] !== wdata_q[i]) begin
+    $error("beat %0d: got %h exp %h",
+           i, rd_q[i], wdata_q[i]);
+    errors++;
+  end</pre>
+      <div class="key">Tests 2 and 3 are the best pair: writing one burst type and reading with another proves the <b>address generator</b> is right, not just that data loops back.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 4: narrow + concurrency + mistakes + QA -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Narrow &amp; concurrent reads</h2>
+    <div class="lbl">Picking bytes from a full-width beat</div>
+    <div class="p">Read 1 byte at 0x22 (SIZE 000). Slave returns the whole word; master takes lane <span class="m">0x22 % 4 = 2</span>.</div>
+    <div style="display: flex; gap: 4px; align-items: center"><span class="p" style="width: 70px">RDATA</span><span class="lane lo">11</span><span class="lane hi">BB</span><span class="lane lo">33</span><span class="lane lo">DD</span></div>
+    <pre class="code">byte_val = RDATA[8*(addr % 4) +: 8];  // = 8'hBB</pre>
+    <div class="lbl">Read during a write</div>
+    <pre class="code">fork
+  axi_write(0, 32'h100, 7, 3'b010, INCR);
+  axi_read (1, 32'h200, 7, 3'b010, INCR, rd_q);
+join</pre>
+    <div class="p">Different addresses, both channels busy at once — proves the read and write FSMs really are independent.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num bad">!</span>Read-side mistakes</h2>
+    <ul class="ul">
+      <li>Starting the read before the write's <b>BRESP</b> → may read stale data.</li>
+      <li>Checking RRESP only on the last beat (it's per beat).</li>
+      <li>Not checking RLAST position — off-by-one bugs slip through.</li>
+      <li>Holding RREADY HIGH forever — never tests slave back-pressure.</li>
+      <li>Sampling RDATA without RVALID &amp;&amp; RREADY at the same edge.</li>
+      <li>Expecting a narrow read to return only the requested bytes — the master must pick lanes.</li>
+      <li>Comparing against uninitialised memory (X) and calling it a pass because <span class="m">!=</span> returns X — use <span class="m">!==</span>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 50%">Question</th><th>Answer</th></tr>
+      <tr><td>How many R beats for ARLEN = 7?</td><td>8, RLAST on the 8th.</td></tr>
+      <tr><td>RRESP vs BRESP?</td><td>RRESP every beat; BRESP once per burst.</td></tr>
+      <tr><td>Why wait for BRESP before reading?</td><td>No R/W ordering in AXI; BRESP proves the write landed.</td></tr>
+      <tr><td>Why use <span class="m">!==</span> in checks?</td><td>Catches X/Z; <span class="m">!=</span> would give X and skip the error.</td></tr>
+      <tr><td>Best single test for the address logic?</td><td>Write with WRAP, read with INCR (and vice versa).</td></tr>
+      <tr><td>How would this become UVM?</td><td>Tasks → driver, checks → monitor + scoreboard with memory model, tests → sequences.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,132 @@
+diff --git a/rtl/axi4_slave_ram.sv b/rtl/axi4_slave_ram.sv
+index 45b07ab..cf327f5 100644
+--- a/rtl/axi4_slave_ram.sv
++++ b/rtl/axi4_slave_ram.sv
+@@ -83,32 +83,25 @@ module axi4_slave_ram #(
+         rd_word_idx = (araddr      >> 2) % MEM_DEPTH;
+     end
+ 
+-    // Write FSM
++    // Write path (fixed): AW and W accepted independently, in either order
++    reg              aw_got, w_got;
++    reg [DATA_WIDTH-1:0]   w_data_q;
++    reg [DATA_WIDTH/8-1:0] w_strb_q;
++    wire wr_in_range = (wr_addr_reg[ADDR_WIDTH-1:2] < MEM_DEPTH);
++    always @(*) begin awready = !aw_got && !bvalid; wready = !w_got && !bvalid; end
+     always @(posedge aclk or negedge aresetn) begin
+         if (!aresetn) begin
+-            wr_state <= WR_IDLE; awready <= 0; wready <= 0; bvalid <= 0; bresp <= 0;
+-            wr_addr_reg <= 0;
+-        end else case (wr_state)
+-            WR_IDLE: begin
+-                awready <= 1; wready <= 1; bvalid <= 0; wr_state <= WR_ADDR;
++            aw_got <= 0; w_got <= 0; bvalid <= 0; bresp <= 0; wr_addr_reg <= 0;
++        end else begin
++            if (awvalid && awready) begin wr_addr_reg <= awaddr; aw_got <= 1; end
++            if (wvalid  && wready)  begin w_data_q <= wdata; w_strb_q <= wstrb; w_got <= 1; end
++            if (aw_got && w_got && !bvalid) begin
++                if (wr_in_range) mem[wr_reg_idx] <= apply_strobe(mem[wr_reg_idx], w_data_q, w_strb_q);
++                bresp  <= wr_in_range ? 2'b00 : 2'b10;
++                bvalid <= 1; aw_got <= 0; w_got <= 0;
+             end
+-            WR_ADDR: if (awvalid && awready) begin
+-                wr_addr_reg <= awaddr;
+-                awready     <= 0;
+-                if (wvalid && wready) begin
+-                    mem[wr_word_idx] <= apply_strobe(mem[wr_word_idx], wdata, wstrb);
+-                    wready <= 0; bvalid <= 1; bresp <= 0; wr_state <= WR_RESP;
+-                end else
+-                    wr_state <= WR_DATA;
+-            end
+-            WR_DATA: if (wvalid && wready) begin
+-                mem[wr_reg_idx] <= apply_strobe(mem[wr_reg_idx], wdata, wstrb);
+-                wready <= 0; bvalid <= 1; bresp <= 0; wr_state <= WR_RESP;
+-            end
+-            WR_RESP: if (bready && bvalid) begin
+-                bvalid <= 0; awready <= 1; wready <= 1; wr_state <= WR_ADDR;
+-            end
+-        endcase
++            if (bvalid && bready) bvalid <= 0;
++        end
+     end
+ 
+     // Read FSM
+@@ -119,8 +112,8 @@ module axi4_slave_ram #(
+             RD_IDLE: begin arready <= 1; rd_state <= RD_ADDR; end
+             RD_ADDR: if (arvalid && arready) begin
+                 arready <= 0;
+-                rdata   <= mem[rd_word_idx];
+-                rresp   <= 0; rvalid <= 1; rd_state <= RD_DATA;
++                rdata   <= (araddr[ADDR_WIDTH-1:2] < MEM_DEPTH) ? mem[rd_word_idx] : 0;
++                rresp   <= (araddr[ADDR_WIDTH-1:2] < MEM_DEPTH) ? 2'b00 : 2'b10; rvalid <= 1; rd_state <= RD_DATA;
+             end
+             RD_DATA: if (rready && rvalid) begin
+                 rvalid <= 0; arready <= 1; rd_state <= RD_ADDR;
+diff --git a/tb/axi4_tb_top.sv b/tb/axi4_tb_top.sv
+index 1d83e9d..e9973ef 100644
+--- a/tb/axi4_tb_top.sv
++++ b/tb/axi4_tb_top.sv
+@@ -171,11 +171,11 @@ module axi4_tb_top;
+         forever begin
+             axi4_seq_item tr = new();
+             tr.op = AXI_WRITE;
+-            while (!(bus.awvalid && bus.awready)) @(posedge aclk);
++            while (!(bus.awvalid === 1'b1 && bus.awready === 1'b1)) @(posedge aclk);
+             tr.addr = bus.awaddr;
+-            while (!(bus.wvalid  && bus.wready))  @(posedge aclk);
++            while (!(bus.wvalid === 1'b1 && bus.wready === 1'b1))  @(posedge aclk);
+             tr.data=bus.wdata; tr.strb=bus.wstrb;
+-            while (!(bus.bvalid  && bus.bready))  @(posedge aclk);
++            while (!(bus.bvalid === 1'b1 && bus.bready === 1'b1))  @(posedge aclk);
+             tr.resp = bus.bresp;
+             ana_put(tr);
+         end
+@@ -185,9 +185,9 @@ module axi4_tb_top;
+         forever begin
+             axi4_seq_item tr = new();
+             tr.op = AXI_READ;
+-            while (!(bus.arvalid && bus.arready)) @(posedge aclk);
++            while (!(bus.arvalid === 1'b1 && bus.arready === 1'b1)) @(posedge aclk);
+             tr.addr = bus.araddr;
+-            while (!(bus.rvalid  && bus.rready))  @(posedge aclk);
++            while (!(bus.rvalid === 1'b1 && bus.rready === 1'b1))  @(posedge aclk);
+             tr.rdata=bus.rdata; tr.resp=bus.rresp;
+             ana_put(tr);
+         end
+@@ -202,16 +202,21 @@ module axi4_tb_top;
+ 
+     task automatic scoreboard_run();
+         integer i, idx, b;
+-        reg [31:0] exp_val;
++        reg [31:0] exp_val, d; reg [3:0] st;
+         axi4_seq_item tr;
+         for (i=0;i<256;i=i+1) sb_mem[i]=0;
+         forever begin
+             ana_get(tr);
+             idx = (tr.addr >> 2) % 256;
+-            if (tr.op==AXI_WRITE) begin
++            if ((tr.addr>>2) >= 256) begin  // out of range: expect SLVERR, no model update
++                if (tr.resp !== 2'b10) begin $display("[SB] FAIL expected SLVERR addr=0x%08h resp=%0b",tr.addr,tr.resp); sb_fail=sb_fail+1; end
++                else begin $display("[SB] PASS SLVERR addr=0x%08h",tr.addr); sb_pass=sb_pass+1; end
++            end
++            else if (tr.op==AXI_WRITE) begin
++                d = tr.data; st = tr.strb;          // copy out of class first
+                 for (b=0;b<4;b=b+1)
+-                    if (tr.strb[b]) sb_mem[idx][b*8+:8]=tr.data[b*8+:8];
+-                if (tr.resp!==2'b00) begin
++                    if (st[b]) sb_mem[idx][b*8+:8]=d[b*8+:8];
++                if (tr.resp!==(((tr.addr>>2)<256)?2'b00:2'b10)) begin
+                     $display("[SB] FAIL WRITE resp=%0h addr=0x%08h",tr.resp,tr.addr);
+                     sb_fail=sb_fail+1;
+                 end else begin
+@@ -235,8 +240,8 @@ module axi4_tb_top;
+     task automatic scoreboard_report();
+         $display("========================================");
+         $display("[SB] PASS=%0d  FAIL=%0d",sb_pass,sb_fail);
+-        if (sb_fail==0) $display("[SB] *** TEST PASSED ***");
+-        else            $display("[SB] *** TEST FAILED ***");
++        if (sb_fail==0 && sb_pass>0) $display("[SB] *** TEST PASSED ***");
++        else begin $display("[SB] *** TEST FAILED ***"); $fatal(1, "scoreboard failures"); end
+         $display("========================================");
+     endtask
+ 

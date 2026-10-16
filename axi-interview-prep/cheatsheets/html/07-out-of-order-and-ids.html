@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Out-of-Order Transactions & IDs</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.6;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.err{background:#FDECEC;border:1px solid #F1B5B5;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#6B1111}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.chip{display:inline-flex;align-items:center;justify-content:center;padding:6px 6px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;min-height:30px;box-sizing:border-box}
+.a{background:#0F766E;color:#FFFFFF}
+.b{background:#2F4B7C;color:#FFFFFF}
+.c{background:#C2410C;color:#FFFFFF}
+.lo{background:#E9ECE8;color:#7A848C}
+.no{background:#B91C1C;color:#FFFFFF}
+.wv{display:grid;grid-template-columns:120px repeat(12,minmax(0,1fr));gap:4px;align-items:center}
+.sig{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16202B}
+.cyc{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5B6670;text-align:center}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.box{border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;color:#FFFFFF;background:#16202B}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="06-wrap-burst.html">← The WRAP Burst, Step by Step</a><a href="../../README.md">Index</a><a href="08-axi-slave-ram-verilog.html">Building an AXI Slave RAM in Verilog →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">DV interview · glance sheet 7</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 58px; line-height: 1; color: #FFFFFF">Out-of-Order Transactions &amp; IDs</h1>
+    <div style="font-size: 17px; color: #C9D2D8">How AXI lets fast responses overtake slow ones — and the single rule that keeps it safe.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 360px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; color: #FFFFFF">Same ID → in issue order</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; color: #7FD1C7">Different ID → any order</div>
+  </div>
+</div>
+
+<!-- ROW 1: what/why + rules -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">1</span>What &amp; why</h2>
+    <ul class="ul">
+      <li><b>Out-of-order (OoO)</b>: responses come back in a different order than the requests were issued.</li>
+      <li>Possible because AXI has <b>multiple outstanding transactions</b> and tags each with an <b>ID</b>.</li>
+      <li>Why it matters: slaves have very different latencies — an SRAM answers in 2 cycles, DDR in 50+. In-order would make every fast access wait behind the slow one (<b>head-of-line blocking</b>).</li>
+      <li>DDR controllers also reorder internally (open-row hits first), so they <i>need</i> OoO to be efficient.</li>
+    </ul>
+    <div class="key"><b>One-liner:</b> IDs let the system return each response as soon as it's ready, while preserving order only where the master needs it.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>The ordering rules</h2>
+    <table class="t">
+      <tr><th style="width: 34px">#</th><th>Rule</th></tr>
+      <tr><td><b>1</b></td><td><b>Same ID, same direction</b> → responses must return in the order the addresses were issued.</td></tr>
+      <tr><td><b>2</b></td><td><b>Different IDs</b> → no ordering requirement; may complete in any order.</td></tr>
+      <tr><td><b>3</b></td><td>Read data <b>may interleave</b> between different RIDs; beats <b>within one burst stay in order</b>.</td></tr>
+      <tr><td><b>4</b></td><td>Write responses (B) may return OoO for different BIDs.</td></tr>
+      <tr><td><b>5</b></td><td><b>AXI4 write data</b> must follow AW order — no interleaving (AXI3 allowed it via WID).</td></tr>
+      <tr><td><b>6</b></td><td><b>No ordering between reads and writes</b>, even with the same ID. Need it? Wait for the response first.</td></tr>
+    </table>
+    <div class="tip">A master that always uses <b>one ID</b> gets fully in-order behaviour for free. Using several IDs is an opt-in to OoO.</div>
+  </div>
+</div>
+
+<!-- ROW 2: timelines -->
+<div class="card" style="gap: 16px">
+  <h2 class="h2"><span class="num">3</span>Same request, two ID choices — A to slow DDR (4 beats), B to fast SRAM (2 beats)</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Different IDs (A = ID0, B = ID1) → out-of-order allowed</div>
+      <div class="wv">
+        <div class="sig">Cycle</div><div class="cyc">1</div><div class="cyc">2</div><div class="cyc">3</div><div class="cyc">4</div><div class="cyc">5</div><div class="cyc">6</div><div class="cyc">7</div><div class="cyc">8</div><div class="cyc">9</div><div class="cyc">10</div><div class="cyc">11</div><div class="cyc">12</div>
+        <div class="sig">AR</div><span class="chip a">A</span><span class="chip b">B</span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span>
+        <div class="sig">R (RID)</div><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip b">B0</span><span class="chip b">B1·L</span><span class="chip lo"></span><span class="chip a">A0</span><span class="chip a">A1</span><span class="chip a">A2</span><span class="chip a">A3·L</span><span class="chip lo"></span><span class="chip lo"></span>
+      </div>
+      <div class="key">B finishes at cycle <b>5</b>, A at <b>10</b>. B overtook A — legal because the IDs differ.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Same ID (both ID0) → must stay in order</div>
+      <div class="wv">
+        <div class="sig">Cycle</div><div class="cyc">1</div><div class="cyc">2</div><div class="cyc">3</div><div class="cyc">4</div><div class="cyc">5</div><div class="cyc">6</div><div class="cyc">7</div><div class="cyc">8</div><div class="cyc">9</div><div class="cyc">10</div><div class="cyc">11</div><div class="cyc">12</div>
+        <div class="sig">AR</div><span class="chip a">A</span><span class="chip b">B</span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span>
+        <div class="sig">R (RID)</div><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip a">A0</span><span class="chip a">A1</span><span class="chip a">A2</span><span class="chip a">A3·L</span><span class="chip b">B0</span><span class="chip b">B1·L</span>
+      </div>
+      <div class="err">B's data was ready at cycle 4 but is <b>blocked behind A</b> until cycle 11 → head-of-line blocking.</div>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Read data interleaving (different RIDs, beat level)</div>
+      <div class="wv">
+        <div class="sig">Cycle</div><div class="cyc">1</div><div class="cyc">2</div><div class="cyc">3</div><div class="cyc">4</div><div class="cyc">5</div><div class="cyc">6</div><div class="cyc">7</div><div class="cyc">8</div><div class="cyc">9</div><div class="cyc">10</div><div class="cyc">11</div><div class="cyc">12</div>
+        <div class="sig">R (RID)</div><span class="chip lo"></span><span class="chip a">A0</span><span class="chip b">B0</span><span class="chip a">A1</span><span class="chip b">B1·L</span><span class="chip a">A2</span><span class="chip a">A3·L</span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span>
+      </div>
+      <div class="p">Legal: beats of A and B mixed. Illegal: A1 before A0 (order <i>within</i> a burst is fixed).</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Illegal: same ID returned out of order</div>
+      <div class="wv">
+        <div class="sig">Cycle</div><div class="cyc">1</div><div class="cyc">2</div><div class="cyc">3</div><div class="cyc">4</div><div class="cyc">5</div><div class="cyc">6</div><div class="cyc">7</div><div class="cyc">8</div><div class="cyc">9</div><div class="cyc">10</div><div class="cyc">11</div><div class="cyc">12</div>
+        <div class="sig">AR (ID0)</div><span class="chip a">A</span><span class="chip c">C</span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span>
+        <div class="sig">R (RID 0)</div><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip no">C0 ✗</span><span class="chip no">C1·L</span><span class="chip a">A0</span><span class="chip a">A1·L</span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span><span class="chip lo"></span>
+      </div>
+      <div class="err">Master would think C's data belongs to A — data corruption. Scoreboards must flag this.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 3: interconnect + write side -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>What the interconnect does with IDs</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1.2fr) 70px minmax(0, 1fr); gap: 8px; align-items: center">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div class="box"><b>Master 0</b><span style="font-size: 12px; color: #C9D2D8">ARID = 3'b101</span></div>
+        <div class="box"><b>Master 1</b><span style="font-size: 12px; color: #C9D2D8">ARID = 3'b101</span></div>
+      </div>
+      <div style="text-align: center; color: #0F766E; font-size: 22px">▶</div>
+      <div class="box" style="background: #0F766E; min-height: 140px"><b>Interconnect</b><span style="font-size: 12.5px; color: #E2F3F0">prepends port number<br>M0 → 0_101 · M1 → 1_101</span></div>
+      <div style="text-align: center; color: #0F766E; font-size: 22px">▶</div>
+      <div class="box" style="min-height: 140px"><b>Slave</b><span style="font-size: 12px; color: #C9D2D8">sees 4-bit unique IDs</span></div>
+    </div>
+    <ul class="ul">
+      <li><b>ID widening:</b> slave-side ID = master-side ID + log2(#masters) bits. Two masters can reuse the same ID without clashing.</li>
+      <li><b>Response routing:</b> the extra bits on RID/BID tell the interconnect which master to send the response to; it strips them on the way back.</li>
+      <li><b>Same ID to two different slaves:</b> the slaves can't coordinate, so the interconnect must <b>stall</b> the 2nd request until the 1st completes (or reorder responses itself). This is the "single-slave per ID" rule many fabrics use.</li>
+    </ul>
+    <div class="tip"><b>Interview favourite:</b> "Master sends ID0 to slave X, then ID0 to slave Y. Y is faster — what happens?" → interconnect blocks or buffers so X's response still reaches the master first.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Write side &amp; capabilities</h2>
+    <table class="t">
+      <tr><th>Item</th><th>AXI3</th><th>AXI4</th></tr>
+      <tr><td>B responses OoO (diff BID)</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>W data interleaving</td><td>Yes (WID)</td><td><b>No</b></td></tr>
+      <tr><td>W data order</td><td>By WID</td><td>Same order as AW</td></tr>
+      <tr><td>R data interleaving</td><td>Yes</td><td>Yes</td></tr>
+    </table>
+    <div class="lbl">Parameters to know for any DUT</div>
+    <ul class="ul">
+      <li><b>ID width</b> — how many distinct streams a master can use.</li>
+      <li><b>Read / write acceptance capability</b> — max outstanding transactions a slave accepts.</li>
+      <li><b>Issuing capability</b> — max outstanding a master will issue.</li>
+      <li><b>Read data reordering depth</b> — how many different IDs a slave may reorder between.</li>
+      <li><b>Read interleaving depth</b> — how many bursts can be active on R at once (1 = no interleave).</li>
+    </ul>
+    <div class="key">Reordering depth 1 = slave is <b>in-order</b>. Always legal, just slower.</div>
+  </div>
+</div>
+
+<!-- ROW 4: DV + QA -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">✓</span>Verifying OoO — per-ID scoreboard</h2>
+    <pre class="code">class axi_rd_sb extends uvm_scoreboard;
+  // one FIFO of expected transactions per ID
+  axi_txn exp_q[bit [ID_W-1:0]][$];
+
+  function void write_ar(axi_txn t);   // from AR monitor
+    exp_q[t.id].push_back(t);
+  endfunction
+
+  function void write_r(axi_txn t);    // full burst from R monitor
+    axi_txn e;
+    if (!exp_q.exists(t.id) || exp_q[t.id].size() == 0)
+      `uvm_error("SB", $sformatf("RID %0h not outstanding", t.id))
+    else begin
+      e = exp_q[t.id].pop_front();     // oldest of SAME ID
+      if (!t.data_match(e)) `uvm_error("SB", "data mismatch")
+    end
+  endfunction
+endclass</pre>
+    <div class="p">Popping the <b>front of the same-ID queue</b> enforces rule 1; using a queue per ID permits rule 2 automatically.</div>
+    <div class="lbl">Checks &amp; coverage</div>
+    <ul class="ul">
+      <li>RID/BID always matches an outstanding ID; no response for an ID with an empty queue.</li>
+      <li>Monitor collects R beats <b>per RID</b> so interleaved bursts rebuild correctly.</li>
+      <li>Cover: OoO actually happened (completion order ≠ issue order), same-ID back-to-back, max outstanding, interleaved R, all ID values.</li>
+      <li>Slave VIP knob: random response reordering + random interleaving.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">?</span>Out-of-order interview Q&amp;A</h2>
+    <table class="t">
+      <tr><th style="width: 48%">Question</th><th>Crisp answer</th></tr>
+      <tr><td>What enables OoO in AXI?</td><td>Multiple outstanding transactions + ID tags.</td></tr>
+      <tr><td>What is the ordering rule?</td><td>Same ID in order; different IDs any order.</td></tr>
+      <tr><td>Can beats inside one burst reorder?</td><td>No — only whole transactions with different IDs.</td></tr>
+      <tr><td>Can read data interleave?</td><td>Yes, across different RIDs.</td></tr>
+      <tr><td>Can write data interleave in AXI4?</td><td>No — WID removed; W follows AW order.</td></tr>
+      <tr><td>Is a write ordered with a later read of the same ID?</td><td>No — wait for BRESP before issuing the read.</td></tr>
+      <tr><td>How does the response find its master?</td><td>Interconnect-added ID bits route it back.</td></tr>
+      <tr><td>Same ID to two slaves — risk?</td><td>Order violation; interconnect must stall or reorder.</td></tr>
+      <tr><td>Benefit of OoO?</td><td>Removes head-of-line blocking; better throughput and latency.</td></tr>
+      <tr><td>Cost of OoO?</td><td>ID tracking and reorder buffers in master/interconnect.</td></tr>
+      <tr><td>How do you test it?</td><td>Per-ID queue scoreboard, reordering slave VIP, coverage on completion order.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

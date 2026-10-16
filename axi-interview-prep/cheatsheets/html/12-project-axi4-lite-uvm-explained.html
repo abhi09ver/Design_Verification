@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Your AXI4-Lite UVM Project, Explained</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:15px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:15px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:15px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13.5px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:12px 14px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.blk{border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-size:13px;line-height:1.3;box-sizing:border-box;min-height:78px}
+.dk{background:#16202B;color:#FFFFFF}
+.tl{background:#0F766E;color:#FFFFFF}
+.bl{background:#2F4B7C;color:#FFFFFF}
+.og{background:#C2410C;color:#FFFFFF}
+.lt{background:#E6F2F0;color:#0B3B37;border:1px solid #A9D2CC}
+.arw{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5B6670;text-align:center;line-height:1.3}
+.st{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:66px;border-radius:34px;padding:6px 10px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;text-align:center}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="11-verification-environment.html">← Verifying the AXI RAM: Full Testbench</a><a href="../../README.md">Index</a><a href="13-project-bugs-and-fixes.html">Bugs in the Repo: Evidence & Fixes →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 22px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 30px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">Project sheet 1 · NitishVerifies / AXI4_UVM_Verification</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 56px; line-height: 1; color: #FFFFFF">Your AXI4-Lite UVM Project, Explained</h1>
+    <div style="font-size: 17px; color: #C9D2D8">Know every file well enough to defend it. Interviewers at top silicon companies go deep on the project you list on your resume.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 340px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">DUT: AXI4-Lite slave, 256 × 32-bit RAM</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #FFFFFF">TB: task-based (runs on iverilog)</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #7FD1C7">+ full UVM class library (tb/*.sv)</div>
+  </div>
+</div>
+
+<!-- ROW 1: two layers -->
+<div class="card" style="gap: 14px">
+  <h2 class="h2"><span class="num">1</span>The repo has two testbenches — know which one actually runs</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">A · Runnable: axi4_tb_top.sv (task-based, iverilog)</div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr) 54px minmax(0, 1fr); gap: 6px; align-items: center">
+        <div class="blk tl"><b>Sequence tasks</b>seq_write / seq_read</div>
+        <div class="arw">req_q<br>▶<br>◀<br>rsp_q</div>
+        <div class="blk tl"><b>Driver tasks</b>do_write / do_read</div>
+        <div class="arw">pins<br>▶</div>
+        <div class="blk og"><b>DUT</b>axi4_slave_ram</div>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr) 54px minmax(0, 1fr); gap: 6px; align-items: center">
+        <div class="blk lt"><b>Report</b>PASS / FAIL counts, coverage counters</div>
+        <div class="arw">◀</div>
+        <div class="blk bl"><b>Scoreboard</b>sb_mem[256] model</div>
+        <div class="arw">◀<br>ana_q</div>
+        <div class="blk bl"><b>Monitor tasks</b>monitor_writes / reads</div>
+      </div>
+      <ul class="ul">
+        <li>Hand-rolled FIFOs (flat arrays + head/tail/count + <span class="m">wait(cnt&gt;0)</span>) replace <span class="m">mailbox</span>.</li>
+        <li>Test picked by a compile-time <span class="m">`define</span> from the Makefile.</li>
+        <li>This is what <span class="m">make all_tests</span> builds and runs.</li>
+      </ul>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">B · UVM library: tb/axi4_*.sv (for VCS / Questa / Xcelium)</div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div class="blk dk" style="min-height: 52px"><b>axi4_*_test</b> → objections, starts sequences on the sequencer</div>
+        <div class="blk dk" style="min-height: 52px; background: #2B3846"><b>axi4_env</b> → agent + scoreboard + coverage, connects analysis ports</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+          <div class="blk tl" style="min-height: 92px"><b>axi4_agent</b>sequencer + driver (ACTIVE only)<br>+ monitor (always)</div>
+          <div class="blk bl" style="min-height: 92px"><b>axi4_scoreboard</b>2 × uvm_tlm_analysis_fifo<br>shadow_mem[assoc]</div>
+          <div class="blk bl" style="min-height: 92px"><b>axi4_coverage</b>2 analysis imps<br>7 covergroups</div>
+        </div>
+      </div>
+      <div class="tip"><b>Know this before you're asked:</b> the Makefile never compiles these files. They are UVM-style code that hasn't been run yet — see the bugs sheet. Say so honestly, or fix it first.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 2: UVM mapping + DUT -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>UVM concept → where it lives in your repo</h2>
+    <table class="t">
+      <tr><th>UVM concept</th><th>Task-based TB (A)</th><th>UVM library (B)</th></tr>
+      <tr><td>Transaction</td><td><span class="m">axi4_pkg::axi4_seq_item</span> (plain class)</td><td><span class="m">axi4_seq_item</span> extends uvm_sequence_item, rand + constraints, do_copy / do_compare</td></tr>
+      <tr><td>Sequence</td><td>seq_write / seq_read tasks</td><td>9 sequences: single, burst, rw, stress, error, wr_rd_check</td></tr>
+      <tr><td>Seq ↔ driver</td><td>req_q / rsp_q FIFOs</td><td>start_item / finish_item ↔ get_next_item / item_done</td></tr>
+      <tr><td>Driver</td><td>do_write: AW &amp; W together, then B</td><td>Same, through <span class="m">vif.driver_cb</span></td></tr>
+      <tr><td>Monitor</td><td>Wait AW → W → B handshakes, push to ana_q</td><td>Forked write/read tasks → <span class="m">ap_write</span>, <span class="m">ap_read</span></td></tr>
+      <tr><td>Analysis path</td><td>ana_q FIFO</td><td>analysis port → <span class="m">uvm_tlm_analysis_fifo</span> (SB) and analysis imps (coverage)</td></tr>
+      <tr><td>Scoreboard</td><td>sb_mem[256], strobe-aware</td><td>assoc array shadow_mem, expects SLVERR ≥ 256 words</td></tr>
+      <tr><td>Coverage</td><td>Write / read counters</td><td>Address quadrant, data patterns, WSTRB, BRESP/RRESP</td></tr>
+      <tr><td>Config / VIF</td><td>Direct hierarchical access</td><td><span class="m">uvm_config_db::get(…"AXI4_VIF"…)</span></td></tr>
+      <tr><td>Factory</td><td>—</td><td><span class="m">type_id::create</span> everywhere</td></tr>
+      <tr><td>End of test</td><td><span class="m">repeat(20) @(posedge)</span> + $finish</td><td>raise / drop objection + fixed #delay</td></tr>
+      <tr><td>Active / passive</td><td>—</td><td><span class="m">get_is_active()</span> in agent build_phase</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">3</span>The DUT: axi4_slave_ram</h2>
+    <div class="lbl">Write FSM (as shipped)</div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center">
+      <div class="st tl">WR_IDLE<span style="font-size: 11px; font-weight: 400">raise AW/W READY</span></div>
+      <div class="st tl">WR_ADDR<span style="font-size: 11px; font-weight: 400">wait AW (+W same cycle)</span></div>
+      <div class="st tl">WR_DATA<span style="font-size: 11px; font-weight: 400">wait W</span></div>
+      <div class="st og">WR_RESP<span style="font-size: 11px; font-weight: 400">BVALID until BREADY</span></div>
+    </div>
+    <div class="lbl">Read FSM</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: center">
+      <div class="st tl">RD_IDLE<span style="font-size: 11px; font-weight: 400">raise ARREADY</span></div>
+      <div class="st tl">RD_ADDR<span style="font-size: 11px; font-weight: 400">AR → register RDATA</span></div>
+      <div class="st og">RD_DATA<span style="font-size: 11px; font-weight: 400">RVALID until RREADY</span></div>
+    </div>
+    <ul class="ul">
+      <li><b>Single outstanding</b> per direction; reads and writes are independent FSMs.</li>
+      <li><span class="m">apply_strobe()</span> merges new bytes into the old word using WSTRB.</li>
+      <li>Index = <span class="m">(addr &gt;&gt; 2) % 256</span> — out-of-range addresses <b>wrap</b> (alias), no SLVERR.</li>
+      <li>RDATA is <b>registered</b>: it's stable while RVALID is held, which satisfies the handshake rule.</li>
+      <li>Memory initialised to 0 in an <span class="m">initial</span> block (simulation only — not reset logic).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ROW 3: stimulus + tests -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>Stimulus: the seq_item constraints</h2>
+    <table class="t">
+      <tr><th>Constraint</th><th>What it does</th><th>Interview angle</th></tr>
+      <tr><td><span class="m">c_txn_type_dist</span></td><td>60% writes, 40% reads</td><td>Why <span class="m">:=</span> vs <span class="m">:/</span> in dist</td></tr>
+      <tr><td><span class="m">c_addr_legal</span></td><td>0x000–0x3FC, word aligned</td><td>How the error sequence overrides it with inline <span class="m">with</span></td></tr>
+      <tr><td><span class="m">c_wstrb</span></td><td>Non-zero; 70% 1111, 5% each of 6 partial patterns</td><td>Only 7 of 15 legal patterns can ever occur</td></tr>
+      <tr><td><span class="m">c_prot</span></td><td>Always 000</td><td>Hard constraint = no PROT coverage</td></tr>
+    </table>
+    <div class="key"><b>Inline override:</b> <span class="m">axi4_error_seq</span> randomises with <span class="m">addr inside {[0x400:0xFFFC]}</span> — but <span class="m">c_addr_legal</span> still forbids that, so <span class="m">randomize()</span> fails. Correct way: <span class="m">txn.c_addr_legal.constraint_mode(0)</span> first, or put the range in a soft constraint.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>Tests and what each really proves</h2>
+    <table class="t">
+      <tr><th>Test</th><th>Stimulus</th><th>Really proves</th></tr>
+      <tr><td>write_test</td><td>8 writes, addr 0x00–0x1C</td><td>BRESP OKAY only — data not read back</td></tr>
+      <tr><td>read_test</td><td>8 reads after reset</td><td>Reset value 0</td></tr>
+      <tr><td>rw_test</td><td>Write then read, 8 addresses</td><td>Full-word data path</td></tr>
+      <tr><td>stress_test</td><td>32 random R/W, random strobes 1–15</td><td>Strobe merge + mixed traffic</td></tr>
+      <tr><td>error_test</td><td>Write/read 0xFFFF_FFFC</td><td>Nothing checked — aliasing hides it</td></tr>
+      <tr><td>wr_rd_chk_test</td><td>DEADBEEF, then CAFE0000 strb 1100</td><td>Expects 0xCAFE_BEEF</td></tr>
+    </table>
+    <div class="tip">Every test drives AW and W in the <b>same cycle</b> with READY always accepted promptly. Real masters don't — that's the gap the bugs sheet exploits.</div>
+  </div>
+</div>
+
+<!-- ROW 4: pitch + one write + run -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>60-second project pitch</h2>
+    <div class="p" style="font-size: 15.5px; line-height: 1.55">"I verified an <b>AXI4-Lite slave RAM</b> — 256 × 32 with byte strobes — using a <b>UVM-structured, self-checking</b> testbench: agent with driver, monitor and sequencer, a <b>scoreboard with a strobe-aware reference model</b>, and <b>functional coverage</b> on addresses, strobes and responses.</div>
+    <div class="p" style="font-size: 15.5px; line-height: 1.55">When I stressed the handshake ordering I found the DUT <b>deadlocks if write data arrives before the address</b>, that it <b>aliases out-of-range addresses</b> instead of returning SLVERR, and that my regression could <b>report PASS while the scoreboard logged errors</b>. I fixed all three and added assertions so they can't come back."</div>
+    <div class="key">Only say the second paragraph <b>after</b> you've applied the fixes from the next sheet. Then it's true, and it's your strongest story.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">7</span>Trace one write end to end</h2>
+    <ol class="ul" style="padding-left: 20px">
+      <li>Test calls <span class="m">seq_write(0x10, D)</span> → item pushed to <span class="m">req_q</span>, sequence blocks on <span class="m">rsp_q</span>.</li>
+      <li>Driver pops it, drives AWADDR/AWVALID + WDATA/WSTRB/WVALID on the next edge.</li>
+      <li>Slave (WR_ADDR) sees both handshakes in one cycle, writes <span class="m">mem[4]</span>, raises BVALID.</li>
+      <li>Driver raises BREADY, captures BRESP, puts the item on <span class="m">rsp_q</span> → sequence unblocks.</li>
+      <li>Monitor independently saw AW, W, B handshakes → builds its own item → <span class="m">ana_q</span>.</li>
+      <li>Scoreboard applies strobes to <span class="m">sb_mem[4]</span>, checks BRESP.</li>
+    </ol>
+    <div class="tip">Key point: the scoreboard uses the <b>monitor's</b> item, never the driver's — so a driver bug can't hide a DUT bug.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">8</span>Run it</h2>
+    <pre class="code">sudo apt install iverilog gtkwave
+cd sim
+make sim TEST=axi4_rw_test SIM=iverilog
+make all_tests SIM=iverilog
+make waves TEST=axi4_rw_test</pre>
+    <div class="lbl">Makefile also targets</div>
+    <ul class="ul">
+      <li><b>Questa</b> — <span class="m">vlog -uvm</span>, <span class="m">vsim +UVM_TESTNAME</span>, UCDB coverage merge</li>
+      <li><b>VCS</b> — <span class="m">-ntb_opts uvm</span>, <span class="m">-cm line+cond+fsm+branch+tgl</span>, urg</li>
+      <li><b>Xcelium</b> — <span class="m">xrun -uvm -coverage all</span>, imc</li>
+      <li>Falls back to iverilog when the commercial tool isn't found.</li>
+    </ul>
+    <div class="key">Be able to explain <span class="m">-sv_seed</span> / <span class="m">+ntb_random_seed</span>: same seed reproduces the same random run — the basis of debugging a regression failure.</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
