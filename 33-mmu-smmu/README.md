@@ -1,4 +1,4 @@
-# 26 · MMU and SMMUv3: One-Stop Interview Kit
+# 33 · MMU and SMMUv3: One-Stop Interview Kit
 
 Everything for MMU / SMMU interviews (Senior CPU / SoC DV, NVIDIA-style), built from Arm IHI 0070 H.a (*SMMU Architecture Specification*, SMMUv3.0–v3.5).
 
@@ -30,7 +30,7 @@ GitHub shows `.html` files as source. To view them: download and open locally, o
 | UVM transaction, invalidation-aware scoreboard, coverage | SystemVerilog/UVM | Elaborated with slang against Accellera UVM, 0 errors |
 
 ```bash
-cd 26-mmu-smmu/code && python3 -m unittest discover -s tests -v && python3 demo.py
+cd 33-mmu-smmu/code && python3 -m unittest discover -s tests -v && python3 demo.py
 ```
 
 ## The five sentences to remember

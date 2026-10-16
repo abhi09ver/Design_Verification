@@ -22,7 +22,7 @@ code/
 ## Run
 
 ```bash
-cd 26-mmu-smmu/code
+cd 33-mmu-smmu/code
 
 # Python model: tests and demo (Python 3.8+)
 python3 -m unittest discover -s tests -v

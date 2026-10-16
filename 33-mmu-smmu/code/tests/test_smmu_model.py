@@ -1,6 +1,6 @@
 """Self-checking tests for the teaching SMMU model.
 
-Run from 26-mmu-smmu/code:   python3 -m unittest discover -s tests -v
+Run from 33-mmu-smmu/code:   python3 -m unittest discover -s tests -v
 Each test is written as an interview scenario: the docstring is the question,
 the assertions are the answer.
 """

@@ -83,7 +83,7 @@ Covergroup example: `smmu_coverage` in [`smmu_dv_pkg.sv`](code/sv/smmu_dv_pkg.sv
 A checker that never fires might be checking nothing. Inject bugs and confirm they are caught:
 
 ```bash
-# from 26-mmu-smmu/code
+# from 33-mmu-smmu/code
 verilator --binary --assert --timing -Wno-fatal +define+BUG_NO_WRAP_BIT \
   --top-module tb_smmu_queue_ptr sv/tb_smmu_queue_ptr.sv sv/smmu_queue_ptr.sv
 ./obj_dir/Vtb_smmu_queue_ptr     # → "Assertion failed ... full mismatch"
