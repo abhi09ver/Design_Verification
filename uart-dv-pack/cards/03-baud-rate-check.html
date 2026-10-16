@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · Baud Rate Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="02-checker-architecture.html">← Prev</a> · <a href="04-framing-error.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 03 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Baud Rate Check</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Is every bit the width it should be — and how wrong can it be before data breaks?</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">03</div>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">The formulas</h2>
+<div style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;">T_bit = 1 / baud</div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;">divisor = round( f_clk / (16 × baud) )</div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;">actual = f_clk / (16 × divisor)</div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;">error % = (actual − target) / target × 100</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">The baud generator is a counter that emits one tick every <i>divisor</i> clocks; 16 ticks make one bit. Integer division is why real UARTs are never exactly on target.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Worked example — 50 MHz clock, 16×</h2>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); font-size: 12.5px; border-top: 1px solid #E2E2DC;">
+<div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Target</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Exact div</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Used</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Actual</div><div style="padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #E2E2DC;">Error</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">9600</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">325.52</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">326</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">9585.9</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">−0.15%</div>
+<div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">115200</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">27.13</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">27</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">115740.7</div><div style="padding: 6px 4px; border-bottom: 1px solid #E2E2DC;">+0.47%</div>
+<div style="padding: 6px 4px; background: #FFF4E5;">921600</div><div style="padding: 6px 4px; background: #FFF4E5;">3.39</div><div style="padding: 6px 4px; background: #FFF4E5;">3</div><div style="padding: 6px 4px; background: #FFF4E5;">1041666.7</div><div style="padding: 6px 4px; background: #FFF4E5; font-weight: 600; color: #9A3F07;">+13.0% ✕</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">High baud on a low clock fails — fixes: fractional divisor, 8× oversampling, or a faster / baud-friendly crystal (e.g. 1.8432 MHz divides exactly).</div>
+</section>
+
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Deep dive — where the ±2% rule comes from</h2>
+<div style="display: flex; gap: 24px; align-items: stretch;">
+<div style="flex: 1.3; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;"><div style="flex: 1; text-align: center;">S</div><div style="flex: 1; text-align: center;">0</div><div style="flex: 1; text-align: center;">1</div><div style="flex: 1; text-align: center;">2</div><div style="flex: 1; text-align: center;">3</div><div style="flex: 1; text-align: center;">4</div><div style="flex: 1; text-align: center;">5</div><div style="flex: 1; text-align: center;">6</div><div style="flex: 1; text-align: center;">7</div><div style="flex: 1; text-align: center;">STOP</div></div>
+<div style="display: flex; height: 28px;"><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; display: flex; justify-content: center;"><div style="width: 2px; background: #1D4ED8;"></div></div><div style="flex: 1; border: 1px solid #C9CBC4; background: #FFF4E5; display: flex; justify-content: center;"><div style="width: 2px; background: #9A3F07;"></div></div></div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Lines = mid-bit sample points, timed from one start edge. Error grows linearly; the stop-bit sample (9.5 T after the edge in 8N1) is the worst case.</div>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+<div><b>1.</b> Last sample must stay inside its bit: drift &lt; 0.5 T over 9.5 T → <b>&lt; 5.26%</b>.</div>
+<div><b>2.</b> Edge detection is only good to 1/16 bit: (0.5 − 0.0625) / 9.5 → <b>≈ 4.6%</b> total.</div>
+<div><b>3.</b> Split between TX and RX clocks → <b>≈ ±2.3% each</b>; rise times and noise eat more → design to <b>±2%</b>.</div>
+<div><b>4.</b> Longer frames (8 data + parity + 2 stop) put the last sample later → tighter budget.</div>
+</div>
+</div>
+</section>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Robust checker — measure every edge gap, not a count</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; white-space: pre;">forever begin
+  @(vif.rx);  t = $realtime;                       // any edge
+  if (in_frame) begin
+    gap = t - t_prev;
+    n   = $rtoi(gap / cfg.bit_time + 0.5);         // nearest whole number of bits
+    err = gap - n * cfg.bit_time;
+    if (err &lt; 0) err = -err;
+    if (n == 0)                                     // pulse shorter than half a bit
+      `uvm_error("UART_GLITCH", $sformatf("%0.1f ns pulse", gap))
+    else if (err &gt; n * cfg.bit_time * cfg.tol)       // tol e.g. 0.02
+      `uvm_error("UART_BAUD", $sformatf("gap %0.1f ns ~ %0d bits, off %0.2f%%",
+                 gap, n, 100.0 * err / (n * cfg.bit_time)))
+  end
+  t_prev = t;
+end</pre>
+<div style="font-size: 12.5px; color: #B9C0CC;">Every bit boundary that has an edge gets checked, and long runs of equal bits are checked as n × T. Use <span style="font-family: 'JetBrains Mono', monospace;">realtime</span> and 1 ps precision: 1e9 / 115200 = 8680.555… ns would round badly at 1 ns.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Weak approaches to call out</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>"Count transitions in a time window"</b> — transition count depends on the data. 0x00 and 0xFF have almost none, so the measured rate is meaningless.</li>
+<li><b>"Count loop iterations and compare to the expected count"</b> — the loop always runs the expected number of times. It checks the checker, never the DUT.</li>
+<li><b>Sampling only mid-bit</b> hides small drift: the value is still right. You need edge timestamps to see the error before it breaks data.</li>
+<li><b>Hard-coded baud parameter</b> — take it from the config object so one checker covers every divisor.</li>
+</ul>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Tests &amp; coverage</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>DUT TX:</b> program every divisor (incl. 1 and max); checker confirms measured T within tolerance.</li>
+<li><b>DUT RX:</b> TB driver gets a drift knob. Sweep 0, ±1, ±2, ±3, ±4.5, ±6%: data correct inside the budget, framing errors expected beyond it.</li>
+<li><b>Change baud mid-traffic</b> (divisor latch write) — first frame after must use new rate.</li>
+<li><b>Coverage:</b> baud bins × frame format; drift bins × pass/fail; divisor min / max / typical.</li>
+<li><b>Autobaud</b> (if supported): measure the start bit of a known char such as 0x55 (alternating bits).</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. Mismatched baud — what does the RX see?</div><div style="color: #C9CCD3;">Small mismatch: nothing. Larger: late bits sampled in the wrong cell → wrong data, then stop bit read as 0 → framing error.</div></div>
+<div><div style="font-weight: 600;">Q. Why measure edges instead of trusting data?</div><div style="color: #C9CCD3;">Data passes until the margin is gone. Edge timing shows a 3% error long before it becomes a data failure.</div></div>
+<div><div style="font-weight: 600;">Q. How would you inject drift in the TB?</div><div style="color: #C9CCD3;">Driver uses bit_time × (1 + drift) from a randomised config field, or drives from a separate clock with ppm offset.</div></div>
+<div><div style="font-weight: 600;">Q. Why 16× and not 8×?</div><div style="color: #C9CCD3;">Finer edge location (1/16 vs 1/8 bit) leaves more drift budget. 8× allows higher baud from the same clock.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: companion write-up "UART protocol checker – Baud Rate" · figures computed, code is an original sketch</div>
+<div>Next → 04 Framing error</div>
+</footer>
+</div></div>
+</body>
+</html>

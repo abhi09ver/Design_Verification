@@ -1,0 +1,52 @@
+xrun: 25.03-s001: (c) Copyright 1995-2025 Cadence Design Systems, Inc.
+TOOL:	xrun	25.03-s001: Started on Oct 15, 2026 at 01:15:57 EDT
+xrun
+	-Q
+	-unbuffered
+	-timescale 1ns/1ns
+	-sysv
+	-access +rw
+	design.sv
+	testbench.sv
+                        logic rob_tag_exists = 0;
+                                             |
+xmvlog: *W,VARIST (memory_management_unit.sv,239|45): Local static variable with initializer requires 'static' keyword.
+    ) dut (
+        |
+xmelab: *W,CUVWSP (./testbench.sv,86|8): 3 output ports were not connected:
+xmelab: (./design.sv,125): commit_id_0
+xmelab: (./design.sv,126): commit_id_1
+xmelab: (./design.sv,127): commit_id_2
+
+    ) completion_buffer_inst (
+                           |
+xmelab: *W,CUVWSP (./design.sv,363|27): 6 output ports were not connected:
+xmelab: (./completion_buffer.sv,50): buffer_full
+xmelab: (./completion_buffer.sv,52): buffer_empty
+xmelab: (./completion_buffer.sv,53): buffer_count
+xmelab: (./completion_buffer.sv,54): debug_head_ptr
+xmelab: (./completion_buffer.sv,55): debug_tail_ptr
+xmelab: (./completion_buffer.sv,56): debug_next_head_ptr
+
+        .ISSUE_WIDTH(ISSUE_WIDTH)
+                   |
+xmelab: *W,CUVUKP (./design.sv,386|19): The name 'ISSUE_WIDTH' is not declared in the instantiated module (defined at ./top_memory_subsystem.sv,20).
+    ) mmu (
+        |
+xmelab: *W,CUVWSP (./top_memory_subsystem.sv,70|8): 4 output ports were not connected:
+xmelab: (./memory_management_unit.sv,64): lq_full
+xmelab: (./memory_management_unit.sv,65): sq_full
+xmelab: (./memory_management_unit.sv,66): lq_debug
+xmelab: (./memory_management_unit.sv,67): sq_debug
+
+	Top level design units:
+		fetch_types_pkg
+		decoder_pkg
+		tomasulo_pkg
+		$unit_0x40549f22
+		tb_fec_dec
+    always_ff @(posedge clk or negedge rst) begin
+            |
+xmelab: *E,MULAXX (./memory_management_unit.sv,129|12): Multiple drivers to always_ff output variable rob_tag_exists detected.
+xrun: *E,ELBERR: Error (*E) or soft error (*SE) occurred during elaboration (status 1), exiting.
+TOOL:	xrun	25.03-s001: Exiting on Oct 15, 2026 at 01:15:58 EDT  (total: 00:00:01)

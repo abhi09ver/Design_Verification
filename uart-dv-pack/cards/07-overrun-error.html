@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · Overrun Error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="06-break-condition.html">← Prev</a> · <a href="08-data-validity-idle-line.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 07 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Overrun Error</h1>
+<div style="font-size: 15px; color: #4A4F5A;">The wire was perfect — the software was too slow. A character arrives with nowhere to go.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">07</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">The data path — and where the character is lost</h2>
+<div style="display: flex; align-items: center; gap: 12px;">
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 12px 14px; text-align: center; width: 120px;"><b>RX line</b><div style="font-size: 12px; color: #4A4F5A;">valid frame</div></div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="border: 2px solid #9A3F07; background: #FFF4E5; border-radius: 8px; padding: 12px 14px; text-align: center; width: 150px;"><b>Shift register</b><div style="font-size: 12px; color: #9A3F07;">new char complete — can't move</div></div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #9A3F07;">✕</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+<div style="font-size: 12px; color: #4A4F5A;">RX FIFO (depth N = 16) — full</div>
+<div style="display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px;">
+<div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div><div style="height: 34px; background: #1D4ED8; border-radius: 3px;"></div>
+</div>
+</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="border: 2px solid #15171C; border-radius: 8px; padding: 12px 14px; text-align: center; width: 130px;"><b>CPU / DMA</b><div style="font-size: 12px; color: #4A4F5A;">not reading RBR</div></div>
+</div>
+<div style="font-size: 13px; color: #4A4F5A;"><b style="color: #15171C;">Definition:</b> a new character completes in the receive shift register while the holding register / FIFO is still full. One character is lost and <b>LSR.OE</b> (bit 1) is set. Nothing is wrong on the wire — so a line monitor alone can never detect it.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Which character is lost? (16550-style)</h2>
+<div style="display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 12px; font-size: 13px;">
+<div style="font-weight: 600;">FIFO off</div><div>New char overwrites the unread one in RBR. Old data lost.</div>
+<div style="font-weight: 600;">FIFO on</div><div>Char in the shift register is overwritten and never enters the FIFO. FIFO contents stay valid.</div>
+<div style="font-weight: 600;">OE timing</div><div>Flag rises as soon as the overrun happens; cleared by reading LSR.</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Exactly which char is dropped, and at which count (N+1 or N+2) OE rises, is spec-specific — make the model take it from the spec, and cover the boundary.</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">How systems prevent it</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>RX FIFO trigger level</b> (1 / 4 / 8 / 14): interrupt early enough for software to drain.</li>
+<li><b>Character timeout</b> interrupt so a few leftover bytes don't sit unread.</li>
+<li><b>Hardware flow control:</b> auto-RTS deasserts near full so the sender pauses (CTS).</li>
+<li><b>DMA</b> for sustained high baud rates.</li>
+<li>Verify each mechanism: with auto-RTS on, a burst must <i>never</i> overrun.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Predict it in the scoreboard — two inputs, one model</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; white-space: pre;">uart_item  rx_q[$];      // model of the DUT RX FIFO
+bit        exp_oe;
+
+function void write_line(uart_item it);      // from line monitor (frame complete)
+  if (rx_q.size() &lt; cfg.fifo_depth) rx_q.push_back(it);
+  else begin exp_oe = 1; n_lost++; end      // FIFO-mode rule: newest char dropped
+endfunction
+
+function void write_bus(bus_item b);        // from APB/AXI monitor or RAL predictor
+  if (b.is_read &amp;&amp; b.addr == RBR) begin
+    uart_item exp = rx_q.pop_front();
+    if (b.data[7:0] !== exp.data) `uvm_error("UART_SB", "RBR data mismatch")
+  end
+  if (b.is_read &amp;&amp; b.addr == LSR) begin
+    if (b.data[1] !== exp_oe) `uvm_error("UART_OE", $sformatf("OE=%b exp %b", b.data[1], exp_oe))
+    exp_oe = 0;                              // OE clears on LSR read
+  end
+endfunction</pre>
+<div style="font-size: 12.5px; color: #B9C0CC;">Overrun lives inside the DUT, so it needs <b>both</b> sides: the serial monitor (chars in) and the register-bus monitor (chars out). Use <span style="font-family: 'JetBrains Mono', monospace;">uvm_analysis_imp_decl</span> to give the scoreboard two write methods.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Test plan &amp; coverage</h2>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px;">
+<li>No reads; burst N, N+1, N+2, N+10 chars. OE exactly at the spec'd count, FIFO keeps the first N.</li>
+<li>FIFO disabled (depth 1): two chars without a read.</li>
+<li>Reader slower than arrival rate — steady-state overruns.</li>
+<li><b>Race:</b> RBR read lands in the same cycle the new char completes.</li>
+<li>Read LSR → OE clears; second overrun sets it again.</li>
+<li>Auto-RTS on: same burst, zero overruns, TX pauses.</li>
+<li>Cover: FIFO level at arrival {0, mid, N−1, N} × FIFO on/off × flow control × error-tagged char.</li>
+</ol>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Modelling pitfalls</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>Same-cycle race:</b> a transaction-level model can't know if the read or the push won. Either model at cycle level, or accept both outcomes within a small window and cover which one happened.</li>
+<li><b>"Char complete" point:</b> RTL may push at mid-stop-bit, your monitor at end of stop. Align the model with the RTL's push point.</li>
+<li>Wrong lost-char assumption (oldest vs newest) → every later compare mis-aligns.</li>
+<li>Forgetting that an LSR read clears OE <i>and</i> other sticky bits.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. Why can't a protocol checker on the line catch overrun?</div><div style="color: #C9CCD3;">The serial stream is perfectly valid. The loss happens between the FIFO and the CPU — you need the bus side too.</div></div>
+<div><div style="font-weight: 600;">Q. Overrun vs underrun?</div><div style="color: #C9CCD3;">Overrun: RX data arrives faster than it's read. TX "underrun" just means TX empty — the line idles, THRE interrupt fires, not an error.</div></div>
+<div><div style="font-weight: 600;">Q. How do you force overrun in a test?</div><div style="color: #C9CCD3;">Mask RX interrupts, stop the reader sequence, and drive more than FIFO depth back-to-back frames.</div></div>
+<div><div style="font-weight: 600;">Q. How would you verify the read/arrive race?</div><div style="color: #C9CCD3;">Constrain read timing relative to the stop bit, sweep the offset by a cycle at a time, and cover the exact-coincidence bin.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: "Overrun error check" from the series roadmap · code is an original sketch</div>
+<div>Next → 08 Data validity &amp; idle line</div>
+</footer>
+</div></div>
+</body>
+</html>

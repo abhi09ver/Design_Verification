@@ -1,0 +1,146 @@
+--- rtl/alloc_reorder_retire.sv	2026-10-15 23:41:13.586332528 +0000
++++ solutions/alloc_reorder_retire.sv	2026-10-15 23:41:13.589437724 +0000
+@@ -77,6 +77,8 @@
+     
+     // Memory Management Unit interface
+     output logic [$clog2(no_ROB)-1:0] mmu_rob_head [ISSUE_WIDTH-1:0],                 // ROB head for MMU
++    output logic [ISSUE_WIDTH-1:0] retire_valid_o,                                    // FIX-12b
++    output logic [$clog2(no_ROB)-1:0] retire_rob_id_o [ISSUE_WIDTH-1:0],              // FIX-12b
+     input logic [ISSUE_WIDTH-1:0] store_commit_valid,
+     input logic [$clog2(no_ROB)-1:0] store_commit_rob_index [ISSUE_WIDTH-1:0]
+ );
+@@ -279,26 +281,56 @@
+         // Count available ALU reservation stations
+         available_alu_rs = 0;
+         for(calc_idx = 0; calc_idx < no_RS_addsublog; calc_idx++) begin
+-            if(!alu_rs_busy_post_dispatch[calc_idx]) begin
++            if(!alu_rs_busy_view[calc_idx]) begin   // FIX-11
+                 available_alu_rs = available_alu_rs + 1;
+             end
+         end
+         // Count available Mul/Div reservation stations
+         available_muldiv_rs = 0;
+         for(calc_idx = 0; calc_idx < no_RS_muldiv; calc_idx++) begin
+-            if(!muldiv_rs_busy_post_dispatch[calc_idx]) begin
++            if(!muldiv_rs_busy_view[calc_idx]) begin   // FIX-11
+                 available_muldiv_rs = available_muldiv_rs + 1;
+             end
+         end
+         // Count available Load/Store buffer entries
+         available_mem_rs = 0;
+         for(calc_idx = 0; calc_idx < no_LoadStoreBuffer; calc_idx++) begin
+-            if(!lsb_busy_post_dispatch[calc_idx]) begin
++            if(!lsb_busy_view[calc_idx]) begin   // FIX-11
+                 available_mem_rs = available_mem_rs + 1;
+             end
+         end
+     end
+ 
++    // FIX-11: ONE source of truth for "is this RS / LSB slot free?"
++    //   Original: dispatch kept a private shadow copy (*_busy_post_dispatch) that was
++    //   cleared by a 1-cycle-DELAYED copy of the FU/MMU clear pulses, while the real RS
++    //   'busy' bit was cleared by the undelayed pulse. Any pulse longer than one cycle
++    //   (see FIX-10) or a same-cycle clear+alloc made the two disagree -> a slot that
++    //   was still busy got handed out again; the RS write was then silently skipped
++    //   ('if (!busy)') and the instruction vanished -> ROB deadlock.
++    //   Now: occupied = real busy bit OR already picked by the bundle in dispatch_reg
++    //   that will be written into the RS at the next edge.
++    logic [no_RS_addsublog-1:0]    alu_rs_busy_view;
++    logic [no_RS_muldiv-1:0]       muldiv_rs_busy_view;
++    logic [no_LoadStoreBuffer-1:0] lsb_busy_view;
++    always_comb begin
++        for (int i = 0; i < no_RS_addsublog; i++)    alu_rs_busy_view[i]    = AS_RS[i].busy;
++        for (int i = 0; i < no_RS_muldiv; i++)       muldiv_rs_busy_view[i] = MD_RS[i].busy;
++        for (int i = 0; i < no_LoadStoreBuffer; i++) lsb_busy_view[i]       = LS_buffer[i].busy;
++        if (alloc_resources_available_d1) begin
++            for (int d = 0; d < ISSUE_WIDTH; d++) begin
++                if (dispatch_reg[d].valid && dispatch_reg[d].rs_allocated) begin
++                    case (dispatch_reg[d].instr_type)
++                        2'b00: alu_rs_busy_view[dispatch_reg[d].rs_index]    = 1'b1;
++                        2'b01: lsb_busy_view[dispatch_reg[d].rs_index]       = 1'b1;
++                        2'b10: muldiv_rs_busy_view[dispatch_reg[d].rs_index] = 1'b1;
++                        default: ;
++                    endcase
++                end
++            end
++        end
++    end
++
+     always_ff @(posedge clk) begin
+         if (rst || flush) begin
+             alu_rs_clear_in_d1 <= '0;
+@@ -467,13 +499,13 @@
+             if(alloc_resources_available) begin
+                 // Initialize next-state busy arrays for resource tracking
+                 for (rs_idx = 0; rs_idx < no_RS_addsublog; rs_idx++) begin
+-                    alu_rs_busy_next[rs_idx] = alu_rs_busy_post_dispatch[rs_idx];
++                    alu_rs_busy_next[rs_idx] = alu_rs_busy_view[rs_idx];   // FIX-11
+                 end
+                 for (muldiv_idx = 0; muldiv_idx < no_RS_muldiv; muldiv_idx++) begin
+-                    muldiv_rs_busy_next[muldiv_idx] = muldiv_rs_busy_post_dispatch[muldiv_idx];
++                    muldiv_rs_busy_next[muldiv_idx] = muldiv_rs_busy_view[muldiv_idx];   // FIX-11
+                 end
+                 for (ls_idx = 0; ls_idx < no_LoadStoreBuffer; ls_idx++) begin
+-                    lsb_busy_next[ls_idx] = lsb_busy_post_dispatch[ls_idx];
++                    lsb_busy_next[ls_idx] = lsb_busy_view[ls_idx];   // FIX-11
+                 end
+ 
+                 // Clear per-cycle allocation trackers to prevent double-allocation
+@@ -805,7 +837,9 @@
+                                 LS_buffer[dispatch_reg[dispatch_idx].rs_index].src_valid <= dispatch_reg[dispatch_idx].src1_ready;
+                                 LS_buffer[dispatch_reg[dispatch_idx].rs_index].pc <= dispatch_reg[dispatch_idx].pc;
+                                 // Set size field based on func3 (RISC-V: 000=byte, 001=half, 010=word)
+-                                case (dispatch_reg[dispatch_idx].func3)
++                                // FIX-9a: size is func3[1:0]; func3[2] is the UNSIGNED flag (lbu=100, lhu=101).
++                                //         'case (func3)' sent lbu/lhu to 'default: word'.
++                                case ({1'b0, dispatch_reg[dispatch_idx].func3[1:0]})
+                                     3'b000: LS_buffer[dispatch_reg[dispatch_idx].rs_index].size <= 2'b00; // byte
+                                     3'b001: LS_buffer[dispatch_reg[dispatch_idx].rs_index].size <= 2'b01; // half
+                                     3'b010: LS_buffer[dispatch_reg[dispatch_idx].rs_index].size <= 2'b10; // word
+@@ -930,7 +964,7 @@
+ 
+                 ////////// Wake-up logic for src1 //////////
+ 
+-                if (AS_RS[as_idx].busy && !AS_RS[as_idx].src1_valid && AS_RS[as_idx].src1_tag != 0) begin
++                if (AS_RS[as_idx].busy && !AS_RS[as_idx].src1_valid /* FIX-4: removed '&& tag != 0' - ROB tag 0 is a REAL tag */) begin
+                     found_src1 = 0;
+                     // 1. Current CDB
+                     for (int cdb_idx = 0; cdb_idx < CDB_WIDTH && !found_src1; cdb_idx++) begin
+@@ -968,7 +1002,7 @@
+ 
+                 ////////// Wake-up logic for src2 //////////
+ 
+-                if (AS_RS[as_idx].busy && !AS_RS[as_idx].src2_valid && AS_RS[as_idx].src2_tag != 0) begin
++                if (AS_RS[as_idx].busy && !AS_RS[as_idx].src2_valid /* FIX-4: removed '&& tag != 0' - ROB tag 0 is a REAL tag */) begin
+                     found_src2 = 0;
+                     // 1. Current CDB
+                     for (int cdb_idx = 0; cdb_idx < CDB_WIDTH && !found_src2; cdb_idx++) begin
+@@ -1011,7 +1045,7 @@
+                 
+                 ////////// Wake-up logic for src1 //////////
+ 
+-                if (MD_RS[md_idx].busy && !MD_RS[md_idx].src1_valid && MD_RS[md_idx].src1_tag != 0) begin
++                if (MD_RS[md_idx].busy && !MD_RS[md_idx].src1_valid /* FIX-4: removed '&& tag != 0' - ROB tag 0 is a REAL tag */) begin
+                     found_src1 = 0;
+                     // 1. Current CDB
+                     for (int cdb_idx = 0; cdb_idx < CDB_WIDTH && !found_src1; cdb_idx++) begin
+@@ -1049,7 +1083,7 @@
+                 
+                 ////////// Wake-up logic for src2 //////////
+ 
+-                if (MD_RS[md_idx].busy && !MD_RS[md_idx].src2_valid && MD_RS[md_idx].src2_tag != 0) begin
++                if (MD_RS[md_idx].busy && !MD_RS[md_idx].src2_valid /* FIX-4: removed '&& tag != 0' - ROB tag 0 is a REAL tag */) begin
+                     found_src2 = 0;
+                     // 1. Current CDB
+                     for (int cdb_idx = 0; cdb_idx < CDB_WIDTH && !found_src2; cdb_idx++) begin
+@@ -1419,6 +1453,10 @@
+         end
+     end
+ 
++    // FIX-12b: export the exact retire set (combinational, 'retires at this edge')
++    assign retire_valid_o  = commit_valid_next;
++    assign retire_rob_id_o = commit_rob_id_next;
++
+     // Complete ROB state output
+     always_comb begin
+         for (int i = 0; i < no_ROB; i++) begin

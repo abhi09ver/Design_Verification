@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · UVM Protocol Checker Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="01-uart-fundamentals.html">← Prev</a> · <a href="03-baud-rate-check.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 02 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Building the UVM Protocol Checker</h1>
+<div style="font-size: 15px; color: #4A4F5A;">A passive observer that turns wire activity into transactions — then judges them against the protocol.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">02</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Where the checker sits</h2>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+<div style="flex: 1; border: 2px solid #15171C; border-radius: 8px; padding: 12px; text-align: center;"><b>DUT</b><div style="color: #4A4F5A; font-size: 12px;">UART TX / RX pins</div></div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="flex: 1; border: 2px solid #15171C; border-radius: 8px; padding: 12px; text-align: center;"><b>uart_if</b><div style="color: #4A4F5A; font-size: 12px;">virtual interface + SVA</div></div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="flex: 1.2; border: 2px solid #1D4ED8; background: #EEF2FF; border-radius: 8px; padding: 12px; text-align: center;"><b>Passive monitor</b><div style="color: #4A4F5A; font-size: 12px;">samples bits, builds uart_item</div></div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 18px;">→</div>
+<div style="flex: 1.4; display: flex; flex-direction: column; gap: 6px;">
+<div style="border: 1.5px solid #15171C; border-radius: 8px; padding: 6px 10px;"><b>Protocol checker</b> <span style="color: #4A4F5A; font-size: 12px;">frame rules</span></div>
+<div style="border: 1.5px solid #15171C; border-radius: 8px; padding: 6px 10px;"><b>Scoreboard</b> <span style="color: #4A4F5A; font-size: 12px;">data / end-to-end</span></div>
+<div style="border: 1.5px solid #15171C; border-radius: 8px; padding: 6px 10px;"><b>Coverage</b> <span style="color: #4A4F5A; font-size: 12px;">config × errors</span></div>
+</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">Connection: monitor <span style="font-family: 'JetBrains Mono', monospace;">uvm_analysis_port</span> → <span style="font-family: 'JetBrains Mono', monospace;">write()</span> broadcast to every subscriber (<span style="font-family: 'JetBrains Mono', monospace;">uvm_subscriber</span> / <span style="font-family: 'JetBrains Mono', monospace;">uvm_analysis_imp</span>). One monitor per direction: TX line and RX line.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Building blocks</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>uart_cfg</b> (uvm_object): baud, clk freq, data_bits, parity mode, stop_bits, tolerance %, per-check enable knobs. Set once by the test, fetched with <span style="font-family: 'JetBrains Mono', monospace;">uvm_config_db</span> in build_phase.</li>
+<li><b>uart_item</b> (uvm_sequence_item): data, parity bit, stop bit(s), start/end timestamps, measured bit times, error flags.</li>
+<li><b>Monitor</b>: watches vif, never drives. Emits one item per frame — frame-level, not bit-level.</li>
+<li><b>Checker</b>: applies rules (baud, framing, parity, break, idle). Reports with distinct message IDs.</li>
+<li><b>Agent</b>: active (driver + sequencer + monitor) for the TB side, passive (monitor only) to observe DUT TX.</li>
+</ul>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">UVM phases used</h2>
+<div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 12px; font-size: 13px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">build_phase</div><div>get cfg + vif from config_db, create ports and sub-components via factory.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">connect_phase</div><div>monitor.ap → checker / scoreboard / coverage exports.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">run_phase</div><div>forever loop: detect start, sample frame, write item.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">check_phase</div><div>leftovers: unmatched items, frame cut by end of test.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">report_phase</div><div>summary: frames seen, errors by type.</div>
+</div>
+</section>
+
+</div>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Monitor run_phase — the skeleton every later check plugs into</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; white-space: pre;">task run_phase(uvm_phase phase);
+  forever begin
+    uart_item it;
+    @(negedge vif.rx);                      // candidate start edge
+    t0 = $realtime;
+    #(cfg.bit_time/2);                      // move to middle of start bit
+    if (vif.rx !== 1'b0) continue;          // false start: glitch, ignore
+    it = uart_item::type_id::create("it");
+    for (int i = 0; i &lt; cfg.data_bits; i++) begin
+      #(cfg.bit_time);  it.data[i] = vif.rx; // LSB first
+    end
+    if (cfg.parity != PAR_NONE) begin #(cfg.bit_time); it.par  = vif.rx; end
+    #(cfg.bit_time);    it.stop = vif.rx;   // checker flags stop == 0
+    it.t_start = t0;    ap.write(it);       // broadcast to subscribers
+  end
+endtask</pre>
+<div style="font-size: 12.5px; color: #B9C0CC;">Use <span style="font-family: 'JetBrains Mono', monospace;">!==</span> so X/Z on the line is caught. Delay-based sampling is simplest; a clocked 16× sampler mirrors the RTL more closely and catches mid-bit glitches.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Design choices — know the trade-off</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>Checks in monitor</b>: least code, but couples collection with judgement; can't reuse the monitor where errors are expected.</li>
+<li><b>Separate checker component</b>: reusable, checks can be disabled per test, cleaner reporting. Preferred.</li>
+<li><b>SVA in the interface</b>: cycle-accurate, works in formal and emulation, but awkward for multi-bit frame state and config.</li>
+<li>Best practice: <b>timing checks as SVA</b>, <b>content checks in the class</b>, <b>data correctness in the scoreboard</b>.</li>
+</ul>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Bugs to spot in tutorial-style code</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>analysis_port has no get().</b> It only broadcasts with write(). To pull, use <span style="font-family: 'JetBrains Mono', monospace;">uvm_tlm_analysis_fifo</span> and call get() on it.</li>
+<li><b>Bit-per-transaction TLM</b> carries no timing — you cannot check baud from it. Sample the vif.</li>
+<li><b>new() on a component inside a module</b> skips the factory and the hierarchy. Build via <span style="font-family: 'JetBrains Mono', monospace;">type_id::create</span> under the env, start with <span style="font-family: 'JetBrains Mono', monospace;">run_test()</span>.</li>
+<li><b>No objection handling</b> → sim ends at time 0. The test raises and drops objections, not the monitor.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. uvm_object vs uvm_component?</div><div style="color: #C9CCD3;">Components are static, live in the hierarchy for the whole sim and have phases. Objects (items, configs, sequences) are transient data with no phases.</div></div>
+<div><div style="font-weight: 600;">Q. Why should the monitor never drive?</div><div style="color: #C9CCD3;">It must observe the same bus in passive agents and at SoC level, where the DUT drives. Any drive breaks reuse.</div></div>
+<div><div style="font-weight: 600;">Q. analysis_port vs blocking put port?</div><div style="color: #C9CCD3;">Analysis is non-blocking, one-to-many, zero-time write(); the monitor never stalls. Put ports are one-to-one and may block.</div></div>
+<div><div style="font-weight: 600;">Q. How do you make the checker configurable per test?</div><div style="color: #C9CCD3;">Config object with enable bits and expected params, set from the test through config_db before build.</div></div>
+<div><div style="font-weight: 600;">Q. Checker in RX path only, or both?</div><div style="color: #C9CCD3;">Both. TB→DUT checks your driver; DUT→TB checks the design's transmitter. Same monitor class, two instances.</div></div>
+<div><div style="font-weight: 600;">Q. Where would you use SVA instead?</div><div style="color: #C9CCD3;">Idle-high after reset, no X on TX, minimum pulse width — local, timing-shaped rules that also run in formal.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: companion write-up "UART protocol checker" · code above is an original sketch</div>
+<div>Next → 03 Baud rate check</div>
+</footer>
+</div></div>
+</body>
+</html>
