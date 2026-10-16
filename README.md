@@ -51,6 +51,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
 | 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
+| 33 | [MMU & SMMUv3 One-Stop Kit](33-mmu-smmu/README.md) | VA/PA, pages, multi-level walks, TLB/ASID/VMID, stage 1/2 nesting, StreamID→STE→CD, command/event queues, CMD_SYNC, stall vs terminate, ATS/PRI/PASID, RME/GPC, invalidation-aware scoreboard; Python model, SVA, UVM code, fresher + senior HTML guides |
 
 ## CPU Lab (code for challenges 26–31)
 
