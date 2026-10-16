@@ -1,0 +1,19 @@
+PIPE   1 | IF 000 | ID  -  | EX  -  | MEM  -  | WB  -  |                
+PIPE   2 | IF 004 | ID 000 | EX  -  | MEM  -  | WB  -  |                
+PIPE   3 | IF 008 | ID 004 | EX 000 | MEM  -  | WB  -  |                
+PIPE   4 | IF 00c | ID 008 | EX 004 | MEM 000 | WB  -  |                
+PIPE   5 | IF 010 | ID 00c | EX 008 | MEM 004 | WB 000 | STALL(load-use)
+PIPE   6 | IF 010 | ID 00c | EX  -  | MEM 008 | WB 004 |                
+PIPE   7 | IF 014 | ID 010 | EX 00c | MEM  -  | WB 008 |                
+PIPE   8 | IF 018 | ID 014 | EX 010 | MEM 00c | WB  -  |                
+PIPE   9 | IF 01c | ID 018 | EX 014 | MEM 010 | WB 00c |                
+PIPE  10 | IF 020 | ID 01c | EX 018 | MEM 014 | WB 010 |                
+PIPE  11 | IF 024 | ID 020 | EX 01c | MEM 018 | WB 014 | STALL(load-use)
+PIPE  12 | IF 024 | ID 020 | EX  -  | MEM 01c | WB 018 |                
+PIPE  13 | IF 028 | ID 024 | EX 020 | MEM  -  | WB 01c |                
+PIPE  14 | IF 02c | ID 028 | EX 024 | MEM 020 | WB  -  | STALL(load-use)
+PIPE  15 | IF 02c | ID 028 | EX  -  | MEM 024 | WB 020 |                
+PIPE  16 | IF 02c | ID 02c | EX 028 | MEM  -  | WB 024 |                
+PIPE  17 | IF 02c | ID 02c | EX 02c | MEM 028 | WB  -  |                
+PIPE  18 | IF 02c | ID 02c | EX 02c | MEM 02c | WB 028 |                
+PIPE  19 | IF 02c | ID 02c | EX 02c | MEM 02c | WB 02c |                

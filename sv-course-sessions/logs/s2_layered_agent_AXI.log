@@ -1,0 +1,46 @@
+UVM_INFO @ 0: reporter [UVM/RELNOTES] 
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  This implementation of the UVM Library deviates from the 1800.2-2020
+  standard.  See the DEVIATIONS.md file contained in the release
+  for more details.
+
+----------------------------------------------------------------
+Accellera:1800.2:UVM:2020.3.1
+
+All copyright owners for this kit are listed in NOTICE.txt
+All Rights Reserved Worldwide
+----------------------------------------------------------------
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+UVM_WARNING @ 0: reporter [NO_DPI_USED] We are thinking of removing support for UVM_NO_DPI.  Please try this test without it and evaluate the impact
+UVM_INFO @ 0: reporter [RNTST] Running test layered_test...
+UVM_INFO @ 0: reporter [UVM/COMP/NAMECHECK] This implementation of the component name checks requires DPI to be enabled
+UVM_WARNING @ 0: reporter [NO_VISIT_CHECK] Because UVM_REGEX_NO_DPI is defined, no uvm component name constraints will be checked
+UVM_INFO @ 0: uvm_test_top.env.axi.drv [AXI_DRV] AXI WR addr=00000ff8 AxLEN=1 AxSIZE=2 INCR
+UVM_INFO @ 10: uvm_test_top.env.axi.drv [AXI_DRV] AXI WR addr=00001000 AxLEN=17 AxSIZE=2 INCR
+UVM_INFO @ 20: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_WRITE addr=00000ff8 words=20
+UVM_INFO @ 20: uvm_test_top.env.axi.drv [AXI_DRV] AXI RD addr=e64fde24 AxLEN=3 AxSIZE=2 INCR
+UVM_INFO @ 30: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_READ addr=e64fde24 words=4
+UVM_INFO @ 30: uvm_test_top.env.axi.drv [AXI_DRV] AXI RD addr=9e2e74a0 AxLEN=19 AxSIZE=2 INCR
+UVM_INFO @ 40: uvm_test_top.env.bus_sqr@@s [BUS_SEQ] sent BUS_READ addr=9e2e74a0 words=20
+UVM_INFO @ 90: uvm_test_top [TEST] PASS: 44 words through PROTO_AXI layer
+UVM_INFO @ 90: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   11
+UVM_WARNING :    2
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[AXI_DRV]     4
+[BUS_SEQ]     3
+[NO_DPI_USED]     1
+[NO_VISIT_CHECK]     1
+[RNTST]     1
+[TEST]     1
+[UVM/COMP/NAMECHECK]     1
+[UVM/RELNOTES]     1
+

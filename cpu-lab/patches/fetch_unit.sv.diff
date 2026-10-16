@@ -1,0 +1,67 @@
+--- rtl/fetch_unit.sv	2026-10-15 23:41:13.584073611 +0000
++++ solutions/fetch_unit.sv	2026-10-15 23:41:13.587107161 +0000
+@@ -31,7 +31,8 @@
+     output logic [ISSUE_WIDTH-1:0] out_deq_valid,
+     output fetch_entry_t out_deq_data [ISSUE_WIDTH-1:0],
+     output fetch_entry_t fec_dec_latch_out [ISSUE_WIDTH-1:0],
+-    output fetch_entry_t imem_fetch_reg_out [ISSUE_WIDTH-1:0]
++    output fetch_entry_t imem_fetch_reg_out [ISSUE_WIDTH-1:0],
++    output logic fetch_hold                       // FIX-8a: PC must not advance
+ );
+ 
+     // Internal connection between instruction_memory and instruction_queue
+@@ -56,9 +57,13 @@
+                 fec_dec_latch[i] <= '{default: 0};
+             end
+         end else begin
++            // FIX-8b: when decode takes a new bundle, EVERY slot is refreshed. A slot with
++            //         nothing behind it becomes a bubble. Originally only slots with
++            //         deq_valid were written, so a short (1- or 2-wide) bundle kept STALE
++            //         valid instructions in the other slots -> decoded & executed twice.
+             for (int i = 0; i < ISSUE_WIDTH; i++) begin
+-                if (deq_ready[i] && deq_valid[i]) begin
+-                    fec_dec_latch[i] <= deq_data[i];
++                if (deq_ready[i]) begin
++                    fec_dec_latch[i] <= deq_valid[i] ? deq_data[i] : '{default: 0};
+                 end
+             end
+         end
+@@ -73,7 +78,7 @@
+     // Enqueue only if fetch is valid and queue is ready
+     always_comb begin
+         for (int i = 0; i < ISSUE_WIDTH; i++) begin
+-          enq_valid[i] = fetch_reg_out[i].valid && enq_ready[i] && !stall_in;
++          enq_valid[i] = fetch_reg_out[i].valid && iq_room && !stall_in;   // FIX-8a
+             enq_data[i]  = fetch_reg_out[i];
+         end
+     end
+@@ -100,8 +105,14 @@
+         .empty(iq_empty)
+     );
+ 
+-    // Assign stall for instruction memory: stall if global stall or IQ is full
+-    assign imem_stall = stall_in || iq_full;
++    // FIX-8a: the fetched bundle is enqueued ALL-OR-NOTHING. If the IQ cannot take the
++    //         whole bundle this cycle, hold the fetch register AND the PC (see fetch.sv).
++    //         Originally: partial enqueue + PC kept advancing while imem was stalled
++    //         -> whole bundles were silently skipped under back-pressure.
++    logic iq_room;
++    assign iq_room    = (iq_inst.count + ISSUE_WIDTH) <= IQ_DEPTH;
++    assign imem_stall = stall_in || !iq_room;
++    assign fetch_hold = imem_stall;
+ 
+     // Instantiate instruction_memory
+     instruction_memory #(
+@@ -255,7 +266,11 @@
+     string prog_file;                             // LAB: program file from plusarg
+ 
+     // Assign output signals
+-    assign fetch_stall = stall_in || (pc_in >= (NO_INSTR * 4));
++    // FIX-8c: do NOT freeze the fetch register when the PC runs past the program; the
++    //         per-slot (current_pc < NO_INSTR*4) check below turns those slots into
++    //         bubbles. Freezing kept the LAST bundle valid, and it was re-enqueued every
++    //         cycle until program_stall_2 rose (3 cycles later) -> duplicates at the end.
++    assign fetch_stall = stall_in;
+     assign fetch_reg_out = fetch_reg;
+     assign debug_pc = pc_in;
+     assign debug_cycle_count = cycle_count;

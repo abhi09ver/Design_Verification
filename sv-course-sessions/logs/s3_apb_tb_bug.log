@@ -1,0 +1,16 @@
+[65] SB PASS  #0 port1 WR addr=00000004 wdata=9779a01d
+[105] SB PASS  #1 port2 WR addr=0000002c wdata=767932e7
+[175] SB PASS  #2 port1 WR addr=00000004 wdata=597219de
+[225] SB PASS  #3 port2 WR addr=00000000 wdata=1ae1f1ec
+[295] SB PASS  #4 port1 WR addr=00000024 wdata=cf1abf95
+[335] SB PASS  #5 port2 WR addr=00000020 wdata=769feea6
+[375] SB PASS  #6 port1 RD addr=00000024 rdata=cf1abf95
+[415] SB ERROR read data mismatch, model expects 1ae1f1ec
+            expected: port2 RD addr=00000000 data=00000000
+            actual  : #7 port2 RD addr=00000000 rdata=e51e0e13
+[485] SB PASS  #8 port1 RD addr=00000024 rdata=cf1abf95
+[555] SB ERROR read data mismatch, model expects 1ae1f1ec
+            expected: port2 RD addr=00000000 data=00000000
+            actual  : #9 port2 RD addr=00000000 rdata=e51e0e13
+
+==== SCOREBOARD: 10 checked, 2 errors -> FAILED ====

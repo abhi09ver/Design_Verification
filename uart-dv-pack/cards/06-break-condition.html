@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · Break Condition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="05-parity-error.html">← Prev</a> · <a href="07-overrun-error.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 06 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Break Condition</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Line held low for longer than a whole character — a deliberate signal, not just a bad frame.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">06</div>
+</header>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">What it looks like (8N1 — one character time = 10 T)</h2>
+<div style="display: flex; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div style="flex: 2; text-align: center;">IDLE</div>
+<div style="flex: 10; text-align: center; border-left: 1px dashed #4A4F5A; border-right: 1px dashed #4A4F5A;">← one character time: start + 8 data + stop, every sample = 0 →</div>
+<div style="flex: 6; text-align: center;">still low → BREAK</div>
+<div style="flex: 3; text-align: center;">MARK</div>
+<div style="flex: 2; text-align: center;">NEXT START</div>
+</div>
+<div style="display: flex;">
+<div style="flex: 2; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C;"></div>
+<div style="flex: 10; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C; background: #EEF2FF;"></div>
+<div style="flex: 6; height: 44px; box-sizing: border-box; border-bottom: 3px solid #9A3F07; background: #FFF4E5;"></div>
+<div style="flex: 3; height: 44px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+<div style="flex: 2; height: 44px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div>
+</div>
+<div style="font-size: 13px; color: #4A4F5A;"><b style="color: #15171C;">Definition:</b> RX input stays at 0 for longer than one full character (start + data + parity + stop). Every sampled bit — data, parity, stop — reads 0, and the line keeps going.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Expected DUT behaviour (16550-style)</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>RX:</b> set <b>LSR.BI</b> (bit 4); FE is typically set with it (spec-dependent).</li>
+<li>Load <b>one</b> 0x00 character into the FIFO per break — not one per elapsed frame time.</li>
+<li>Then wait for the line to return to <b>mark (1)</b> and a fresh valid start before receiving again.</li>
+<li>Raise the receiver line status interrupt if enabled.</li>
+<li><b>TX:</b> LCR bit 6 "set break" forces TX low until cleared. Safe sequence: wait for TX empty, set break, hold the required time, clear.</li>
+</ul>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Why break exists</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>Attention / out-of-band signal</b> — e.g. console "break" to drop into a debugger or bootloader.</li>
+<li><b>LIN bus</b> — each frame begins with a sync break of at least 13 dominant (low) bits.</li>
+<li><b>Autobaud / resync</b> — a guaranteed reset point that can't occur in normal data.</li>
+<li><b>Fault detection</b> — a cut or shorted line reads as permanent 0, i.e. continuous break.</li>
+</ul>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px; font-size: 13px;"><b>Break vs framing error:</b> both have stop = 0. A framing error can have any data and the line rises soon after. A break has all-zero samples <i>and</i> stays low past the character time. Duration decides.</div>
+</section>
+
+</div>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Break detector — a parallel thread with a timeout race</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.5; white-space: pre;">forever begin
+  @(negedge vif.rx);  t0 = $realtime;
+  fork begin                                   // isolate: disable fork kills only these
+    fork
+      wait (vif.rx === 1'b1);                  // line came back: ordinary frame
+      #(cfg.char_bits * cfg.bit_time);          // char_bits = 1 + data + par + stop
+    join_any
+    disable fork;
+  end join
+  if (vif.rx === 1'b0) begin                   // still low after a full character
+    in_break = 1;                              // frame sampler skips FE/baud checks
+    wait (vif.rx === 1'b1);
+    brk_bits = ($realtime - t0) / cfg.bit_time;
+    `uvm_info("UART_BRK", $sformatf("break %0.1f bit times", brk_bits), UVM_MEDIUM)
+    if (!brk_expected) `uvm_error("UART_BRK_UNEXP", "unexpected break")
+    in_break = 0;
+  end
+end</pre>
+<div style="font-size: 12.5px; color: #B9C0CC;">The outer <span style="font-family: 'JetBrains Mono', monospace;">fork begin … end join</span> wrapper matters: a bare <span style="font-family: 'JetBrains Mono', monospace;">disable fork</span> also kills every other thread this process spawned — a favourite SV interview question.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Test plan — durations around the threshold</h2>
+<div style="display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 6px 12px; font-size: 13px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">0.9 char</div><div>Not a break. Data 0x00 + framing error expected.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">1.0 char</div><div>Boundary — spec decides. Classic corner bin.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">1.5 / 2 char</div><div>Break: BI set, one 0x00 in FIFO.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">20+ char</div><div>Still exactly one char and one BI — no repeats.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">break → char</div><div>Valid frame right after mark returns decodes cleanly.</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">TX set-break</div><div>Set mid-character and when idle; check TX low time and clean recovery.</div>
+</div>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">Bugs this catches</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>RX pushes a 0x00 into the FIFO every character time during a long break → FIFO floods, overrun.</li>
+<li>RX restarts on the first sample after break without waiting for mark → junk frame.</li>
+<li>BI asserted but FE not (or vice versa) against the spec.</li>
+<li>Checker floods the log with FE + baud errors during an intended break — suppress while <span style="font-family: 'JetBrains Mono', monospace;">in_break</span>.</li>
+<li>Break while FIFO is full: is the break char dropped and OE set?</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. How is break different from sending 0x00?</div><div style="color: #C9CCD3;">0x00 has a stop bit of 1 after 9 low bits. Break has no stop bit — the line stays low past the whole character.</div></div>
+<div><div style="font-weight: 600;">Q. How do you detect break in the TB?</div><div style="color: #C9CCD3;">Race a "line went high" wait against a one-character timeout; whichever finishes first decides.</div></div>
+<div><div style="font-weight: 600;">Q. Why only one character per break?</div><div style="color: #C9CCD3;">Break is one event. Repeated 0x00 chars would look like data and fill the FIFO.</div></div>
+<div><div style="font-weight: 600;">Q. Where else have you seen break used?</div><div style="color: #C9CCD3;">LIN's 13-bit sync break, bootloader entry, debug consoles.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: "Break condition check" from the series roadmap · code is an original sketch</div>
+<div>Next → 07 Overrun error</div>
+</footer>
+</div></div>
+</body>
+</html>
