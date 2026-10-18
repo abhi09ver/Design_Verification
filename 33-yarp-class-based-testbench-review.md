@@ -40,7 +40,7 @@ Original course TB: 50 instructions, 10 seeds. The fixed TB: 500 instructions ×
 | 4 | no instruction latch while pending | 0 / 0 / **10 hung** | 6/9 | SVA R4 |
 | 5 | fetch while load pending | **0** / 4 / 0 (was 0/6 even after the first fixes) | 6/9 | **SVA R10, the only way to see it** |
 | 6 | PC ignores ready | 10 / 0 / 0 | **9/9** | SVA R2 |
-| 7 | load retires without data ready | 9 / 1 / 0 | 6/9 | register mismatch |
+| 7 | load retires without data ready | 9 / 1 / 0 | 6/9 | PC mismatch (fetch stream runs ahead) |
 | 8 | SUB executes as ADD | **0** / 4 / 0 | 6/9 | register mismatch |
 | 9 | LBU sign-extends | **0** / 4 / 0 | 3/9 (`mem` 3/3) | register mismatch |
 
