@@ -39,6 +39,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
 | 32 | [YARP Single-Cycle Core Review](32-yarp-single-cycle-core-review.md) | 4 RTL bugs found vs ISS, valid/ready spec mismatch, reviewed interface with driver/monitor clocking blocks + protocol SVA |
+| 33 | [YARP Class-Based Testbench Review](33-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
 
 ## CPU Lab (code for challenges 26–31)
 
