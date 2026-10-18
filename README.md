@@ -42,9 +42,9 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 33 | [YARP Class-Based Testbench Review](33-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
 | 34 | [RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → single-cycle → pipeline → OOO/LSQ/caches → DV strategy, golden model, TB anatomy, random, SV timing, SVA, coverage, mutation, bug catalog, debug, rapid-fire drills |
 
-## CPU Lab (code for challenges 26–31)
+## CPU Lab (code for challenges 26–34)
 
-[`cpu-lab/`](cpu-lab/README.md) holds the runnable code: the uploaded 3-wide OOO core with all fixes and per-file patches, a commit-scoreboard testbench with an ISS, 20 directed bug hunts, a random generator, bind-based SVA, a 5-stage pipelined RV32I CPU (pq5), an 11-level beginner RTL ladder, and three interactive HTML study pages in [`cpu-lab/pages/`](cpu-lab/pages/). Runs on free Verilator.
+[`cpu-lab/`](cpu-lab/README.md) holds the runnable code: the uploaded 3-wide OOO core with all fixes and per-file patches, a commit-scoreboard testbench with an ISS, 20 directed bug hunts, a random generator, bind-based SVA, a 5-stage pipelined RV32I CPU (pq5), an 11-level beginner RTL ladder, the YARP single-cycle core with its class-based testbench (C++ ISS over DPI, coverage, protocol SVA, runtime mutation campaign), and four HTML study pages in [`cpu-lab/pages/`](cpu-lab/pages/), including the 27-plate **[RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html)** for a last-minute skim. Runs on free Verilator.
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
