@@ -40,6 +40,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
 | 32 | [YARP Single-Cycle Core Review](32-yarp-single-cycle-core-review.md) | 4 RTL bugs found vs ISS, valid/ready spec mismatch, reviewed interface with driver/monitor clocking blocks + protocol SVA |
 | 33 | [YARP Class-Based Testbench Review](33-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
+| 34 | [RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → single-cycle → pipeline → OOO/LSQ/caches → DV strategy, golden model, TB anatomy, random, SV timing, SVA, coverage, mutation, bug catalog, debug, rapid-fire drills |
 
 ## CPU Lab (code for challenges 26–31)
 
