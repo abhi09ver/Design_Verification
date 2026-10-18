@@ -1,4 +1,4 @@
-# 33 — YARP Class-Based Testbench: Code Review, Bug Hunt and a Working Run
+# 38 — YARP Class-Based Testbench: Code Review, Bug Hunt and a Working Run
 
 Code: [`cpu-lab/yarp/qs/`](cpu-lab/yarp/qs/)
 

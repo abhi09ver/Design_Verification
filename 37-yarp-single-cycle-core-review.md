@@ -1,4 +1,4 @@
-# 32 — YARP Single-Cycle RV32I Core: Bug Hunt, Interface Review and Protocol SVA
+# 37 — YARP Single-Cycle RV32I Core: Bug Hunt, Interface Review and Protocol SVA
 
 Code: [`cpu-lab/yarp/`](cpu-lab/yarp/). The original upload is in `orig/`, the fixed RTL in `fixed/`, and the diff in `fixes.patch`.
 

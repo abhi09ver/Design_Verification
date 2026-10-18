@@ -2,7 +2,7 @@
 
 Everything built while studying a 3-wide RISC-V out-of-order (Tomasulo) core for Senior DV interviews:
 the code, the testbenches, the tools, the results, and three interactive study pages.
-The written cheatsheets live next to the other challenges in the repo root (**26–34**).
+The written cheatsheets live next to the other challenges in the repo root (**26–31** and **37–39**).
 
 ## Read first (night before an interview)
 
@@ -14,9 +14,9 @@ The written cheatsheets live next to the other challenges in the repo root (**26
 | 5-stage pipelined CPU, hazards, CPI (Pequeno series) | [29 – Pipelined CPU](../29-pipelined-in-order-cpu-hazards.md) |
 | Fundamentals: 11 levels from adder to tiny OOO | [30 – CPU From Zero](../30-cpu-from-zero-rtl-ladder.md) |
 | All questions + model answers + key numbers | [31 – Question bank](../31-cpu-interview-question-bank.md) |
-| Single-cycle YARP: 4 RTL bugs, valid/ready spec gap, interface review | [32 – YARP core review](../32-yarp-single-cycle-core-review.md) |
-| Class-based TB (gen/drv/mon/sb + DPI ISS): 17 TB bugs fixed, coverage closure, mutation 9/9 | [33 – YARP testbench review](../33-yarp-class-based-testbench-review.md) |
-| **Everything on one page per concept (skim this last)** | [34 – RISC-V Core & DV Atlas](pages/riscv_dv_atlas.html) |
+| Single-cycle YARP: 4 RTL bugs, valid/ready spec gap, interface review | [37 – YARP core review](../37-yarp-single-cycle-core-review.md) |
+| Class-based TB (gen/drv/mon/sb + DPI ISS): 17 TB bugs fixed, coverage closure, mutation 9/9 | [38 – YARP testbench review](../38-yarp-class-based-testbench-review.md) |
+| **Everything on one page per concept (skim this last)** | [39 – RISC-V Core & DV Atlas](pages/riscv_dv_atlas.html) |
 
 ## Interactive pages (open in a browser, work offline except fonts)
 
