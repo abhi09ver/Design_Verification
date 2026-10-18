@@ -38,6 +38,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 29 | [Pipelined In-Order CPU (Pequeno-style 5-stage)](29-pipelined-in-order-cpu-hazards.md) | RV32I formats, valid/stall/flush, forwarding distances 1–3, load-use interlock, static prediction, cycles = 4 + N + stalls + 2×flushes |
 | 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
+| 32 | [YARP Single-Cycle Core Review](32-yarp-single-cycle-core-review.md) | 4 RTL bugs found vs ISS, valid/ready spec mismatch, reviewed interface with driver/monitor clocking blocks + protocol SVA |
 
 ## CPU Lab (code for challenges 26–31)
 
