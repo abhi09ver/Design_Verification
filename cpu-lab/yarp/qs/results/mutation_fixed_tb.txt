@@ -1,0 +1,11 @@
+0   clean                    fixed TB 0/9  ( default=0/3 mem=0/3 cmp=0/3) | | runs with coverage holes: 9
+1   Y1_slt_magnitude         fixed TB 9/9  ( default=3/3 mem=3/3 cmp=3/3) | 9 [MODEL] reg mismatch | runs with coverage holes: 0
+2   Y2_branch_signedness     fixed TB 9/9  ( default=3/3 mem=3/3 cmp=3/3) | | runs with coverage holes: 0
+3   Y3_jalr_phantom_load     fixed TB 9/9  ( default=3/3 mem=3/3 cmp=3/3) | 9 [MODEL] mem mismatch | runs with coverage holes: 0
+4   P1_no_instr_latch        fixed TB 6/9  ( default=3/3 mem=3/3 cmp=0/3) | 6 [SVA] R4 | runs with coverage holes: 3
+5   P2_fetch_while_pending   fixed TB 6/9  ( default=3/3 mem=3/3 cmp=0/3) | 6 [SVA] R10 | runs with coverage holes: 3
+6   P3_pc_ignores_ready      fixed TB 9/9  ( default=3/3 mem=3/3 cmp=3/3) | 9 [SVA] R2 | runs with coverage holes: 0
+7   P4_load_no_wait          fixed TB 6/9  ( default=3/3 mem=3/3 cmp=0/3) | | runs with coverage holes: 3
+8   P5_sub_as_add            fixed TB 6/9  ( default=3/3 mem=3/3 cmp=0/3) | 6 [MODEL] reg mismatch | runs with coverage holes: 3
+9   P6_lbu_sign_extends      fixed TB 3/9  ( default=0/3 mem=3/3 cmp=0/3) | 3 [MODEL] reg mismatch | runs with coverage holes: 6
+DONE

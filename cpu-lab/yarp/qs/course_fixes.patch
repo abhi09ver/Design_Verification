@@ -1,0 +1,501 @@
+diff -ruN course/riscv_pkg.sv course_fixed/riscv_pkg.sv
+--- course/riscv_pkg.sv	2026-10-18 05:39:33.575736820 +0000
++++ course_fixed/riscv_pkg.sv	2026-10-18 05:56:46.873575122 +0000
+@@ -83,4 +83,11 @@
+     AUIPC = U_TYPE_1
+   } u_type_t;
+ 
++  // [MIN-FIX C1] used by yarp_data_mem_model but never defined in the package
++  typedef enum logic[1:0] {
++    BYTE      = 2'b00,
++    HALF_WORD = 2'b01,
++    WORD      = 2'b11
++  } mem_access_size_t;
++
+ endpackage
+diff -ruN course/yarp_agent.sv course_fixed/yarp_agent.sv
+--- course/yarp_agent.sv	2026-10-18 05:39:33.576098906 +0000
++++ course_fixed/yarp_agent.sv	2026-10-18 05:57:18.018393417 +0000
+@@ -39,6 +39,9 @@
+     fork
+       gen.run();
+     join
++    // [FIX A1] the generator returns up to 2 transactions before the driver
++    // finishes them. Wait for the driver, THEN drain.
++    wait (drv.n_done == num_tr);
+     mon.end_of_test();
+   endtask
+ 
+diff -ruN course/yarp_data_mem_model.sv course_fixed/yarp_data_mem_model.sv
+--- course/yarp_data_mem_model.sv	2026-10-18 05:39:33.575904681 +0000
++++ course_fixed/yarp_data_mem_model.sv	2026-10-18 05:57:18.018180143 +0000
+@@ -32,10 +32,8 @@
+       default: $fatal(1, "Invalid byte enable: 2'b%2b", byte_en);
+     endcase
+ 
+-    // Check address alignment
+-    if (address % size != 0) begin
+-      $fatal(1, "Address 0x%x is not aligned to %0d bytes when byte_en=2'b%s", address, size, byte_en.name());
+-    end
++    // [FIX M1] misaligned is legal stimulus (rs1 holds random values):
++    // handle it byte by byte, the same policy as the C model. No $fatal.
+ 
+     // Write data to memory
+     for (int i = 0; i < size; i++) begin
+@@ -58,14 +56,11 @@
+       default: $fatal(1, "Invalid byte enable: 2'b%2b", byte_en);
+     endcase
+ 
+-    // Check address alignment
+-    if (address % size != 0) begin
+-      $fatal(1, "Address 0x%x is not aligned to %0d bytes when byte_en=%s", address, size, byte_en.name());
+-    end
+-
+-    // Read data from memory
++    // [FIX M1] no alignment $fatal (see write)
++    // [FIX M2] unwritten bytes read as 0 (no X, no tool warning)
++    data = '0;
+     for (int i = 0; i < size; i++) begin
+-      data[i*8 +: 8] = mem[address + i];
++      data[i*8 +: 8] = mem.exists(address + i) ? mem[address + i] : 8'h00;
+     end
+ 
+     return data;
+diff -ruN course/yarp_driver.sv course_fixed/yarp_driver.sv
+--- course/yarp_driver.sv	2026-10-18 05:39:33.575949017 +0000
++++ course_fixed/yarp_driver.sv	2026-10-18 05:57:18.018274129 +0000
+@@ -14,6 +14,7 @@
+ 
+   mailbox #(yarp_transaction)  gen2drv;
+   virtual yarp_interface       vif;
++  int unsigned                 n_done;   // [FIX A1] transactions fully served
+ 
+   function new (mailbox #(yarp_transaction) gen2drv, virtual yarp_interface vif);
+     $display("[INFO] @ %0t: Creating the yarp_driver", $time);
+@@ -24,6 +25,11 @@
+   virtual task reset_seq ();
+     // Drive reset at the beginning and for 3 cycles
+     vif.cb.reset_n <= 1'b0;
++    // [FIX D1] responder outputs must not be X after reset
++    vif.cb.instr_mem_ready   <= 1'b0;
++    vif.cb.instr_mem_rd_data <= 32'h0;
++    vif.cb.data_mem_ready    <= 1'b0;
++    vif.cb.data_mem_rd_data  <= 32'h0;
+     repeat (3) @vif.cb;
+     vif.cb.reset_n <= 1'b1;
+     @vif.cb;
+@@ -55,21 +61,19 @@
+     // Drive the instruction memory transaction
+     vif.cb.instr_mem_ready <= 1'b1;
+     vif.cb.instr_mem_rd_data <= tr.instr_mem_rd_data;
+-    fork
+-      begin
+-        // Wait for the clocking block
+-        @vif.cb;
+-        vif.cb.instr_mem_ready <= 1'b0;
+-        vif.cb.instr_mem_rd_data <= 32'h0;
+-      end
+-    join_none
++    // [FIX D3] drop ready INLINE after the handshake edge. The old fork/join_none
++    // cleared ready on the same edge where the next transaction set it: a race.
++    @vif.cb;
++    vif.cb.instr_mem_ready <= 1'b0;
++    vif.cb.instr_mem_rd_data <= 32'h0;
+   endtask
+ 
+   task process_data_mem_transaction (yarp_transaction tr);
+     int data_mem_ready_delay;
+ 
+     data_mem_ready_delay = tr.data_mem_ready_delay;
+-    @vif.cb;
++    // [FIX D3] no extra @vif.cb here: process_instr already stopped on the
++    // handshake edge, and that sample shows data_mem_req (spec R3)
+     // Process the data memory transaction only if the data_mem_req is high
+     if (!vif.cb.data_mem_req) begin
+       // No data memory request - break from loop
+@@ -83,19 +87,19 @@
+     end
+     // Drive the data memory transaction
+     vif.cb.data_mem_ready <= 1'b1;
+-    vif.cb.data_mem_rd_data <= yarp_data_mem_model::read(vif.cb.data_mem_addr, mem_access_size_t'(vif.cb.data_mem_byte_en));
+-    // Write into the memory model for a store transaction
+-    if (vif.cb.data_mem_req & vif.cb.data_mem_wr & vif.cb.data_mem_ready) begin
++    // [FIX D2] the old write was gated on vif.cb.data_mem_ready, which is the value
++    // SAMPLED BEFORE this edge (still 0), so stores never reached the model.
++    // [FIX D4] read only for loads
++    if (vif.cb.data_mem_wr) begin
+       yarp_data_mem_model::write(vif.cb.data_mem_addr, vif.cb.data_mem_wr_data, mem_access_size_t'(vif.cb.data_mem_byte_en));
++      vif.cb.data_mem_rd_data <= 32'h0;
++    end else begin
++      vif.cb.data_mem_rd_data <= yarp_data_mem_model::read(vif.cb.data_mem_addr, mem_access_size_t'(vif.cb.data_mem_byte_en));
+     end
+-    fork
+-      begin
+-        // Wait for the clocking block
+-        @vif.cb;
+-        vif.cb.data_mem_ready <= 1'b0;
+-        vif.cb.data_mem_rd_data <= 32'h0;
+-      end
+-    join_none
++    // [FIX D3] inline deassert, no fork
++    @vif.cb;
++    vif.cb.data_mem_ready <= 1'b0;
++    vif.cb.data_mem_rd_data <= 32'h0;
+   endtask
+ 
+   virtual task run ();
+@@ -106,6 +110,7 @@
+       wait_for_instr_mem_req();
+       process_instr_mem_transaction(tr);
+       process_data_mem_transaction(tr);
++      n_done++;
+     end
+   endtask
+ 
+diff -ruN course/yarp_environment.sv course_fixed/yarp_environment.sv
+--- course/yarp_environment.sv	2026-10-18 05:39:48.670555432 +0000
++++ course_fixed/yarp_environment.sv	2026-10-18 05:57:18.018520978 +0000
+@@ -12,11 +12,12 @@
+     $display ("[INFO] @ %0t: Creating the yarp_environment", $time);
+     // Create the mailbox
+     gen2drv = new(1);
+-    mon2sb = new(1);
++    mon2sb = new();      // [FIX E1] unbounded: the per-cycle monitor must never block
+ 
+     // Create the agent and scoreboard
+     agent = new(gen2drv, mon2sb, vif, num_tr);
+     scoreboard = new(mon2sb);
++    scoreboard.num_tr = num_tr;   // [FIX S3]
+   endfunction
+ 
+   virtual task run ();
+diff -ruN course/yarp_interface.sv course_fixed/yarp_interface.sv
+--- course/yarp_interface.sv	2026-10-18 05:39:48.667961361 +0000
++++ course_fixed/yarp_interface.sv	2026-10-18 07:10:02.513527559 +0000
+@@ -31,4 +31,33 @@
+     inout    data_mem_ready;
+     inout    data_mem_rd_data;
+   endclocking
++
++  // ------------------------------------------------------------------
++  // [FIX SVA] protocol checks, one per spec rule. Some bugs give NO wrong
++  // result (e.g. fetching while a load is pending), so only an assertion
++  // can catch them; the scoreboard never will.
++  // ------------------------------------------------------------------
++  wire i_wait = instr_mem_req && !instr_mem_ready;
++  wire d_wait = data_mem_req  && !data_mem_ready;
++  wire i_hs   = instr_mem_req &&  instr_mem_ready;
++
++  default clocking sva_cb @(posedge clk); endclocking
++  default disable iff (!reset_n);
++
++  a_ireq_hold  : assert property (i_wait |=> instr_mem_req)
++    else $error("[SVA] R1 instr_mem_req dropped before ready");
++  a_iaddr_stab : assert property (i_wait |=> $stable(instr_mem_addr))
++    else $error("[SVA] R2 instr_mem_addr changed before ready");
++  a_dreq_start : assert property (data_mem_req && !$past(d_wait) |-> i_hs)
++    else $error("[SVA] R3 data_mem_req started without an instruction handshake");
++  a_dreq_hold  : assert property (d_wait |=> data_mem_req)
++    else $error("[SVA] R4 data_mem_req dropped before ready");
++  a_dpay_stab  : assert property (d_wait |=> $stable({data_mem_addr, data_mem_byte_en, data_mem_wr, data_mem_wr_data}))
++    else $error("[SVA] R5-R7 data payload changed before ready");
++  a_no_fetch   : assert property (d_wait |=> !instr_mem_req)
++    else $error("[SVA] R10 fetch issued while a data transfer was pending");
++  a_size_legal : assert property (data_mem_req |-> data_mem_byte_en != 2'b10)
++    else $error("[SVA] reserved byte_en 2'b10");
++  a_ialign     : assert property (instr_mem_req |-> instr_mem_addr[1:0] == 2'b00)
++    else $error("[SVA] misaligned fetch address");
+ endinterface
+diff -ruN course/yarp_monitor.sv course_fixed/yarp_monitor.sv
+--- course/yarp_monitor.sv	2026-10-18 05:39:33.575960464 +0000
++++ course_fixed/yarp_monitor.sv	2026-10-18 05:57:18.018339767 +0000
+@@ -41,6 +41,10 @@
+       tr.data_mem_wr_data  = vif.cb.data_mem_wr_data;
+       tr.data_mem_ready    = vif.cb.data_mem_ready;
+       tr.data_mem_rd_data  = vif.cb.data_mem_rd_data;
++      // [FIX S2] hand over at the NEXT negedge. The scoreboard reads the RTL
++      // regfile hierarchically; at the posedge that read races the regfile's
++      // NBA update. Half a cycle later the value is settled on every simulator.
++      @(negedge vif.clk);
+       // Put it in the mailbox
+       mon2sb.put(tr.copy());
+     end
+diff -ruN course/yarp_scoreboard.sv course_fixed/yarp_scoreboard.sv
+--- course/yarp_scoreboard.sv	2026-10-18 05:39:33.576200797 +0000
++++ course_fixed/yarp_scoreboard.sv	2026-10-18 07:10:15.332464988 +0000
+@@ -20,6 +20,70 @@
+ class yarp_scoreboard;
+ 
+   mailbox #(yarp_transaction) mon2sb;
++  int unsigned                num_tr;     // [FIX S3] set by the environment
++  int unsigned                n_instr;
++  bit                         mem_pending;
++
++  // [FIX COV] functional coverage of the compare corners. A signed-compare bug
++  // (e.g. |a|<|b|) is invisible unless the operands have DIFFERENT signs or
++  // are BOTH negative; an unsigned bug needs an operand with bit 31 set.
++  // arch[] = register state BEFORE the current instruction (refreshed after
++  // every check), so operand values are known when the instruction arrives.
++  bit [31:0]                  arch [32];
++  int unsigned                cov [string];
++  string                      cov_bins [$] = '{"SLT.aneg_bpos", "SLT.apos_bneg", "SLT.bothneg",
++                                               "SLTI.aneg_bpos", "SLTI.apos_bneg", "SLTI.bothneg",
++                                               "BLT/BGE.aneg_bpos", "BLT/BGE.apos_bneg", "BLT/BGE.bothneg",
++                                               "SLTU.msb", "SLTIU.msb", "BLTU/BGEU.msb",
++                                               "LB.neg", "LBU.bit7", "LH.neg", "LHU.bit15"};
++  bit [31:0]                  pend_ins;   // the load/store waiting for its data handshake
++
++  // sign/zero-extension bugs only show when the loaded byte/half has its top bit set
++  function void sample_load_cov (bit [31:0] ins, bit [31:0] rdata);
++    if (ins[6:0] != 7'h03) return;
++    case (ins[14:12])
++      3'd0: if (rdata[7])  cov["LB.neg"]++;
++      3'd4: if (rdata[7])  cov["LBU.bit7"]++;
++      3'd1: if (rdata[15]) cov["LH.neg"]++;
++      3'd5: if (rdata[15]) cov["LHU.bit15"]++;
++      default: ;
++    endcase
++  endfunction
++
++  function void sample_cov (bit [31:0] ins);
++    bit [31:0] a = arch[ins[19:15]];
++    bit [31:0] b = (ins[6:0] == 7'h13) ? {{20{ins[31]}}, ins[31:20]} : arch[ins[24:20]];
++    string k = "";
++    case ({ins[6:0], ins[14:12]})
++      {7'h33, 3'd2}: k = "SLT";    {7'h13, 3'd2}: k = "SLTI";
++      {7'h33, 3'd3}: k = "SLTU";   {7'h13, 3'd3}: k = "SLTIU";
++      {7'h63, 3'd4}, {7'h63, 3'd5}: k = "BLT/BGE";
++      {7'h63, 3'd6}, {7'h63, 3'd7}: k = "BLTU/BGEU";
++      default: return;
++    endcase
++    if (ins[6:0] == 7'h33 && ins[31:25] != 0) return;
++    if (k inside {"SLTU", "SLTIU", "BLTU/BGEU"}) begin
++      if (a[31] || b[31]) cov[{k, ".msb"}]++;
++    end else begin
++      if (a[31] && !b[31])     cov[{k, ".aneg_bpos"}]++;
++      else if (!a[31] && b[31]) cov[{k, ".apos_bneg"}]++;
++      else if (a[31] && b[31]) cov[{k, ".bothneg"}]++;
++    end
++  endfunction
++
++  function void refresh_arch ();
++    for (int i = 0; i < 32; i++) arch[i] = `YARP_REGFILE.regfile[i];
++  endfunction
++
++  function void report_cov ();
++    int holes = 0; string s = "";
++    foreach (cov_bins[i]) begin
++      s = {s, $sformatf(" %s=%0d", cov_bins[i], cov.exists(cov_bins[i]) ? cov[cov_bins[i]] : 0)};
++      if (!cov.exists(cov_bins[i])) holes++;
++    end
++    $display("[INFO] YARP Scoreboard: compare-corner coverage:%s", s);
++    if (holes) $display("[WARN] YARP Scoreboard: %0d coverage HOLE(S): this run could NOT have seen a signed/unsigned compare bug there", holes);
++  endfunction
+ 
+   function new (mailbox #(yarp_transaction) mon2sb);
+     $display("[INFO] @ %0t: Creating the yarp_scoreboard", $time);
+@@ -27,7 +91,7 @@
+     init();
+   endfunction
+ 
+-  virtual function void run ();
++  virtual task run ();   // [MIN-FIX C3] was 'function': mailbox.get() blocks, so it must be a task
+     yarp_transaction tr;
+     forever begin
+       // Wait for the mailbox
+@@ -35,7 +99,11 @@
+       // Compare the instruction address (PC) with the expected value from the C-model using DPI call
+       if (tr.instr_mem_req && tr.instr_mem_ready) begin
+         $display("[INFO] @ %0t: YARP Scoreboard: Instruction Memory Address: 0x%h Data: 0x%h", $time, tr.instr_mem_addr, tr.instr_mem_rd_data);
++        sample_cov(tr.instr_mem_rd_data);    // [FIX COV] before arch[] is refreshed
++        pend_ins = tr.instr_mem_rd_data;
+         step(tr.instr_mem_rd_data);
++        n_instr++;
++        mem_pending = tr.data_mem_req && !tr.data_mem_ready;
+         if (compare_instruction_address(tr.instr_mem_addr)==0) begin
+           $fatal(1, "[ERROR] @ %0t: YARP Scoreboard: Instruction Address Mismatch", $time);
+         end
+@@ -46,11 +114,14 @@
+               $fatal(1, "[ERROR] @ %0t: YARP Scoreboard: Architecture Register Mismatch", $time);
+             end
+           end
++          refresh_arch();
+           $display("[INFO] @ %0t: YARP Scoreboard: Done processing instruction at PC: 0x%h\n", $time, tr.instr_mem_addr);
+         end
+       end
+       // Compare the write data for store instruction with the expected value from the C-model using DPI call
+       if (tr.data_mem_req && tr.data_mem_ready) begin
++        mem_pending = 0;
++        sample_load_cov(pend_ins, tr.data_mem_rd_data);
+         $display("[INFO] @ %0t: YARP Scoreboard: Data Memory Address: 0x%h Byte Enable: 0x%h Write: 0x%h  Write Data: 0x%h",
+                  $time, tr.data_mem_addr, tr.data_mem_byte_en, tr.data_mem_wr, tr.data_mem_wr_data);
+         if (compare_data_memory_access(tr.data_mem_addr, int'(tr.data_mem_byte_en), int'(tr.data_mem_wr), tr.data_mem_wr_data)==0) begin
+@@ -62,13 +133,20 @@
+             $fatal(1, "[ERROR] @ %0t: YARP Scoreboard: Architecture Register Mismatch", $time);
+           end
+         end
++        refresh_arch();
+         $display("[INFO] @ %0t: YARP Scoreboard: Done processing instruction at PC: 0x%h\n", $time, tr.instr_mem_addr);
+       end
+     end
+-  endfunction
++  endtask
+ 
+   function void end_of_test ();
+     $display("[INFO] @ %0t: YARP Scoreboard: End of test", $time);
++    // [FIX S3] completeness: a hung core or a dropped handshake must not pass
++    if (n_instr != num_tr || mem_pending)
++      $fatal(1, "[ERROR] @ %0t: YARP Scoreboard: INCOMPLETE, retired %0d of %0d (mem_pending=%0d)",
++             $time, n_instr, num_tr, mem_pending);
++    report_cov();
++    $display("[INFO] @ %0t: YARP Scoreboard: PASS, %0d instructions checked", $time, n_instr);
+     // Compare the architecture registers before ending the test
+     for (int i = 0; i < 32; i++) begin
+       if (compare_architecture_register(i, `YARP_REGFILE.regfile[i])==0) begin
+diff -ruN course/yarp_tb_pkg.sv course_fixed/yarp_tb_pkg.sv
+--- course/yarp_tb_pkg.sv	2026-10-18 05:39:48.676924245 +0000
++++ course_fixed/yarp_tb_pkg.sv	2026-10-18 05:56:46.880565044 +0000
+@@ -14,10 +14,11 @@
+ 
+   `include "yarp_data_mem_model.sv"
+   `include "yarp_transaction.sv"
++  `include "yarp_tests.sv"
+   `include "yarp_generator.sv"
+   `include "yarp_driver.sv"
++  `include "yarp_monitor.sv"   // [MIN-FIX C2] must come before the agent that uses it
+   `include "yarp_agent.sv"
+-  `include "yarp_monitor.sv"
+   `include "yarp_scoreboard.sv"
+   `include "yarp_environment.sv"
+ 
+diff -ruN course/yarp_tb_top.sv course_fixed/yarp_tb_top.sv
+--- course/yarp_tb_top.sv	2026-10-18 05:39:48.671961361 +0000
++++ course_fixed/yarp_tb_top.sv	2026-10-18 07:07:39.149367238 +0000
+@@ -45,12 +45,27 @@
+   initial begin
+     $timeformat(-12, 0, " ps", 10);
+     num_tr = 50;
++    void'($value$plusargs("NUM_TR=%d", num_tr));
+     env = new(yarp_if, num_tr);
++    // [TEST HOOK] blueprint override selected by plusarg
++    if ($test$plusargs("TEST=mem"))   begin yarp_tr_mem   t = new(); env.agent.gen.blueprint = t; end
++    if ($test$plusargs("TEST=alu"))   begin yarp_tr_alu   t = new(); env.agent.gen.blueprint = t; end
++    if ($test$plusargs("TEST=b2b"))   begin yarp_tr_b2b   t = new(); env.agent.gen.blueprint = t; end
++    if ($test$plusargs("TEST=stall")) begin yarp_tr_stall t = new(); env.agent.gen.blueprint = t; end
++    if ($test$plusargs("TEST=cmp"))   begin yarp_tr_cmp   t = new(); env.agent.gen.blueprint = t; end
+     env.run();
+     $display("[INFO] @ %0t: YARP Testbench: Finished running the test", $time);
+     $finish();
+   end
+ 
++  // [FIX W1] hang watchdog: a core that stops fetching must FAIL fast,
++  // not let the simulation run forever (~36 cycles max per instruction)
++  initial begin
++    #1;
++    #(num_tr * 400ns + 10us);
++    $fatal(1, "[ERROR] @ %0t: WATCHDOG, test did not finish (core hung?)", $time);
++  end
++
+   initial begin
+     $dumpfile(`QS_VCD_DUMP_NAME);
+     $dumpvars(2, yarp_tb_top);
+diff -ruN course/yarp_tests.sv course_fixed/yarp_tests.sv
+--- course/yarp_tests.sv	1970-01-01 00:00:00.000000000 +0000
++++ course_fixed/yarp_tests.sv	2026-10-18 07:07:39.149015011 +0000
+@@ -0,0 +1,38 @@
++// ------------------------------------------------------------------
++// Test layer: blueprint overrides. The base classes stay untouched.
++// ------------------------------------------------------------------
++// Loads/stores in a 64-byte window around x0, so loads read back stores.
++class yarp_tr_mem extends yarp_transaction;
++  function new(); w_ld = 30; w_st = 30; endfunction
++  constraint c_win { (opcode inside {I_TYPE_0, S_TYPE}) -> (rs1 == 0 && imm12 inside {[0:63]}); }
++endclass
++
++// ALU only (R + I type): checks the datapath at full rate
++class yarp_tr_alu extends yarp_transaction;
++  function new(); w_ld = 0; w_st = 0; w_br = 0; w_jal = 0; w_jalr = 0; w_lui = 5; w_auipc = 5; endfunction
++endclass
++
++// Back-to-back: ready with zero delay. Hits the pipeline-like corner
++// where a handshake completes every cycle.
++class yarp_tr_b2b extends yarp_tr_mem;
++  // same name as the base constraint -> REPLACES it (constraint override)
++  constraint legal_delay { instr_mem_ready_delay == 0; data_mem_ready_delay == 0; }
++endclass
++
++// Long stalls on both interfaces: checks the payload-stable rules
++class yarp_tr_stall extends yarp_tr_mem;
++  constraint legal_delay { instr_mem_ready_delay inside {[8:16]}; data_mem_ready_delay inside {[8:16]}; }
++endclass
++
++// [FIX COV] compare-corner test: closes the coverage bins above.
++// LUI fills registers with big values (bit 31 set half the time) and ADDI with
++// negative immediates makes negatives; then most ALU/branch ops are compares.
++class yarp_tr_cmp extends yarp_transaction;
++  function new(); w_r = 25; w_i = 30; w_br = 20; w_lui = 15; w_ld = 0; w_st = 0;
++                  w_auipc = 0; w_jal = 2; w_jalr = 2; endfunction
++  constraint c_cmp {
++    (opcode == R_TYPE)   -> funct3 inside {SLT, SLTU};
++    (opcode == I_TYPE_1) -> funct3 inside {SLTI, SLTIU, ADDI};
++    (opcode == B_TYPE)   -> funct3 inside {BLT, BGE, BLTU, BGEU};
++  }
++endclass
+diff -ruN course/yarp_transaction.sv course_fixed/yarp_transaction.sv
+--- course/yarp_transaction.sv	2026-10-18 05:39:33.575626368 +0000
++++ course_fixed/yarp_transaction.sv	2026-10-18 05:57:18.018024767 +0000
+@@ -34,6 +34,34 @@
+   rand  bit[11:0]       imm12;
+   rand  bit[19:0]       imm20;
+ 
++  // [FIX T1] randomize() is uniform over ALL solutions, so J/U-type (many free
++  // fields) took about 70% of instructions. Pick the opcode class first, by weight.
++  int unsigned w_r = 20, w_i = 20, w_ld = 15, w_st = 15, w_br = 10,
++               w_lui = 5, w_auipc = 5, w_jal = 5, w_jalr = 5;
++
++  function void pre_randomize();
++    opcode.rand_mode(1);
++    randcase
++      w_r     : opcode = R_TYPE;
++      w_i     : opcode = I_TYPE_1;
++      w_ld    : opcode = I_TYPE_0;
++      w_st    : opcode = S_TYPE;
++      w_br    : opcode = B_TYPE;
++      w_lui   : opcode = U_TYPE_0;
++      w_auipc : opcode = U_TYPE_1;
++      w_jal   : opcode = J_TYPE;
++      w_jalr  : opcode = I_TYPE_2;
++    endcase
++    opcode.rand_mode(0);
++  endfunction
++
++  // [FIX T2] keep every fetch word-aligned (RV32I has no 2-byte instructions)
++  constraint legal_target {
++    (opcode == B_TYPE)   -> (imm12[0] == 1'b0);             // imm12 = imm[12:1]
++    (opcode == J_TYPE)   -> (imm20[0] == 1'b0);             // imm20 = imm[20:1]
++    (opcode == I_TYPE_2) -> (rs1 == 0 && imm12[1:0] == 0);  // aligned absolute JALR
++  }
++
+   virtual function void display();
+     $display("[INFO] @ %0t: Tr: instr_mem_rd_data: 0x%h instr_mem_ready_delay: %2d data_mem_ready_delay: %2d",
+               $time, instr_mem_rd_data, instr_mem_ready_delay, data_mem_ready_delay);
+@@ -169,7 +197,7 @@
+       end
+     endcase
+     /* verilator lint_on CASEINCOMPLETE */
+-    $display(gen_instr_msg);
++    // $display(gen_instr_msg);   // very noisy at 500 instructions
+     instr_mem_rd_data = instruction;
+   endfunction
+ 
+@@ -191,6 +219,10 @@
+     copy.data_mem_ready         = this.data_mem_ready;
+     copy.data_mem_rd_data       = this.data_mem_rd_data;
+     copy.data_mem_ready_delay   = this.data_mem_ready_delay;
++    // [FIX T3] copy the instruction fields too
++    copy.instruction = this.instruction; copy.opcode = this.opcode; copy.rd = this.rd;
++    copy.funct3 = this.funct3; copy.rs1 = this.rs1; copy.rs2 = this.rs2;
++    copy.funct7 = this.funct7; copy.imm12 = this.imm12; copy.imm20 = this.imm20;
+ 
+     return copy;
+   endfunction

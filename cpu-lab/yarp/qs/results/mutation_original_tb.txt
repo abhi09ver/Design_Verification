@@ -1,0 +1,12 @@
+n   mutant                   | ORIGINAL TB real/false/hung    | FIXED TB detected  (why)
+0   clean                    | real  0  false  4  hung  0  /10 | 0/6 
+1   Y1_slt_magnitude         | real  3  false  3  hung  0  /10 | 5/6  5 [MODEL] reg mismatch
+2   Y2_branch_signedness     | real  0  false  4  hung  0  /10 | 6/6 
+3   Y3_jalr_phantom_load     | real  9  false  1  hung  0  /10 | 6/6  6 [MODEL] mem mismatch
+4   P1_no_instr_latch        | real  0  false  0  hung 10  /10 | 6/6  6 WATCHDOG
+5   P2_fetch_while_pending   | real  0  false  4  hung  0  /10 | 0/6 
+6   P3_pc_ignores_ready      | real 10  false  0  hung  0  /10 | 6/6 
+7   P4_load_no_wait          | real  9  false  1  hung  0  /10 | 6/6 
+8   P5_sub_as_add            | real  0  false  4  hung  0  /10 | 6/6  6 [MODEL] reg mismatch
+9   P6_lbu_sign_extends      | real  0  false  4  hung  0  /10 | 3/6  3 [MODEL] reg mismatch
+DONE

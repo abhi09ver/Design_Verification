@@ -1,0 +1,66 @@
+diff -ru --strip-trailing-cr orig/yarp_branch_control.sv fixed/yarp_branch_control.sv
+--- orig/yarp_branch_control.sv	2026-10-18 05:33:25.717412249 +0000
++++ fixed/yarp_branch_control.sv	2026-10-18 05:33:25.719821432 +0000
+@@ -48,10 +48,11 @@
+     case (instr_func3_ctl_i)
+       BEQ     : branch_taken = (opr_a_i == opr_b_i);
+       BNE     : branch_taken = (opr_a_i != opr_b_i);
+-      BLT     : branch_taken = (opr_a_i <  opr_b_i);
+-      BGE     : branch_taken = (opr_a_i >= opr_b_i);
+-      BLTU    : branch_taken = (twos_compl_a <  twos_compl_b);
+-      BGEU    : branch_taken = (twos_compl_a >= twos_compl_b);
++      // FIX-Y2: BLT/BGE compared UNSIGNED (logic is unsigned), BLTU/BGEU compared magnitudes |a|,|b|
++      BLT     : branch_taken = ($signed(opr_a_i) <  $signed(opr_b_i));
++      BGE     : branch_taken = ($signed(opr_a_i) >= $signed(opr_b_i));
++      BLTU    : branch_taken = (opr_a_i <  opr_b_i);
++      BGEU    : branch_taken = (opr_a_i >= opr_b_i);
+       default : branch_taken = 1'b0;
+     endcase
+   end
+diff -ru --strip-trailing-cr orig/yarp_control.sv fixed/yarp_control.sv
+--- orig/yarp_control.sv	2026-10-18 05:33:25.717453828 +0000
++++ fixed/yarp_control.sv	2026-10-18 05:33:25.719847199 +0000
+@@ -122,6 +122,10 @@
+     endcase
+     // JALR
+     if ((instr_opcode_i == I_TYPE_2)) begin
++      // FIX-Y3: {opcode[4],funct3} of JALR (0_000) equals LB's, so the LB branch above had already
++      //         set data_req/data_byte -> every jalr issued a spurious data-memory READ.
++      i_type_controls.data_req        = 1'b0;
++      i_type_controls.data_byte       = '0;
+       i_type_controls.rf_wr_data_sel  = PC;
+       i_type_controls.pc_sel          = 1'b1;
+       i_type_controls.alu_funct_sel   = OP_ADD;
+diff -ru --strip-trailing-cr orig/yarp_execute.sv fixed/yarp_execute.sv
+--- orig/yarp_execute.sv	2026-10-18 05:33:25.717528092 +0000
++++ fixed/yarp_execute.sv	2026-10-18 05:33:25.719904988 +0000
+@@ -55,7 +55,7 @@
+       OP_AND  : alu_res = opr_a_i & opr_b_i;
+       OP_XOR  : alu_res = opr_a_i ^ opr_b_i;
+       OP_SLTU : alu_res = {31'h0, opr_a_i < opr_b_i};
+-      OP_SLT  : alu_res = {31'h0, twos_compl_a < twos_compl_b};
++      OP_SLT  : alu_res = {31'h0, $signed(opr_a_i) < $signed(opr_b_i)};   // FIX-Y1: was |a| < |b|
+       default : alu_res = 32'h0;
+     endcase
+   end
+diff -ru --strip-trailing-cr orig/yarp_top.sv fixed/yarp_top.sv
+--- orig/yarp_top.sv	2026-10-18 05:33:25.717636104 +0000
++++ fixed/yarp_top.sv	2026-10-18 05:33:25.720054145 +0000
+@@ -164,7 +164,7 @@
+     .rs1_addr_i               (dec_rf_rs1),
+     .rs2_addr_i               (dec_rf_rs2),
+     .rd_addr_i                (dec_rf_rd),
+-    .wr_en_i                  (ctl_rf_wr_en),
++    .wr_en_i                  (ctl_rf_wr_en & reset_seen_q),   // FIX-Y4: PC is frozen in the first cycle
+     .wr_data_i                (rf_wr_data),
+     .rs1_data_o               (rf_rs1_data),
+     .rs2_data_o               (rf_rs2_data)
+@@ -226,7 +226,7 @@
+   yarp_data_mem u_yarp_data_mem (
+     .clk                      (clk),
+     .reset_n                  (reset_n),
+-    .data_req_i               (ctl_data_req),
++    .data_req_i               (ctl_data_req & reset_seen_q),   // FIX-Y4: ...so nothing may be written then
+     .data_addr_i              (ex_alu_res),
+     .data_byte_en_i           (ctl_data_byte),
+     .data_wr_i                (ctl_data_wr),

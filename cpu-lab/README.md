@@ -1,8 +1,8 @@
-# CPU Lab — one-stop interview kit (OOO core · pipelined CPU · RTL ladder)
+# CPU Lab — one-stop interview kit (OOO core · pipelined CPU · single-cycle YARP · RTL ladder)
 
 Everything built while studying a 3-wide RISC-V out-of-order (Tomasulo) core for Senior DV interviews:
 the code, the testbenches, the tools, the results, and three interactive study pages.
-The written cheatsheets live next to the other challenges in the repo root (**26–31**).
+The written cheatsheets live next to the other challenges in the repo root (**26–31** and **37–39**).
 
 ## Read first (night before an interview)
 
@@ -14,6 +14,9 @@ The written cheatsheets live next to the other challenges in the repo root (**26
 | 5-stage pipelined CPU, hazards, CPI (Pequeno series) | [29 – Pipelined CPU](../29-pipelined-in-order-cpu-hazards.md) |
 | Fundamentals: 11 levels from adder to tiny OOO | [30 – CPU From Zero](../30-cpu-from-zero-rtl-ladder.md) |
 | All questions + model answers + key numbers | [31 – Question bank](../31-cpu-interview-question-bank.md) |
+| Single-cycle YARP: 4 RTL bugs, valid/ready spec gap, interface review | [37 – YARP core review](../37-yarp-single-cycle-core-review.md) |
+| Class-based TB (gen/drv/mon/sb + DPI ISS): 17 TB bugs fixed, coverage closure, mutation 9/9 | [38 – YARP testbench review](../38-yarp-class-based-testbench-review.md) |
+| **Everything on one page per concept (skim this last)** | [39 – RISC-V Core & DV Atlas](pages/riscv_dv_atlas.html) |
 
 ## Interactive pages (open in a browser, work offline except fonts)
 
@@ -22,6 +25,7 @@ The written cheatsheets live next to the other challenges in the repo root (**26
 | [`pages/tomasulo_core_lab.html`](pages/tomasulo_core_lab.html) | architecture map, cycle stepper from a real trace, 15 bug cards with reveal, exercises, interview drill, bug catalog |
 | [`pages/cpu_from_zero.html`](pages/cpu_from_zero.html) | beginner ladder with stories, pictures, run/break-it results, quizzes |
 | [`pages/pequeno_study_guide.html`](pages/pequeno_study_guide.html) | Parts 1–6 of the Pequeno series explained + parts 7–9, real pipeline diagrams, CPI table, mutation table |
+| [`pages/riscv_dv_atlas.html`](pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → design → pipeline/OOO/memory → verification → bug catalog, debug playbook, rapid-fire drills |
 
 GitHub shows `.html` as source; download the file (or the branch as a zip) and open it locally.
 
@@ -38,6 +42,13 @@ GitHub shows `.html` as source; download the file (or the branch as a zip) and o
 | `tools/` | `rv.py` (assembler + ISS), `run_test.py` (scoreboard), `gen_random.py`, `trace2json.py` |
 | `tests/` | `t00_original` + `b01..b19` bug hunts |
 | `unit/tb_btb_plru.sv` | BTB replacement unit test |
+| `yarp/orig/`, `yarp/fixed/`, `yarp/fixes.patch` | YARP single-cycle core as uploaded, with fixes Y1–Y4 |
+| `yarp/tb/`, `yarp/tools/`, `yarp/tests/`, `yarp/if/` | commit-trace TB vs Python ISS, 13 directed + random programs, reviewed interface with SVA |
+| `yarp/qs/course/` → `yarp/qs/course_fixed/` | your class-based course TB as written → fixed in place (`[FIX ..]` tags, `course_fixes.patch`) |
+| `yarp/qs/rtl_vr/`, `yarp/qs/rtl_mut/` | YARP with valid/ready ports; same core with 9 bugs selectable by `+MUT=n` |
+| `yarp/qs/model/` | C++ RV32I model behind the DPI calls (cross-checked 213/213 vs the Python ISS) |
+| `yarp/qs/results/` | mutation tables: original course TB vs fixed TB |
+| `generators/atlas/` | Python source that builds the atlas page |
 | `examples/demo_stepper.s` | program used for the cycle stepper |
 | `beginner/` | 11 levels (`L01_adder.sv` … `L11_tiny_ooo.sv`), `run_all.sh`, `mutate.py` |
 | `pq5/` | 5-stage pipelined RV32I CPU, labelled assembler + ISS, 10 programs, random generator, mutation script, `results/` |

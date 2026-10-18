@@ -1,0 +1,891 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>RISC-V Core &amp; DV Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: an atlas of uniform plates. Each plate = header strip, diagram + deep dive, then a
+   three-cell footer (spec rules / bugs that live here / interview line). Same order on every plate. */
+:root{
+  --paper:#eef1f4; --card:#ffffff; --ink:#132030; --muted:#566476; --rule:#cfd7e0; --wash:#e3e9ef;
+  --accent:#1f5fae;           /* signal blue: design, wires */
+  --dv:#0d7a6c;               /* verification teal */
+  --bug:#b8322a; --bugwash:#fbeceb;
+  --rule-c:#8a5a00; --rulewash:#fbf3e2;
+  --askwash:#e8f1fb;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0e141b; --card:#151e28; --ink:#dde5ee; --muted:#93a2b3; --rule:#2a3746; --wash:#1b2632;
+  --accent:#6aa5ec; --dv:#3cc2ae; --bug:#ff7b6e; --bugwash:#2e1a1a; --rule-c:#e2b65a; --rulewash:#2a2414;
+  --askwash:#16263a; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --paper:#0e141b; --card:#151e28; --ink:#dde5ee; --muted:#93a2b3; --rule:#2a3746; --wash:#1b2632;
+  --accent:#6aa5ec; --dv:#3cc2ae; --bug:#ff7b6e; --bugwash:#2e1a1a; --rule-c:#e2b65a; --rulewash:#2a2414;
+  --askwash:#16263a; color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--f-body);}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+
+/* masthead */
+.mast{padding-block:28px 18px;display:grid;gap:10px;border-bottom:2px solid var(--ink)}
+.mast .kicker{font:600 12px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.mast h1{font-size:clamp(34px,6vw,58px);font-weight:700;line-height:.95}
+.mast p{margin:0;max-width:72ch;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+
+/* sticky index */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--card);border-bottom:1px solid var(--rule);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px))}
+.nav-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px}
+.nav a{flex:0 0 auto;text-decoration:none;color:var(--ink);font:500 12.5px/1 var(--f-mono);padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);white-space:nowrap}
+.nav a:hover,.nav a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.nav a b{font-family:var(--f-display);font-size:14px;letter-spacing:.03em}
+
+/* part dividers */
+.part{margin-top:42px;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:8px}
+.part .num{font:700 64px/0.8 var(--f-display);color:var(--accent);grid-row:span 2}
+.part h2{font-size:30px}
+.part p{margin:0;color:var(--muted)}
+
+/* plate */
+.plate{margin-top:22px;background:var(--card);border:1px solid var(--rule);border-radius:6px;overflow:hidden;scroll-margin-top:64px}
+.ph{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;padding:14px 18px 12px;border-bottom:1px solid var(--rule);background:var(--wash)}
+.ph .code{grid-row:span 2;font:700 15px/1 var(--f-mono);color:var(--card);background:var(--ink);padding:8px 8px;border-radius:3px;align-self:start;text-align:center;min-width:52px}
+.ph h3{font-size:clamp(22px,3vw,30px);font-weight:700;line-height:1.05}
+.ph .thesis{margin:2px 0 0;color:var(--muted);max-width:90ch}
+.pb{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;padding:16px 18px}
+.fig{min-width:0}
+.fig .scroll{overflow-x:auto}
+.deep{min-width:0}
+.deep h4,.pf h4{font:600 11.5px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;margin:0 0 8px;color:var(--muted)}
+.deep ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.deep li::marker{color:var(--accent)}
+.pf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule)}
+.pf > div{padding:12px 16px;min-width:0}
+.pf ul{margin:0;padding-left:16px;display:grid;gap:5px;font-size:14px}
+.pf .rules{background:var(--rulewash)} .pf .rules h4{color:var(--rule-c)}
+.pf .bugs{background:var(--bugwash)} .pf .bugs h4{color:var(--bug)}
+.pf .ask{background:var(--askwash)} .pf .ask h4{color:var(--accent)}
+.pf .ask p{margin:0 0 6px;font-size:14px}
+.pf .ask .q{font-weight:600}
+.tag{display:inline-block;font:600 10.5px/1 var(--f-mono);padding:3px 5px;border-radius:3px;border:1px solid currentColor;margin-right:4px;vertical-align:1px}
+.t-bug{color:var(--bug)} .t-dv{color:var(--dv)} .t-rule{color:var(--rule-c)} .t-d{color:var(--accent)}
+
+/* figure parts */
+table.bits{border-collapse:collapse;font:12px/1.2 var(--f-mono);width:100%;min-width:560px}
+table.bits td,table.bits th{border:1px solid var(--rule);padding:5px 4px;text-align:center}
+table.bits th{font-weight:500;color:var(--muted);background:var(--paper);font-size:10.5px}
+table.bits td.f{background:var(--wash)}
+table.bits td.imm{background:var(--rulewash);color:var(--rule-c);font-weight:600}
+table.bits td.op{background:var(--askwash);color:var(--accent)}
+table.bits td.lbl{text-align:left;font-weight:700;background:var(--card);font-family:var(--f-display);font-size:15px}
+table.grid{border-collapse:collapse;font-size:13px;width:100%}
+table.grid th,table.grid td{border-bottom:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+table.grid th{font:600 11px/1.2 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.grid td.n{font-variant-numeric:tabular-nums;text-align:right;font-family:var(--f-mono)}
+.bad{color:var(--bug);font-weight:600} .good{color:var(--dv);font-weight:600}
+svg{max-width:100%;height:auto;display:block}
+svg .ink{fill:var(--ink)} svg .mut{fill:var(--muted)} svg .acc{fill:var(--accent)} svg .dvf{fill:var(--dv)} svg .bugf{fill:var(--bug)}
+svg .box{fill:var(--card);stroke:var(--ink);stroke-width:1.4}
+svg .boxw{fill:var(--wash);stroke:var(--rule);stroke-width:1.2}
+svg .boxa{fill:var(--askwash);stroke:var(--accent);stroke-width:1.4}
+svg .boxd{fill:var(--card);stroke:var(--dv);stroke-width:1.6}
+svg .boxb{fill:var(--bugwash);stroke:var(--bug);stroke-width:1.4}
+svg .boxr{fill:var(--rulewash);stroke:var(--rule-c);stroke-width:1.2}
+svg .w{stroke:var(--ink);stroke-width:1.4;fill:none}
+svg .wa{stroke:var(--accent);stroke-width:1.8;fill:none}
+svg .wd{stroke:var(--dv);stroke-width:1.8;fill:none}
+svg .wb{stroke:var(--bug);stroke-width:1.8;fill:none;stroke-dasharray:5 3}
+svg .wm{stroke:var(--muted);stroke-width:1;fill:none;stroke-dasharray:3 3}
+svg text{font-family:var(--f-body);font-size:12px}
+svg .t{fill:var(--ink)} svg .tm{fill:var(--muted);font-size:11px} svg .tb{font-weight:700}
+svg .tmono{font-family:var(--f-mono);font-size:11px}
+svg .th{font-family:var(--f-display);font-size:15px;font-weight:700;fill:var(--ink)}
+.callout{margin-top:10px;padding:8px 12px;border-left:3px solid var(--accent);background:var(--wash);font-size:13.5px}
+.callout.b{border-color:var(--bug)} .callout.d{border-color:var(--dv)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
+.kv dt{font-family:var(--f-mono);font-size:12.5px;color:var(--accent)}
+.kv dd{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font:500 12px/1 var(--f-mono);border:1px solid var(--rule);border-radius:999px;padding:5px 9px;background:var(--paper)}
+.foot{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--rule);padding-top:12px}
+
+@media (max-width:860px){ .pb{grid-template-columns:1fr} .pf{grid-template-columns:1fr} }
+@media (max-width:480px){ .part .num{font-size:46px} .ph{padding:12px} .pb{padding:12px} }
+@media (prefers-reduced-motion: no-preference){ .nav a{transition:border-color .15s,color .15s} }
+</style>
+<div class="wrap">
+<header class="mast">
+  <span class="kicker">RV32I · single-cycle · 5-stage · Tomasulo · class-based DV</span>
+  <h1>RISC-V Core &amp; Verification Atlas</h1>
+  <p>One plate per concept, built up from the ISA contract to out-of-order execution to how a senior CPU
+  verification engineer proves it all works. Every plate reads the same way. Bugs marked with an ID were found
+  and fixed in the YARP, pq5 and Tomasulo labs.</p>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--accent)"></i>design / datapath</span>
+    <span><i class="sw" style="background:var(--dv)"></i>verification</span>
+    <span><i class="sw" style="background:var(--rule-c)"></i>spec rule / constraint</span>
+    <span><i class="sw" style="background:var(--bug)"></i>bug</span>
+  </div>
+</header>
+<nav class="nav" aria-label="Plates"><div class="nav-row"><a href="#p01"><b>01</b> ISA contract</a><a href="#p02"><b>02</b> Encodings</a><a href="#p03"><b>03</b> Semantics</a><a href="#p04"><b>04</b> Memory access</a><a href="#p05"><b>05</b> Traps & CSRs</a><a href="#p06"><b>06</b> Single-cycle</a><a href="#p07"><b>07</b> Decode/control</a><a href="#p08"><b>08</b> Valid/ready</a><a href="#p09"><b>09</b> Reset & X</a><a href="#p10"><b>10</b> Performance</a><a href="#p11"><b>11</b> 5-stage pipe</a><a href="#p12"><b>12</b> Data hazards</a><a href="#p13"><b>13</b> Control hazards</a><a href="#p14"><b>14</b> Out-of-order</a><a href="#p15"><b>15</b> LSQ & memory order</a><a href="#p16"><b>16</b> Caches & VM</a><a href="#p17"><b>17</b> DV strategy</a><a href="#p18"><b>18</b> Golden model</a><a href="#p19"><b>19</b> TB anatomy</a><a href="#p20"><b>20</b> Random stimulus</a><a href="#p21"><b>21</b> SV timing</a><a href="#p22"><b>22</b> Assertions</a><a href="#p23"><b>23</b> Coverage</a><a href="#p24"><b>24</b> Mutation testing</a><a href="#p25"><b>25</b> Bug catalog</a><a href="#p26"><b>26</b> Debug playbook</a><a href="#p27"><b>27</b> Rapid fire</a></div></nav>
+<section class="part" id="part-I"><span class="num">I</span><h2>Architecture</h2><p>What the ISA promises</p></section>
+<article class="plate" id="p01">
+  <header class="ph"><span class="code">PL·01</span>
+    <h3>The RV32I contract</h3><p class="thesis">The ISA is a contract between software and every implementation. Verification checks the implementation against this contract and nothing else, so you need to know exactly what it does and does not promise.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 300" role="img" aria-label="Architectural state of RV32I">
+ <rect class="boxa" x="10" y="10" width="190" height="280" rx="4"/>
+ <text class="th" x="22" y="34">Architectural state</text>
+ <text class="t tmono" x="22" y="60">x0  = 0 (always)</text>
+ <text class="t tmono" x="22" y="80">x1 … x31  32-bit</text>
+ <text class="t tmono" x="22" y="100">pc        32-bit</text>
+ <text class="t tmono" x="22" y="120">memory    byte-addr,</text>
+ <text class="t tmono" x="22" y="136">          little-endian</text>
+ <text class="tm" x="22" y="166">no flags register</text>
+ <text class="tm" x="22" y="184">no overflow trap</text>
+ <text class="tm" x="22" y="202">no delay slots</text>
+ <text class="tm" x="22" y="220">CSRs live in Zicsr</text>
+ <text class="tm" x="22" y="238">(privileged spec)</text>
+ <rect class="box" x="220" y="10" width="390" height="280" rx="4"/>
+ <text class="th" x="232" y="34">40 instructions in 6 formats</text>
+ <g class="tmono">
+  <rect class="boxw" x="232" y="48" width="180" height="44"/><text class="t tb" x="240" y="66">OP (R) · 10</text><text class="tm" x="240" y="83">add sub sll slt sltu xor srl sra or and</text>
+  <rect class="boxw" x="418" y="48" width="180" height="44"/><text class="t tb" x="426" y="66">OP-IMM (I) · 9</text><text class="tm" x="426" y="83">addi slti sltiu xori ori andi slli srli srai</text>
+  <rect class="boxw" x="232" y="100" width="180" height="44"/><text class="t tb" x="240" y="118">LOAD (I) · 5</text><text class="tm" x="240" y="135">lb lh lw lbu lhu</text>
+  <rect class="boxw" x="418" y="100" width="180" height="44"/><text class="t tb" x="426" y="118">STORE (S) · 3</text><text class="tm" x="426" y="135">sb sh sw</text>
+  <rect class="boxw" x="232" y="152" width="180" height="44"/><text class="t tb" x="240" y="170">BRANCH (B) · 6</text><text class="tm" x="240" y="187">beq bne blt bge bltu bgeu</text>
+  <rect class="boxw" x="418" y="152" width="180" height="44"/><text class="t tb" x="426" y="170">JUMP · 2</text><text class="tm" x="426" y="187">jal (J)   jalr (I)</text>
+  <rect class="boxw" x="232" y="204" width="180" height="44"/><text class="t tb" x="240" y="222">UPPER (U) · 2</text><text class="tm" x="240" y="239">lui auipc</text>
+  <rect class="boxw" x="418" y="204" width="180" height="44"/><text class="t tb" x="426" y="222">SYSTEM / MEM · 3</text><text class="tm" x="426" y="239">fence ecall ebreak</text>
+ </g>
+ <text class="tm" x="232" y="275">37 compute / memory / control + 3 system = 40</text>
+</svg></div>
+<div class="callout">Extensions are separate contracts: <b>M</b> mul/div, <b>A</b> atomics, <b>C</b> 16-bit, <b>F/D</b> float, <b>Zicsr</b>, <b>Zifencei</b>. "RV32IMC" means base plus those. A verification plan starts by naming the exact ISA string.</div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Load/store architecture</b>: only loads and stores touch memory, and every ALU op is register–register or register–immediate. That is what makes a single-cycle or 5-stage datapath simple.</li><li><b>x0 is not a register you can write.</b> Writes are discarded and reads return 0. <code>addi x0,x0,0</code> is the canonical NOP. A hardware bug that stores into x0 is invisible until something forwards from it.</li><li><b>No condition codes</b>: branches compare two registers directly. There are no flags to rename in an OOO core, which removes a whole bug class.</li><li><b>No integer overflow trap</b>: <code>add</code> wraps silently. Software detects overflow with <code>slt</code>/<code>sltu</code>.</li><li><b>Divide by zero does not trap</b> (M extension): x/0 = −1, x%0 = x, and −2³¹/−1 = −2³¹. Tomasulo lab bug <b>B06</b> returned +1.</li><li><b>Implementation-defined ≠ undefined</b>: misaligned data access may be handled in hardware or trap. The DV plan must pick the policy the design implements, and the reference model must match it.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Instructions are 32-bit and 4-byte aligned (without C). A jump or taken branch to a non-aligned target raises <i>instruction-address-misaligned</i>.</li><li>Register read happens before write in one instruction: <code>jalr x1,0(x1)</code> uses the old x1.</li><li>HINT space: writes to x0 with other encodings are legal NOP-like hints. They must not trap.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B06</span> signed divide by zero returned +1 instead of −1.</li><li><span class='tag t-bug'>B14</span> Booth multiplier overflowed on −2³¹ (the one value with no positive twin).</li><li>Classic: the regfile write port lets x0 be written, and forwarding then sends that value onward.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Where do you start verifying a RISC-V core?</p><p>Pin the contract: ISA string, privilege modes, the misaligned and illegal-instruction policy, and the reset state. Then pick a golden model configured to that exact contract. Every later check derives from it.</p></div>
+  </div>
+</article>
+<article class="plate" id="p02">
+  <header class="ph"><span class="code">PL·02</span>
+    <h3>Formats and immediates</h3><p class="thesis">Six formats keep rs1, rs2 and rd in the same bit positions so decode can read registers before it knows the format. Immediates pay the price: their bits are scrambled to keep the sign bit at inst[31].</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><table class="bits">
+<tr><th></th><th>31</th><th colspan="6">30 … 25</th><th colspan="4">24 … 21</th><th>20</th><th colspan="5">19 … 15</th><th colspan="3">14 … 12</th><th colspan="4">11 … 8</th><th>7</th><th colspan="7">6 … 0</th></tr>
+<tr><td class="lbl">R</td><td class="f" colspan="7">funct7</td><td class="f" colspan="5">rs2</td><td class="f" colspan="5">rs1</td><td class="f" colspan="3">funct3</td><td class="f" colspan="5">rd</td><td class="op" colspan="7">opcode</td></tr>
+<tr><td class="lbl">I</td><td class="imm" colspan="12">imm[11:0]</td><td class="f" colspan="5">rs1</td><td class="f" colspan="3">funct3</td><td class="f" colspan="5">rd</td><td class="op" colspan="7">opcode</td></tr>
+<tr><td class="lbl">S</td><td class="imm" colspan="7">imm[11:5]</td><td class="f" colspan="5">rs2</td><td class="f" colspan="5">rs1</td><td class="f" colspan="3">funct3</td><td class="imm" colspan="5">imm[4:0]</td><td class="op" colspan="7">opcode</td></tr>
+<tr><td class="lbl">B</td><td class="imm">12</td><td class="imm" colspan="6">imm[10:5]</td><td class="f" colspan="5">rs2</td><td class="f" colspan="5">rs1</td><td class="f" colspan="3">funct3</td><td class="imm" colspan="4">imm[4:1]</td><td class="imm">11</td><td class="op" colspan="7">opcode</td></tr>
+<tr><td class="lbl">U</td><td class="imm" colspan="20">imm[31:12]</td><td class="f" colspan="5">rd</td><td class="op" colspan="7">opcode</td></tr>
+<tr><td class="lbl">J</td><td class="imm">20</td><td class="imm" colspan="10">imm[10:1]</td><td class="imm">11</td><td class="imm" colspan="8">imm[19:12]</td><td class="f" colspan="5">rd</td><td class="op" colspan="7">opcode</td></tr>
+</table></div>
+<table class="grid" style="margin-top:12px">
+<tr><th>opcode</th><th>class</th><th>imm value (sign = inst[31])</th></tr>
+<tr><td class="mono">0110011</td><td>OP (R)</td><td>none</td></tr>
+<tr><td class="mono">0010011</td><td>OP-IMM (I)</td><td class="mono">sx(inst[31:20])</td></tr>
+<tr><td class="mono">0000011 / 0100011</td><td>LOAD / STORE</td><td class="mono">I / sx({inst[31:25],inst[11:7]})</td></tr>
+<tr><td class="mono">1100011</td><td>BRANCH</td><td class="mono">sx({i[31],i[7],i[30:25],i[11:8],0})</td></tr>
+<tr><td class="mono">0110111 / 0010111</td><td>LUI / AUIPC</td><td class="mono">{inst[31:12], 12'b0}</td></tr>
+<tr><td class="mono">1101111 / 1100111</td><td>JAL / JALR</td><td class="mono">sx({i[31],i[19:12],i[20],i[30:21],0}) / I</td></tr>
+</table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>B and J offsets are in units of 2 bytes</b>: bit 0 is implicit 0. That gives ±4 KiB for branches and ±1 MiB for JAL. With C absent, bit 1 must also be 0 at the target, or the jump traps.</li><li><b>Why scramble?</b> Each immediate bit sits in as few positions as possible across formats, so the mux tree in decode stays small. Sign extension always comes from inst[31], so it can start before the format is known.</li><li><b>funct7 matters only for 3 cases</b>: ADD/SUB and SRL/SRA (bit 30), and SRLI/SRAI (imm[10], also inst[30]). Every other funct7 in OP is reserved, so it should decode as illegal, not as an alias.</li><li><b>A decoder keyed on partial fields aliases.</b> YARP keyed I-type control on {opcode[4], funct3}. JALR (1100111, f3=000) collided with LB (0000011, f3=000). That is bug <b>Y3</b>.</li><li><b>Stimulus encodes the same layout.</b> A generator that packs B-type bits wrong produces legal-looking but different branches. Cross-check your encoder against an assembler or ISS once.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Illegal: opcode not in the table, a reserved funct3/funct7 combination, or the all-zero instruction <code>0x00000000</code> (defined illegal so zeroed memory traps).</li><li>SLLI/SRLI/SRAI on RV32: imm[5] = 1 is reserved.</li><li>JALR requires funct3 = 000. Other values are reserved.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>Y3</span> JALR aliased LB in a {opcode[4],funct3} key, so every JALR issued a phantom data read.</li><li><span class='tag t-bug'>B01</span> Tomasulo decode let immediate bits leak into the opcode key: valid instructions decoded as OTHER, then deadlock.</li><li><span class='tag t-bug'>B02</span> I-type immediates were zero-extended: <code>addi x1,x0,-1</code> gave 0x00000FFF.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you verify a decoder?</p><p>Exhaustively. 2³² is too many, but opcode×funct3×funct7 plus immediate boundary values is small. Compare every control field against a table derived from the spec, and make sure reserved encodings decode to illegal. Formal equivalence against a spec-written decoder closes it.</p></div>
+  </div>
+</article>
+<article class="plate" id="p03">
+  <header class="ph"><span class="code">PL·03</span>
+    <h3>Semantics corners: signed, unsigned, shifts, jumps</h3><p class="thesis">Most ALU bugs are not wrong operators. They are wrong interpretations of the same 32 bits. SystemVerilog makes this worse: <code>logic</code> is unsigned unless you say otherwise.</p></header>
+  <div class="pb"><div class="fig">
+<table class="grid">
+<tr><th>Instruction</th><th>Compare as</th><th>Corner that exposes a bug</th></tr>
+<tr><td class="mono">slt / slti / blt / bge</td><td>signed</td><td class="mono">a=−1 (0xFFFFFFFF), b=1 → 1 &nbsp; (unsigned says 0)</td></tr>
+<tr><td class="mono">sltu / bltu / bgeu</td><td>unsigned</td><td class="mono">a=0x80000000, b=1 → 0 &nbsp; (signed says 1)</td></tr>
+<tr><td class="mono">sltiu</td><td>imm is <b>sign</b>-extended, then compared unsigned</td><td class="mono">sltiu rd,rs,−1 → 1 unless rs=0xFFFFFFFF</td></tr>
+<tr><td class="mono">sltiu rd,rs,1</td><td>idiom</td><td class="mono">= seqz (rd = rs==0)</td></tr>
+<tr><td class="mono">sll / srl / sra</td><td>shamt = rs2[4:0]</td><td class="mono">rs2=33 shifts by 1; sra keeps the sign</td></tr>
+<tr><td class="mono">lui / auipc</td><td>imm&lt;&lt;12, auipc adds pc</td><td class="mono">auipc uses <b>its own</b> pc, not pc+4</td></tr>
+<tr><td class="mono">jal / jalr</td><td>rd = pc+4</td><td class="mono">jalr target = (rs1+imm) &amp; ~1</td></tr>
+</table>
+<div class="scroll"><svg viewBox="0 0 600 120" style="margin-top:12px" role="img" aria-label="Number line showing signed versus magnitude order">
+ <line class="w" x1="20" y1="60" x2="580" y2="60"/>
+ <text class="tm" x="20" y="90">−2³¹</text><text class="tm" x="290" y="90">0</text><text class="tm" x="540" y="90">2³¹−1</text>
+ <circle class="bugf" cx="140" cy="60" r="6"/><text class="t tmono" x="112" y="44">a = −5</text>
+ <circle class="dvf" cx="345" cy="60" r="6"/><text class="t tmono" x="325" y="44">b = 3</text>
+ <text class="t" x="20" y="18">signed:  a &lt; b   → slt = 1  ✓</text>
+ <text class="bugf" x="320" y="18" style="font-size:12px">|a| &lt; |b| ?  5 &lt; 3 → 0  ✗  (bug Y1)</text>
+ <text class="tm" x="20" y="112">A magnitude compare agrees with signed compare whenever both operands are non-negative. That is why easy stimulus never sees it.</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Three compare semantics, four bug shapes</b>: signed-as-unsigned, unsigned-as-signed, magnitude (abs), and wrong operand order. Each one agrees with the correct answer on half the input space or more.</li><li><b>In SystemVerilog</b>: <code>a &lt; b</code> on <code>logic [31:0]</code> is unsigned. Signed needs <code>$signed(a) &lt; $signed(b)</code>, and one unsigned operand makes the whole expression unsigned. Bug <b>Y2</b> is exactly this.</li><li><b>Shifts</b>: only the low 5 bits of the amount count. SRA must replicate bit 31 (<code>$signed(a) &gt;&gt;&gt; sh</code>). <code>&gt;&gt;&gt;</code> on an unsigned operand is a logical shift.</li><li><b>JALR clears bit 0 only.</b> Bit 1 left at 1 makes a misaligned target, which must trap when C is absent. A design without traps (YARP) must document what it does instead, and the model must follow.</li><li><b>rd = rs1 on JALR</b>: the target uses the old rs1, and the link value goes to rd. An implementation that writes rd first jumps to pc+4+imm.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Writes to x0 by any of these instructions are discarded, including the jal/jalr link.</li><li>No instruction sets flags. Overflow is silent wrap.</li><li>SUB is funct7 = 0100000. Any other non-zero funct7 on OP is reserved.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>Y1</span> SLT compared |a| &lt; |b|. Caught 9/9 only after compare-corner coverage plus a targeted test.</li><li><span class='tag t-bug'>Y2</span> BLT/BGE used unsigned compares, and BLTU/BGEU used magnitudes. The original testbench never caught it (0/10).</li><li><span class='tag t-bug'>P5</span> SUB decoded as ADD. Missed entirely by a stimulus that was 70% JAL/LUI.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Name a test that exposes a signed/unsigned bug.</p><p>Operands with different signs, and both negative, on every compare form: slt, slti, sltu, sltiu, and all six branches. Make it a coverage cross (instruction × operand-sign class), not a hand test, so you can prove it was hit.</p></div>
+  </div>
+</article>
+<article class="plate" id="p04">
+  <header class="ph"><span class="code">PL·04</span>
+    <h3>Loads, stores, sizes and alignment</h3><p class="thesis">A load is address, size, sign rule and byte placement. Each of the four is a separate place to be wrong, and the memory interface contract decides which side of the boundary each one lives on.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 230" role="img" aria-label="Little-endian word and load extension">
+ <text class="th" x="10" y="20">Little-endian word at 0x100 = 0x8899AABB</text>
+ <g>
+  <rect class="boxw" x="10" y="32" width="70" height="34"/><text class="t tmono" x="22" y="54">0x100</text>
+  <rect class="boxw" x="80" y="32" width="70" height="34"/><text class="t tmono" x="92" y="54">0x101</text>
+  <rect class="boxw" x="150" y="32" width="70" height="34"/><text class="t tmono" x="162" y="54">0x102</text>
+  <rect class="boxw" x="220" y="32" width="70" height="34"/><text class="t tmono" x="232" y="54">0x103</text>
+  <rect class="boxa" x="10" y="66" width="70" height="30"/><text class="acc tmono" x="34" y="86">BB</text>
+  <rect class="boxa" x="80" y="66" width="70" height="30"/><text class="acc tmono" x="104" y="86">AA</text>
+  <rect class="boxa" x="150" y="66" width="70" height="30"/><text class="acc tmono" x="174" y="86">99</text>
+  <rect class="boxa" x="220" y="66" width="70" height="30"/><text class="acc tmono" x="244" y="86">88</text>
+ </g>
+ <text class="tm" x="10" y="114">lowest address = least significant byte</text>
+ <g class="tmono">
+  <text class="t" x="320" y="44">lb  x1, 0x100  → 0xFFFFFFBB</text>
+  <text class="t" x="320" y="64">lbu x1, 0x100  → 0x000000BB</text>
+  <text class="t" x="320" y="84">lh  x1, 0x102  → 0xFFFF8899</text>
+  <text class="t" x="320" y="104">lhu x1, 0x102  → 0x00008899</text>
+  <text class="t" x="320" y="124">lw  x1, 0x100  → 0x8899AABB</text>
+ </g>
+ <rect class="boxr" x="10" y="140" width="600" height="80" rx="4"/>
+ <text class="th" x="22" y="162">Interface contract (write it down)</text>
+ <text class="t" x="22" y="182">Lane-aligned: memory returns the whole word; the core shifts by addr[1:0], then extends.</text>
+ <text class="t" x="22" y="200">Right-aligned (YARP): memory shifts; the core only extends. The TB model must match.</text>
+ <text class="tm" x="22" y="215">YARP byte_en is a SIZE code (00 B, 01 H, 11 W, 10 reserved), not four byte enables.</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Sign rule depends on the instruction, not the data</b>: LB/LH extend bit 7/15, while LBU/LHU zero-extend. A bug only shows when the loaded byte has its top bit set. Random memory full of zeros never shows it (mutant <b>P6</b>).</li><li><b>Misaligned</b> (lw at 0x101, lh at 0x103): allowed to work, trap, or be emulated by the execution environment. Pick one. The YARP lab uses byte-wise access in RTL, TB memory and the C model. The original testbench <code>$fatal</code>-ed on it, which gave 40% false failures.</li><li><b>Store data</b>: SB/SH write only the low byte/half of rs2. Memory must not touch the other lanes (read-modify-write or byte strobes).</li><li><b>Load-after-store is the real check</b>: a store that never lands is invisible until a later load reads the same bytes. Constrain addresses into a small window so that happens often.</li><li><b>A load to x0</b> still performs the access (it matters for I/O side effects), but the result is discarded.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Little-endian byte order is mandated for the base ISA.</li><li>Alignment policy is implementation-defined. The reference model must be configured to the same policy as the RTL.</li><li>The load address is rs1 + sign-extended imm, computed modulo 2³².</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B10</span> Tomasulo lbu/lhu read whole words and sign-extended.</li><li><span class='tag t-bug'>D2</span> YARP TB driver gated store writes on a stale clocking-block sample, so stores never reached memory. Loads read 0 and the C model disagreed.</li><li><span class='tag t-bug'>M1</span> TB memory model <code>$fatal</code> on misaligned addresses, although the spec says handle them.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Your loads pass. Why might stores still be broken?</p><p>Loads only prove stores if they read back what was stored. Random addresses make that rare. Check the store stream directly (address/size/data vs the model at the interface) and bias load addresses onto recently stored bytes.</p></div>
+  </div>
+</article>
+<article class="plate" id="p05">
+  <header class="ph"><span class="code">PL·05</span>
+    <h3>Traps, CSRs and precise exceptions</h3><p class="thesis">The base ISA leaves exceptions to the privileged spec, and that is where senior interviews go. A trap has to look as if every older instruction finished and no younger one started.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 250" role="img" aria-label="Machine-mode trap flow">
+ <rect class="box" x="10" y="20" width="150" height="54" rx="4"/><text class="th" x="22" y="42">Instruction i</text><text class="tm" x="22" y="62">faults (or interrupt)</text>
+ <path class="wa" d="M160 47 H215"/><polygon class="acc" points="215,42 225,47 215,52"/>
+ <rect class="boxa" x="225" y="10" width="200" height="140" rx="4"/>
+ <text class="th" x="237" y="32">Hardware, atomically</text>
+ <g class="tmono"><text class="t" x="237" y="54">mepc   ← pc of i</text>
+ <text class="t" x="237" y="72">mcause ← {intr, code}</text>
+ <text class="t" x="237" y="90">mtval  ← bad addr / instr</text>
+ <text class="t" x="237" y="108">MPIE ← MIE ; MIE ← 0</text>
+ <text class="t" x="237" y="126">MPP ← priv ; priv ← M</text>
+ <text class="t" x="237" y="144">pc ← mtvec</text></g>
+ <path class="wa" d="M425 80 H470"/><polygon class="acc" points="470,75 480,80 470,85"/>
+ <rect class="box" x="480" y="40" width="130" height="80" rx="4"/><text class="th" x="492" y="62">Handler</text><text class="tm" x="492" y="82">… mret</text><text class="tm" x="492" y="100">pc ← mepc</text>
+ <rect class="boxr" x="10" y="166" width="600" height="76" rx="4"/>
+ <text class="th" x="22" y="188">Precise</text>
+ <text class="t" x="22" y="208">all instructions older than i retired · i and younger have no architectural effect</text>
+ <text class="tm" x="22" y="228">In an OOO core this is the ROB's job: the exception is recorded at execute and taken only when i reaches the ROB head.</text>
+</svg></div>
+<table class="grid" style="margin-top:8px"><tr><th>mcause</th><th>Exception (intr=0)</th><th>mcause</th><th>Interrupt (intr=1)</th></tr>
+<tr><td class="n">0</td><td>instr addr misaligned</td><td class="n">3</td><td>machine software</td></tr>
+<tr><td class="n">2</td><td>illegal instruction</td><td class="n">7</td><td>machine timer</td></tr>
+<tr><td class="n">3</td><td>breakpoint (ebreak)</td><td class="n">11</td><td>machine external</td></tr>
+<tr><td class="n">4 / 6</td><td>load / store misaligned</td><td></td><td></td></tr>
+<tr><td class="n">5 / 7</td><td>load / store access fault</td><td></td><td></td></tr>
+<tr><td class="n">11</td><td>ecall from M</td><td></td><td></td></tr></table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Synchronous vs asynchronous</b>: an exception belongs to one instruction and is deterministic, so an ISS can predict it. An interrupt arrives between instructions at a time the design chooses. The ISS cannot predict it and must be told: "DUT took interrupt X before instruction N".</li><li><b>mepc points at the faulting instruction</b> for exceptions (ecall included: software adds 4) and at the next unexecuted instruction for interrupts.</li><li><b>Priority when several apply</b>: the spec orders exceptions (e.g. instruction-address faults before illegal instruction) and interrupts (MEI &gt; MSI &gt; MTI). These are corners worth a cross.</li><li><b>CSR side effects</b>: reading <code>mcycle</code>/<code>minstret</code> is non-deterministic against a model. Mask, or let the model take the DUT value. CSR writes with WARL fields need the model to apply the same legalization.</li><li><b>Common OOO trap bugs</b>: a younger store already sitting in the store queue gets drained after the trap; a younger load updated the RAT; mepc taken from the fetch PC instead of the faulting PC.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Traps are precise in the base privileged spec.</li><li>MIE clears on trap entry and is restored from MPIE on mret.</li><li>Writes to read-only CSRs are illegal-instruction exceptions. WARL fields legalize silently.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>YARP has no trap support. An illegal opcode silently acts as a NOP, so the model must mirror that policy or every illegal instruction mismatches.</li><li>Interrupt taken in the same cycle as a branch mispredict: mepc points into the wrong path.</li><li>Store committed to memory after an older load faulted (imprecise).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you check interrupts against an ISS?</p><p>The DUT decides when. The TB observes the retirement point where the trap was taken and injects the same interrupt into the ISS at that instruction boundary, then compares everything else as usual. Separately, check the decision is legal: enabled, pending, priority, latency bound, with SVA plus coverage.</p></div>
+  </div>
+</article><section class="part" id="part-II"><span class="num">II</span><h2>Design</h2><p>How one core keeps the promise</p></section>
+<article class="plate" id="p06">
+  <header class="ph"><span class="code">PL·06</span>
+    <h3>Single-cycle datapath (YARP)</h3><p class="thesis">Every instruction does fetch, decode, read, execute, memory and write-back in one clock. The datapath is a set of muxes, and the control unit's only job is to set them.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 640 300" role="img" aria-label="YARP single-cycle datapath">
+ <rect class="boxa" x="10" y="120" width="56" height="50" rx="3"/><text class="th" x="24" y="150">PC</text>
+ <rect class="box" x="96" y="110" width="80" height="70" rx="3"/><text class="th" x="104" y="136">imem</text><text class="tm" x="104" y="156">req/addr</text><text class="tm" x="104" y="170">rd_data</text>
+ <rect class="box" x="206" y="40" width="96" height="60" rx="3"/><text class="th" x="216" y="64">decode</text><text class="tm" x="216" y="84">rs1 rs2 rd imm</text>
+ <rect class="boxw" x="206" y="200" width="96" height="60" rx="3"/><text class="th" x="216" y="224">control</text><text class="tm" x="216" y="244">mux selects</text>
+ <rect class="box" x="332" y="110" width="80" height="70" rx="3"/><text class="th" x="340" y="136">regfile</text><text class="tm" x="340" y="156">2R 1W</text>
+ <rect class="boxa" x="442" y="100" width="70" height="90" rx="3"/><text class="th" x="456" y="140">ALU</text><text class="tm" x="452" y="160">+ − &lt; ⊕ ≪</text>
+ <rect class="box" x="542" y="110" width="88" height="70" rx="3"/><text class="th" x="552" y="136">dmem</text><text class="tm" x="552" y="156">addr size</text><text class="tm" x="552" y="170">wr rd</text>
+ <rect class="boxw" x="442" y="220" width="70" height="40" rx="3"/><text class="t tb" x="452" y="244">branch</text>
+ <path class="wa" d="M66 145 H96"/><path class="w" d="M176 130 H190 V70 H206"/>
+ <path class="w" d="M302 70 H320 V130 H332"/><path class="w" d="M412 130 H442"/><path class="w" d="M412 160 H442"/>
+ <path class="wa" d="M512 145 H542"/><text class="tm" x="514" y="138">addr</text>
+ <path class="w" d="M254 100 V200"/>
+ <path class="w" d="M412 170 H428 V240 H442"/>
+ <path class="wd" d="M586 180 V285 H372 V180"/><text class="tm" x="430" y="280">wb mux: ALU | MEM | IMM | pc+4</text>
+ <path class="wa" d="M477 260 V290 H38 V170"/><text class="tm" x="44" y="285">next pc: pc+4 | {alu[31:1],0} if branch_taken | pc_sel</text>
+ <text class="tm" x="320" y="28">op1sel: rs1 | pc   op2sel: rs2 | imm</text>
+</svg></div>
+<table class="grid" style="margin-top:6px"><tr><th>Class</th><th>op1</th><th>op2</th><th>ALU</th><th>wb</th><th>pc</th><th>mem</th></tr>
+<tr><td>R</td><td>rs1</td><td>rs2</td><td>funct</td><td>ALU</td><td>+4</td><td>–</td></tr>
+<tr><td>I-alu</td><td>rs1</td><td>imm</td><td>funct</td><td>ALU</td><td>+4</td><td>–</td></tr>
+<tr><td>Load</td><td>rs1</td><td>imm</td><td>add</td><td>MEM</td><td>+4</td><td>rd</td></tr>
+<tr><td>Store</td><td>rs1</td><td>imm</td><td>add</td><td>–</td><td>+4</td><td>wr rs2</td></tr>
+<tr><td>Branch</td><td>pc</td><td>imm</td><td>add</td><td>–</td><td>taken ? alu : +4</td><td>–</td></tr>
+<tr><td>JAL / JALR</td><td>pc / rs1</td><td>imm</td><td>add</td><td>pc+4</td><td>alu &amp; ~1</td><td>–</td></tr>
+<tr><td>LUI / AUIPC</td><td>– / pc</td><td>imm</td><td>– / add</td><td>IMM / ALU</td><td>+4</td><td>–</td></tr></table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>The branch unit compares rs1/rs2 while the ALU computes pc+imm.</b> Two units run in parallel. In YARP the compare is a separate module, and that is where Y2 lived.</li><li><b>The clock period is the longest path</b>: imem → decode → regfile read → ALU → dmem → wb mux → regfile setup. That is why single-cycle CPUs are slow. The pipeline (PL-11) cuts this path into stages.</li><li><b>Combinational memory read</b>: single-cycle assumes rd_data arrives in the same cycle as the address. Real memories are synchronous. That forces either a pipeline or a valid/ready stall FSM (PL-08).</li><li><b>White-box points for DV</b>: the regfile write port (wr_en, rd, data) gives one retire event per cycle. It is the natural compare point for a commit scoreboard.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Exactly one instruction retires per accepted fetch. No retire without a fetch handshake.</li><li>Register writes and the PC update happen on the same edge: the retire edge.</li><li>Loads write the register only once the data is valid.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>Y4</span> The first cycle after reset froze the PC but still wrote the regfile, so the first instruction executed twice.</li><li><span class='tag t-bug'>P4</span> Retiring a load before data_mem_ready advanced the PC early. It shows up as a PC mismatch.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: What is the critical path of a single-cycle RISC-V?</p><p>A load: PC → imem → decode/regfile read → address add → dmem read → extend → wb mux → regfile setup. Pipelining cuts it at the four boundaries between those blocks.</p></div>
+  </div>
+</article>
+<article class="plate" id="p07">
+  <header class="ph"><span class="code">PL·07</span>
+    <h3>Control decode and encoding collisions</h3><p class="thesis">The control unit maps opcode/funct to a bundle of mux selects. Bugs come from default values, overrides that clear too little, and keys built from too few bits.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 250" role="img" aria-label="JALR and LB key collision">
+ <text class="th" x="10" y="20">YARP I-type key = {opcode[4], funct3}</text>
+ <rect class="boxw" x="10" y="34" width="290" height="70" rx="4"/>
+ <text class="t tmono" x="22" y="56">LB    0000011  f3=000</text>
+ <text class="t tmono" x="22" y="76">key = {0, 000}  → data_req=1</text>
+ <text class="tm" x="22" y="96">opcode[4] = 0</text>
+ <rect class="boxb" x="320" y="34" width="290" height="70" rx="4"/>
+ <text class="t tmono" x="332" y="56">JALR  1100111  f3=000</text>
+ <text class="t tmono" x="332" y="76">key = {0, 000}  → data_req=1 ✗</text>
+ <text class="tm" x="332" y="96">opcode[4] = 0 as well</text>
+ <rect class="boxr" x="10" y="120" width="600" height="58" rx="4"/>
+ <text class="t" x="22" y="142">JALR override set pc_sel, wb=PC, alu=ADD … but did not clear data_req / data_byte</text>
+ <text class="t tb" x="22" y="164">→ every JALR issued a phantom data-memory read (bug Y3)</text>
+ <text class="th" x="10" y="204">Safer pattern</text>
+ <text class="t tmono" x="10" y="224">ctl = '0;  case (opcode) … full 7-bit key, then funct3/funct7 …</text>
+ <text class="t tmono" x="10" y="242">default: illegal = 1;   // never "behave like ADD"</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Start from all-zero (no side effects)</b> and turn on only what each instruction needs. A side-effect signal (data_req, rf_wr_en, pc_sel) that defaults on is a phantom write waiting to happen.</li><li><b>An override must restate every side-effect field.</b> A partial override inherits whatever the earlier case left. That is how Y3 happened.</li><li><b>A <code>default:</code> that executes ADD</b> hides illegal encodings. The core silently runs garbage, and only a model with the same quirk agrees.</li><li><b>Phantom requests are invisible to register checks.</b> The register result was correct, so only an interface check (scoreboard comparing every data access, or SVA "data_req only for load/store") catches them.</li><li><b>Decode is ideal for formal</b>: write the spec table as SVA (<code>opcode==JALR |-> !data_req</code>) and prove it for all encodings.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>data_req is asserted iff the opcode is LOAD or STORE.</li><li>rf_wr_en is never asserted for STORE or BRANCH.</li><li>Reserved funct3/funct7 values decode to illegal.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>Y3</span> JALR phantom load. Caught 9/9 by the data-access compare in the fixed TB.</li><li><span class='tag t-bug'>B01</span> Opcode key polluted by immediate bits, so instructions decoded as OTHER and the core deadlocked.</li><li><span class='tag t-bug'>B03</span> ALU silently dropped OP-IMM: the instruction never completed.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: The register results all match the ISS. What can still be wrong in decode?</p><p>Side effects that do not reach registers: phantom memory reads, writes to x0 that forward, illegal encodings that execute instead of trapping, and CSR or fence side effects. Check the interfaces as well as the architectural state.</p></div>
+  </div>
+</article>
+<article class="plate" id="p08">
+  <header class="ph"><span class="code">PL·08</span>
+    <h3>Valid/ready memory handshake</h3><p class="thesis">Real memories answer late. The core raises req, holds the payload stable, and the transfer happens only on the edge where req and ready are both high. YARP's spec turns this into ten rules, and each rule is one assertion.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 640 250" role="img" aria-label="Valid ready waveform with data pending">
+ <g class="tm"><text x="4" y="34">clk</text><text x="4" y="64">i_req</text><text x="4" y="94">i_addr</text><text x="4" y="124">i_ready</text><text x="4" y="154">d_req</text><text x="4" y="184">d_ready</text><text x="4" y="214">state</text></g>
+ <path class="w" d="M60 40 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20 v-14 h20 v14 h20"/>
+ <path class="wa" d="M60 70 v-14 h160 v14 h120 v-14 h220"/>
+ <rect class="boxw" x="60" y="82" width="160" height="16"/><text class="t tmono" x="100" y="94">PC (stable)</text>
+ <rect class="boxw" x="340" y="82" width="120" height="16"/><text class="t tmono" x="356" y="94">PC+4</text>
+ <path class="wd" d="M60 130 h120 v-14 h40 v14 h160 v-14 h40 v14 h180"/>
+ <path class="wa" d="M60 160 h120 v-14 h160 v14 h260"/>
+ <path class="wd" d="M60 190 h260 v-14 h40 v14 h240"/>
+ <line class="wm" x1="220" y1="20" x2="220" y2="230"/><text class="dvf" x="160" y="245" style="font-size:11px">instr handshake + d_req (R3)</text>
+ <line class="wm" x1="340" y1="20" x2="340" y2="230"/><text class="dvf" x="300" y="16" style="font-size:11px">data handshake</text>
+ <text class="t tmono" x="64" y="214">FETCH</text><text class="t tmono" x="232" y="214">PENDING</text><text class="tm" x="232" y="228">i_req=0 (R10)</text><text class="t tmono" x="350" y="214">FETCH</text>
+</svg></div>
+<table class="grid"><tr><th>Rule</th><th>Spec text, compressed</th><th>SVA</th></tr>
+<tr><td>R1 R2</td><td>i_req held, i_addr stable until i_ready</td><td class="mono">i_req&amp;&amp;!i_rdy |=&gt; i_req &amp;&amp; $stable(addr)</td></tr>
+<tr><td>R3</td><td>d_req starts in the instr-accept cycle</td><td class="mono">d_req &amp;&amp; !$past(d_wait) |-&gt; i_hs</td></tr>
+<tr><td>R4–R7</td><td>d_req and payload stable until d_ready</td><td class="mono">d_wait |=&gt; d_req &amp;&amp; $stable({a,be,wr,wd})</td></tr>
+<tr><td>R8 R9</td><td>back-to-back legal; ready may toggle alone</td><td>cover, never assert</td></tr>
+<tr><td>R10</td><td>no fetch while data pending</td><td class="mono">d_wait |=&gt; !i_req</td></tr></table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Pending FSM</b>: on an instruction handshake for a load/store, if d_ready is not already high, latch the instruction (the memory stops driving it next cycle), drop i_req, and hold the data payload from the latch. Retire on the data handshake.</li><li><b>Ready without a request is legal</b> (R9). A responder that holds ready high gets 1-cycle transfers. A responder that waits to see req first costs a cycle every time.</li><li><b>The instruction bits disappear after the handshake.</b> Forgetting to latch them (mutant <b>P1</b>) makes the data payload change mid-transfer. SVA R4/R5 catch it immediately; without SVA it shows up as a hang.</li><li><b>A rule with no data effect needs an assertion</b>: fetching during a pending load (mutant <b>P2</b>) corrupts nothing visible in this TB. The scoreboard passed 6/6, and only SVA R10 caught it.</li><li><b>Cover the legal corners too</b>: stall→handshake, back-to-back handshakes, ready held with no request. Otherwise the assertions may be vacuously true.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>The payload is only meaningful while req is high.</li><li>No combinational path from ready to req (protocol deadlock rule of thumb).</li><li>The reserved size code 2'b10 is never driven.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>RTL</span> The uploaded YARP had no ready ports at all. Random ready tripped R2 on the first stall.</li><li><span class='tag t-bug'>P1</span> No instruction latch: caught by SVA R4. The original TB hung on 10/10 seeds.</li><li><span class='tag t-bug'>P2</span> Fetch while pending: caught only by SVA R10.</li><li><span class='tag t-bug'>P3</span> PC ignores ready: SVA R2 at the first stall.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Why put protocol assertions in the interface, not the scoreboard?</p><p>Every test and every environment that instantiates the interface gets them, they fire at the exact cycle (not at the next compare point), and they check rules that have no data effect. The scoreboard checks results; assertions check behaviour.</p></div>
+  </div>
+</article>
+<article class="plate" id="p09">
+  <header class="ph"><span class="code">PL·09</span>
+    <h3>Reset, first cycle and X-propagation</h3><p class="thesis">Reset bugs live in the cycles nobody tests: the edge reset releases, the first fetch, and state that was never reset. Make the testbench hostile in those cycles.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 190" role="img" aria-label="First cycle after reset double execution">
+ <g class="tm"><text x="4" y="34">clk</text><text x="4" y="64">reset_n</text><text x="4" y="94">reset_seen_q</text><text x="4" y="124">pc_q</text><text x="4" y="154">rf write</text></g>
+ <path class="w" d="M90 40 h25 v-14 h25 v14 h25 v-14 h25 v14 h25 v-14 h25 v14 h25 v-14 h25 v14 h25 v-14 h25 v14 h25 v-14 h25 v14 h25"/>
+ <path class="wa" d="M90 70 h75 v-14 h345"/>
+ <path class="wa" d="M90 100 h125 v-14 h295"/>
+ <rect class="boxw" x="90" y="112" width="175" height="16"/><text class="t tmono" x="140" y="124">0x0 (frozen)</text>
+ <rect class="boxw" x="265" y="112" width="50" height="16"/><text class="t tmono" x="270" y="124">0x4</text>
+ <rect class="boxb" x="165" y="140" width="50" height="16"/><text class="bugf tmono" x="170" y="152">x1+=1</text>
+ <rect class="boxw" x="215" y="140" width="50" height="16"/><text class="t tmono" x="220" y="152">x1+=1</text>
+ <text class="bugf" x="290" y="152" style="font-size:12px">addi x1,x1,1 ran twice → x1 = 2 (or more)</text>
+ <text class="tm" x="90" y="180">Hidden when TB memory returns 0 for req=0 (YARP decodes 0x00000000 as a no-op); exposed with +IMEM_ALWAYS.</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Gate every architectural side effect with the same condition that gates the PC.</b> YARP froze the PC with <code>reset_seen_q</code> but let the regfile and data request run (<b>Y4</b>).</li><li><b>Polite testbench models hide bugs.</b> Memory that returns 0 when not requested makes the extra cycle harmless. Hostile models return real data whenever the spec allows, including with no request and with random ready.</li><li><b>Unreset state</b>: the YARP regfile has no reset (legal: x1–x31 are UNSPECIFIED at reset). The model must start from the same values, or the TB must initialise registers by program before comparing.</li><li><b>X-propagation</b>: an X on ready or rd_data right after reset (driver bug <b>D1</b>) can be optimistic in RTL sim (if/case treat X as false) and pessimistic in gate sim. Drive every responder output in the reset sequence.</li><li><b>Reset in the middle</b>: assert reset during a pending load. Every FSM must return to idle, and no write may happen on the reset edge.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>PC = reset vector at the first fetch. The vector is implementation-defined (YARP: parameter RESET_PC, 0x1000 by default).</li><li>Only pc and mstatus-type CSRs have mandated reset values. GPRs are unspecified.</li><li>No architectural write may occur before the first instruction is accepted.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>Y4</span> First instruction executed twice. Found with an always-answering imem.</li><li><span class='tag t-bug'>D1</span> TB drove only reset_n, leaving ready/rd_data at X after reset.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you verify reset?</p><p>Reset at time 0 and mid-traffic (pending load, stall, branch in flight); check that every state element returns to its spec value; check that no side effect happens on the reset edge or in the first cycle; check that the first fetch is the reset vector. Run both X-pessimistic and hostile-memory variants.</p></div>
+  </div>
+</article><section class="part" id="part-III"><span class="num">III</span><h2>Performance</h2><p>Pipelines, out-of-order, memory</p></section>
+<article class="plate" id="p10">
+  <header class="ph"><span class="code">PL·10</span>
+    <h3>The performance equation</h3><p class="thesis">Time = instructions × CPI × clock period. Every microarchitecture idea attacks one factor and usually hurts another. Performance verification checks that the cycle count matches the model, not just the answers.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 150" role="img" aria-label="Iron law of performance">
+ <text class="th" x="10" y="30" style="font-size:22px">CPU time = IC × CPI × T<tspan class="tm" style="font-size:12px" dx="12">(the iron law)</tspan></text>
+ <rect class="boxw" x="10" y="50" width="190" height="90" rx="4"/><text class="th" x="22" y="72">IC</text><text class="tm" x="22" y="92">ISA + compiler</text><text class="tm" x="22" y="108">C ext: same IC, smaller code</text><text class="tm" x="22" y="124">M ext: far lower IC for mul</text>
+ <rect class="boxa" x="215" y="50" width="190" height="90" rx="4"/><text class="th" x="227" y="72">CPI</text><text class="tm" x="227" y="92">hazards, stalls, misses</text><text class="tm" x="227" y="108">pipeline → ~1, OOO/superscalar</text><text class="tm" x="227" y="124">→ &lt; 1 (IPC &gt; 1)</text>
+ <rect class="boxw" x="420" y="50" width="190" height="90" rx="4"/><text class="th" x="432" y="72">T</text><text class="tm" x="432" y="92">critical path per stage</text><text class="tm" x="432" y="108">single-cycle: whole datapath</text><text class="tm" x="432" y="124">5-stage: ≈ slowest stage</text>
+</svg></div>
+<table class="grid"><tr><th>pq5 program</th><th class="n">N</th><th class="n">stalls</th><th class="n">flushes</th><th class="n">4+N+s+2f</th><th class="n">measured</th><th class="n">CPI</th></tr>
+<tr><td>p01_alu</td><td class="n">23</td><td class="n">0</td><td class="n">0</td><td class="n">27</td><td class="n">27</td><td class="n">1.17</td></tr>
+<tr><td>p02_forwarding</td><td class="n">14</td><td class="n">0</td><td class="n">0</td><td class="n">18</td><td class="n">18</td><td class="n">1.29</td></tr></table>
+<div class="callout d">Formula checked against every pq5 run: <b>cycles = 4 + N + load-use stalls + 2 × flushes</b> (pipeline fill = 4, mispredict penalty = 2 because branches resolve in EX). Removing branch prediction failed <b>no</b> functional test but raised CPI to 1.66 on a loop. Only a cycle check catches that.</div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Single-cycle</b>: CPI = 1, T = the whole datapath. <b>5-stage</b>: CPI ≈ 1 + stall rate, T ≈ ⅕. <b>OOO superscalar</b>: CPI &lt; 1, with T bounded by wakeup/select and bypass loops.</li><li><b>Amdahl</b>: speedup = 1 / ((1−f) + f/s). Halving the latency of an op used 10% of the time buys at most 5%.</li><li><b>Performance bugs are silent.</b> A predictor that never predicts, a BTB that evicts the wrong way (<b>B15</b>) or a stall that is one cycle too long all pass every functional test.</li><li><b>How to verify performance</b>: a cycle-approximate model or analytic formula per microbenchmark, assertions on bounded latencies (e.g. "a load-use stall lasts exactly 1 cycle"), and trend checks of CPI per test in regression.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>The ISA says nothing about timing: performance is a design spec, so write it down (latencies, penalties, throughput).</li><li>Measure CPI with the same retire event the scoreboard uses.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B15</span> BTB replacement evicted the most recent entry and never used a free way. Found by unit test, invisible functionally.</li><li>pq5 mutant "no branch prediction": 0/10 directed and 0/100 random fail, yet p04_loop_sum CPI rose to 1.66 (p09_multiply 1.48).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: All tests pass. How would you find a performance bug?</p><p>Compare cycle counts to an expected model per directed microbenchmark (loop, pointer chase, branchy code), assert latency bounds with SVA, and track CPI per test across regressions so a jump flags a change.</p></div>
+  </div>
+</article>
+<article class="plate" id="p11">
+  <header class="ph"><span class="code">PL·11</span>
+    <h3>The 5-stage pipeline</h3><p class="thesis">Cut the single-cycle path into IF, ID, EX, MEM and WB with registers between them. Five instructions are in flight, and correctness now depends on the timing between them.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><table class="grid" style="font-family:var(--f-mono);font-size:12px;min-width:560px">
+<tr><th>instr \ cycle</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr>
+<tr><td>i1 add x5,…</td><td>IF</td><td>ID</td><td>EX</td><td>MEM</td><td>WB</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>i2 sub …,x5</td><td></td><td>IF</td><td>ID</td><td class="good">EX ◀ fwd</td><td>MEM</td><td>WB</td><td></td><td></td><td></td></tr>
+<tr><td>i3 lw x6,0(x5)</td><td></td><td></td><td>IF</td><td>ID</td><td>EX</td><td>MEM</td><td>WB</td><td></td><td></td></tr>
+<tr><td>i4 add …,x6</td><td></td><td></td><td></td><td>IF</td><td>ID</td><td class="bad">stall</td><td class="good">EX ◀ fwd</td><td>MEM</td><td>WB</td></tr>
+<tr><td>i5 beq taken</td><td></td><td></td><td></td><td></td><td>IF</td><td>IF</td><td>ID</td><td>EX ✱</td><td>MEM</td></tr>
+</table></div>
+<div class="scroll"><svg viewBox="0 0 620 120" style="margin-top:10px" role="img" aria-label="Pipeline registers with valid, stall and flush">
+ <g><rect class="boxa" x="10" y="30" width="80" height="44" rx="3"/><text class="th" x="36" y="57">IF</text>
+ <rect class="boxw" x="98" y="26" width="14" height="52"/>
+ <rect class="boxa" x="120" y="30" width="80" height="44" rx="3"/><text class="th" x="146" y="57">ID</text>
+ <rect class="boxw" x="208" y="26" width="14" height="52"/>
+ <rect class="boxa" x="230" y="30" width="80" height="44" rx="3"/><text class="th" x="256" y="57">EX</text>
+ <rect class="boxw" x="318" y="26" width="14" height="52"/>
+ <rect class="boxa" x="340" y="30" width="80" height="44" rx="3"/><text class="th" x="358" y="57">MEM</text>
+ <rect class="boxw" x="428" y="26" width="14" height="52"/>
+ <rect class="boxa" x="450" y="30" width="80" height="44" rx="3"/><text class="th" x="474" y="57">WB</text></g>
+ <path class="wb" d="M160 90 V100 H50 V78"/><text class="bugf" x="56" y="114" style="font-size:11px">stall (load-use): hold IF, ID; bubble into EX</text>
+ <path class="wd" d="M270 20 V12 H50 V26"/><text class="dvf" x="300" y="16" style="font-size:11px">flush + redirect_pc from EX (wrong prediction)</text>
+ <text class="tm" x="545" y="50">packet =</text><text class="tm" x="545" y="64">{valid, pc,</text><text class="tm" x="545" y="78">ctl, data}</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Every stage register carries a valid bit.</b> valid=0 is a bubble. A flush clears valid; a stall holds the register and injects valid=0 downstream. Forgetting to clear valid in one register is the classic flush bug: pq5 failed 98/100 random tests when either IF/ID or ID was left unflushed.</li><li><b>Fill latency</b>: with no hazards N instructions take Δ + N − 1 = N + 4 cycles (Δ = 5 stages).</li><li><b>Structural hazards are removed by design</b>: separate instruction and data memory, a 2-read/1-write regfile, and the PC adder separate from the ALU.</li><li><b>WAR and WAW cannot happen</b> in an in-order pipeline where the write always happens in the last stage. RAW is the only data hazard (PL-12).</li><li><b>Stall vs flush in the same cycle</b>: flush must win (the stalled instruction is on the wrong path). pq5 also proves that it cannot happen, with assertion <code>a_noflushstall</code>.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Commit order = program order, one retire per cycle at most.</li><li>A flushed instruction must have no architectural effect: no rf write, no store, no CSR change.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>pq5 mutant: flush forgets IF/ID → 6/10 directed, 98/100 random fail.</li><li>pq5 mutant: x0 writable → 54/100 random fail (it shows up when a later instruction forwards x0).</li><li><span class='tag t-bug'>B09</span> Tomasulo frontend ignored back-pressure and replayed stale bundles: the commit stream was no longer the program.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: What does the scoreboard compare for a pipelined core?</p><p>The same thing as for a single-cycle one: the retire stream (pc, instr, rd, wdata, mem ops) in order against the ISS. Pipelining changes when instructions retire, not what they do, so the checker sits at retire and ignores timing.</p></div>
+  </div>
+</article>
+<article class="plate" id="p12">
+  <header class="ph"><span class="code">PL·12</span>
+    <h3>Data hazards: forwarding and the load-use stall</h3><p class="thesis">A result exists before it is written back. Forwarding passes it backwards to the instruction that needs it; the one thing it cannot do is go backwards in time, which costs a load-use bubble.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 210" role="img" aria-label="Forwarding paths">
+ <rect class="boxa" x="20" y="60" width="110" height="60" rx="3"/><text class="th" x="54" y="95">ID</text>
+ <rect class="boxa" x="180" y="60" width="110" height="60" rx="3"/><text class="th" x="214" y="95">EX</text>
+ <rect class="boxa" x="340" y="60" width="110" height="60" rx="3"/><text class="th" x="370" y="95">MEM</text>
+ <rect class="boxa" x="500" y="60" width="110" height="60" rx="3"/><text class="th" x="534" y="95">WB</text>
+ <path class="wd" d="M395 60 V36 H235 V60"/><text class="dvf" x="256" y="30" style="font-size:11px">dist 1: EX/MEM → EX (wins)</text>
+ <path class="wd" d="M555 60 V14 H215 V60"/><text class="dvf" x="380" y="10" style="font-size:11px">dist 2: MEM/WB → EX</text>
+ <path class="wd" d="M555 120 V150 H75 V120"/><text class="dvf" x="230" y="146" style="font-size:11px">dist 3: rf write-first (or WB → ID bypass)</text>
+ <path class="wb" d="M395 120 V180 H235 V120"/><text class="bugf" x="250" y="196" style="font-size:11px">load in MEM → EX: value not ready → stall 1</text>
+</svg></div>
+<table class="grid"><tr><th>pq5: remove one mechanism</th><th class="n">directed fail</th><th class="n">random fail</th></tr>
+<tr><td>no forward from MEM (dist 1)</td><td class="n">9/10</td><td class="n">100/100</td></tr>
+<tr><td>no forward from WB (dist 2)</td><td class="n">9/10</td><td class="n">57/100</td></tr>
+<tr><td>no write-through (dist 3)</td><td class="n">7/10</td><td class="n">54/100</td></tr>
+<tr><td>no load-use stall</td><td class="n">2/10</td><td class="n">26/100</td></tr>
+<tr><td class="bad">forwarding priority reversed</td><td class="n bad">2/10</td><td class="n bad">5/100</td></tr></table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Forward condition</b> per operand: <code>valid &amp;&amp; wr_en &amp;&amp; rd != 0 &amp;&amp; rd == rs</code>. Every term is a bug if missing: invalid (flushed) producer, a store or branch (no write), x0, wrong register.</li><li><b>Priority</b>: if two older instructions write the same register, the nearer one is newer. Reversing the priority fails only 5/100 random programs, so it needs a directed "write x5 three times then read" test or a coverage cross on (distance × same-rd).</li><li><b>Load-use</b>: the loaded value exists at the end of MEM; the next instruction needs it at the start of EX. One bubble, detected in ID: <code>EX.is_load &amp;&amp; EX.rd != 0 &amp;&amp; EX.rd ∈ {ID.rs1, ID.rs2}</code>.</li><li><b>Redundant guards can be proven</b>: pq5's "don't forward a load's address from MEM" guard is unreachable because the interlock already stalls. The assertion <code>a_loaduse</code> proves it.</li><li><b>Store data is an operand too</b>: rs2 of a store needs forwarding exactly like an ALU operand, and so does the branch compare in EX.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Read-after-write must observe the latest older write in program order.</li><li>The x0 source always reads 0, regardless of any in-flight write to x0.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Forwarding priority reversed: passes 95% of random tests.</li><li>Forwarding from a flushed (valid=0) instruction: a wrong-path value leaks into the right path.</li><li>Store data (rs2) not forwarded: the store writes a stale value; only a later load sees it.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you make sure forwarding is fully covered?</p><p>Cross producer type (ALU, load, jal link) × distance (1, 2, 3, 4+) × consumer operand (rs1, rs2, store data, branch) × same-rd collisions. Random programs with a small register pool (e.g. only x1–x6) hit it fast. Close the holes with directed sequences.</p></div>
+  </div>
+</article>
+<article class="plate" id="p13">
+  <header class="ph"><span class="code">PL·13</span>
+    <h3>Control hazards and branch prediction</h3><p class="thesis">Fetch has to guess the next PC before the branch is decoded. Correctness requires only that a wrong guess be squashed completely; performance is how rarely you guess wrong.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 200" role="img" aria-label="Prediction structures">
+ <rect class="boxa" x="10" y="20" width="140" height="60" rx="3"/><text class="th" x="22" y="44">Static</text><text class="tm" x="22" y="64">BTFN: backward taken,</text><text class="tm" x="22" y="76">forward not taken</text>
+ <rect class="boxa" x="165" y="20" width="140" height="60" rx="3"/><text class="th" x="177" y="44">BHT</text><text class="tm" x="177" y="64">2-bit counters,</text><text class="tm" x="177" y="76">gshare (pc ⊕ history)</text>
+ <rect class="boxa" x="320" y="20" width="140" height="60" rx="3"/><text class="th" x="332" y="44">BTB</text><text class="tm" x="332" y="64">pc → target,</text><text class="tm" x="332" y="76">tagged, set-assoc</text>
+ <rect class="boxa" x="475" y="20" width="135" height="60" rx="3"/><text class="th" x="487" y="44">RAS</text><text class="tm" x="487" y="64">return stack for</text><text class="tm" x="487" y="76">jalr ra (ret)</text>
+ <rect class="boxr" x="10" y="100" width="600" height="90" rx="4"/>
+ <text class="th" x="22" y="122">One check catches every kind of wrong guess</text>
+ <text class="t tmono" x="22" y="144">carry pred_npc with the instruction; in EX:</text>
+ <text class="t tmono" x="22" y="162">if (real_npc != pred_npc) flush younger, redirect pc ← real_npc</text>
+ <text class="tm" x="22" y="182">covers wrong direction, wrong target, unpredicted jalr and an aliased BTB hit on a non-branch</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Penalty = depth of resolution.</b> Resolving in EX costs 2 (pq5); resolving in ID costs 1 but needs a comparator plus forwarding into ID. Deep OOO cores pay 10–20 cycles, which is why predictors are large.</li><li><b>Recovery must undo speculative state</b>: in-order cores clear valid bits; OOO cores also restore the rename map (checkpoint or ROB walk), free physical registers, kill younger LSQ entries and repair the global history.</li><li><b>Predictor bugs are mostly performance bugs</b>, unless the predictor can produce a target that is never checked (e.g. a non-branch predicted taken, with no check in EX).</li><li><b>DV for prediction</b>: functional (every mispredict flushes completely), then performance (accuracy on known patterns: loops, alternating, correlated), then unit tests of replacement, aliasing and counter saturation.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Prediction is invisible to the ISA: wrong-path instructions must never retire or change memory.</li><li>A taken branch/jump to a misaligned target traps on the branch itself (no C).</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B15</span> BTB PLRU evicted the newest entry and ignored a free way.</li><li>Mispredict in the same cycle as an older load-use stall: the stall holds the wrong-path instruction.</li><li>RAS not repaired after a mispredicted call: every later return mispredicts (performance only).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you verify that a mispredict leaves no trace?</p><p>Directed: branch to code that would store or write registers on the wrong path, then check memory and the regfile. Random: lockstep ISS at retire, plus an SVA that nothing retires with a flushed ID, plus coverage of mispredict × wrong-path instruction type (store, load, CSR, branch).</p></div>
+  </div>
+</article>
+<article class="plate" id="p14">
+  <header class="ph"><span class="code">PL·14</span>
+    <h3>Out-of-order core: rename, issue, commit</h3><p class="thesis">Issue instructions when their operands are ready, not in program order, then retire in program order so software never notices. The ROB is the bridge between the two orders.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 640 270" role="img" aria-label="Tomasulo with reorder buffer">
+ <rect class="boxa" x="10" y="20" width="90" height="56" rx="3"/><text class="th" x="22" y="44">Fetch</text><text class="tm" x="22" y="62">+ predict</text>
+ <rect class="boxa" x="120" y="20" width="120" height="56" rx="3"/><text class="th" x="132" y="44">Rename</text><text class="tm" x="132" y="62">RAT: reg → tag</text>
+ <rect class="box" x="260" y="10" width="150" height="76" rx="3"/><text class="th" x="272" y="32">Reservation stns</text><text class="tm" x="272" y="50">wait for tags</text><text class="tm" x="272" y="66">select oldest-ready</text>
+ <rect class="box" x="430" y="10" width="90" height="34" rx="3"/><text class="t tb" x="442" y="32">ALU ×n</text>
+ <rect class="box" x="430" y="52" width="90" height="34" rx="3"/><text class="t tb" x="442" y="74">MUL/DIV</text>
+ <rect class="box" x="540" y="10" width="90" height="76" rx="3"/><text class="t tb" x="552" y="32">LSQ</text><text class="tm" x="552" y="52">PL-15</text>
+ <path class="w" d="M100 48 H120"/><path class="w" d="M240 48 H260"/><path class="w" d="M410 27 H430"/><path class="w" d="M410 69 H430"/>
+ <path class="wd" d="M475 86 V118"/><path class="wd" d="M585 86 V118"/>
+ <rect class="boxd" x="10" y="118" width="620" height="30" rx="3"/><text class="dvf tb" x="22" y="138">CDB: broadcast {tag, value} → RS wakeup + ROB fill</text>
+ <path class="wd" d="M335 118 V86"/>
+ <rect class="boxa" x="120" y="170" width="510" height="56" rx="3"/>
+ <text class="th" x="132" y="192">ROB (program order)</text>
+ <g class="tmono"><rect class="boxw" x="310" y="180" width="60" height="36"/><text class="t" x="320" y="202">head</text>
+ <rect class="boxw" x="370" y="180" width="60" height="36"/><rect class="boxw" x="430" y="180" width="60" height="36"/><rect class="boxw" x="490" y="180" width="60" height="36"/>
+ <rect class="boxw" x="550" y="180" width="60" height="36"/><text class="t" x="560" y="202">tail</text></g>
+ <path class="wa" d="M180 76 V170"/><text class="tm" x="186" y="160">allocate</text>
+ <path class="wa" d="M340 226 V250 H40"/><text class="t" x="44" y="264">commit in order → ARF, stores drain, exceptions taken here</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Renaming removes WAR and WAW</b>: each destination gets a fresh tag (ROB entry or physical register). Only true RAW dependences remain.</li><li><b>Wakeup/select is the critical loop</b>: the CDB tag compares against every RS source, and back-to-back dependent issue needs wakeup and select in one cycle. Tag width and CDB count bound IPC.</li><li><b>Tag 0 is a real tag.</b> Using 0 as "no tag" while also allocating ROB entry 0 means one entry can never be woken. Tomasulo lab bug <b>B04</b>: a deadlock that only shows when entry 0 is used for a long-latency op.</li><li><b>Free-list consistency</b>: two structures tracking the same resource (a dispatch free-list vs busy bits) will drift. Lab bug <b>B12</b> failed 79 of 120 random seeds before the fix.</li><li><b>Commit is where correctness is defined</b>: the scoreboard compares the commit stream, exceptions and interrupts are taken at the head, and stores leave the core only after commit.</li><li><b>Mispredict recovery</b>: squash everything younger than the branch in ROB, RS and LSQ; restore the RAT (checkpoint at the branch, or walk the ROB); free the tags.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Retire order = program order; retired state is always a precise architectural state.</li><li>No younger instruction may make a visible change before an older one retires (stores, CSRs, I/O loads).</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B04</span> ROB tag 0 could never be woken: deadlock.</li><li><span class='tag t-bug'>B05</span> A second DIV overwrote the first in the divider: deadlock and lost result.</li><li><span class='tag t-bug'>B11</span> MMU consumed one load-buffer entry twice. Caught by SVA A7 on the program that "passed".</li><li><span class='tag t-bug'>B12</span> Dispatch free-list disagreed with busy bits: 79/120 random seeds failed.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: What do you check in an OOO core beyond the commit stream?</p><p>Liveness (every allocated ROB entry eventually retires: watchdog plus SVA), resource conservation (free + used = total for ROB, RS, physical registers, LSQ, every cycle), uniqueness (no tag in two places), and no wakeup for a tag that is not in flight. Those are what found B04, B05, B11 and B12.</p></div>
+  </div>
+</article>
+<article class="plate" id="p15">
+  <header class="ph"><span class="code">PL·15</span>
+    <h3>Load/store queue and memory disambiguation</h3><p class="thesis">Registers are renamed but memory is not. A load that runs ahead of an older store to the same address reads stale data, unless the LSQ catches it.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 230" role="img" aria-label="Store to load forwarding">
+ <text class="th" x="10" y="20">Store queue (oldest → youngest)</text>
+ <g class="tmono">
+  <rect class="boxw" x="10" y="30" width="140" height="44"/><text class="t" x="18" y="50">sw 0x100 ← A</text><text class="tm" x="18" y="66">committed (senior)</text>
+  <rect class="boxw" x="150" y="30" width="140" height="44"/><text class="t" x="158" y="50">sw 0x104 ← B</text><text class="tm" x="158" y="66">addr known</text>
+  <rect class="boxb" x="290" y="30" width="140" height="44"/><text class="t" x="298" y="50">sw ??? ← C</text><text class="bugf" x="298" y="66" style="font-size:11px">addr unknown</text>
+ </g>
+ <rect class="boxa" x="460" y="30" width="150" height="44" rx="3"/><text class="t tmono" x="468" y="50">lw 0x104</text><text class="tm" x="468" y="66">younger load</text>
+ <path class="wd" d="M535 74 V88 H220 V74"/><text class="dvf" x="300" y="102" style="font-size:11px">search older stores, youngest first</text>
+ <rect class="boxr" x="10" y="110" width="600" height="112" rx="4"/>
+ <text class="t" x="22" y="132"><tspan class="tb">Match, full overlap</tspan>  → forward store data (B)</text>
+ <text class="t" x="22" y="152"><tspan class="tb">Partial overlap</tspan> (sb into a lw) → wait for the store to drain, or merge bytes</text>
+ <text class="t" x="22" y="172"><tspan class="tb">Older address unknown</tspan> (C) → wait (conservative) or speculate</text>
+ <text class="t" x="22" y="192"><tspan class="tb">Speculate</tspan> → when C resolves to 0x104, detect the violation and replay the load + younger</text>
+ <text class="tm" x="22" y="212">No match → read the cache. Stores write memory only after commit.</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Senior stores</b>: a committed store still in the queue is architecturally done but not yet in memory. Loads must still see it, flushes must not kill it, and a reset or flush that drops it loses data (lab <b>B13</b>, distilled into <code>b19_senior_store</code>).</li><li><b>Byte-level overlap</b>: compare address <i>and</i> size. sb 0x101 then lw 0x100 overlaps one byte. Comparing word addresses only forwards the whole word: wrong.</li><li><b>Ordering inside the LSQ</b>: the youngest older store wins. Multiple loads to one address must each complete (lab <b>B08</b>: the third load was marked done and never broadcast).</li><li><b>Memory consistency</b>: single-core needs program-order semantics for one hart. Multi-core RVWMO allows more reordering, but FENCE must restore order, and atomics (A ext) need LR/SC reservation rules.</li><li><b>DV stimulus</b>: small address pools (8–16 lines), mixed sizes and offsets, stores with late addresses (dependent on a slow divide), and many loads in flight. That is how B07 and B13 were found by random before directed tests existed.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>A load returns the value of the youngest older store to each byte, else memory.</li><li>Stores are not visible outside the core until commit.</li><li>FENCE orders memory operations as specified (predecessor/successor sets).</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>B07</span> Loads ignored older stores (no disambiguation): wrong data on aliasing.</li><li><span class='tag t-bug'>B08</span> The third load to one address never broadcast: deadlock.</li><li><span class='tag t-bug'>B13</span> Store-queue ordering: deadlocks, orphaned and bypassed stores.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How would you stress an LSQ?</p><p>Constrain addresses to a few lines so aliasing is common, mix byte/half/word at all offsets, make store addresses depend on long-latency ops so loads run ahead, and fill the queues (back-pressure). Check with the ISS at commit, plus SVA that the store queue drains in order and nothing is lost on a flush.</p></div>
+  </div>
+</article>
+<article class="plate" id="p16">
+  <header class="ph"><span class="code">PL·16</span>
+    <h3>Memory hierarchy: caches, coherence, translation</h3><p class="thesis">Caches and TLBs must be invisible to the ISA except for timing. Verifying them is mostly about proving that invisibility under replacement, races and multiple masters.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 220" role="img" aria-label="Cache address breakdown and MESI">
+ <text class="th" x="10" y="20">Address split (32 KiB, 4-way, 64 B lines)</text>
+ <g class="tmono"><rect class="boxa" x="10" y="30" width="300" height="34"/><text class="acc" x="120" y="52">tag [31:13]</text>
+ <rect class="boxw" x="310" y="30" width="140" height="34"/><text class="t" x="340" y="52">index [12:6]</text>
+ <rect class="boxr" x="450" y="30" width="160" height="34"/><text class="t" x="480" y="52">offset [5:0]</text></g>
+ <text class="tm" x="10" y="82">sets = 32K / (64 × 4) = 128 → 7 index bits; tag = 32 − 7 − 6 = 19 bits</text>
+ <text class="th" x="10" y="112">MESI (per line, per core)</text>
+ <g><rect class="boxd" x="10" y="124" width="110" height="40" rx="3"/><text class="t tb" x="18" y="149">M modified</text>
+ <rect class="boxd" x="140" y="124" width="110" height="40" rx="3"/><text class="t tb" x="148" y="149">E exclusive</text>
+ <rect class="boxd" x="270" y="124" width="110" height="40" rx="3"/><text class="t tb" x="278" y="149">S shared</text>
+ <rect class="boxw" x="400" y="124" width="110" height="40" rx="3"/><text class="t tb" x="408" y="149">I invalid</text></g>
+ <text class="tm" x="10" y="186">invariant: one M or E holder per line, or any number of S; a write needs M (invalidate the others first)</text>
+ <text class="tm" x="10" y="206">AMAT = hit time + miss rate × miss penalty   ·   misses: compulsory, capacity, conflict (+ coherence)</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Write-back + write-allocate</b> is the usual L1D. A dirty line must be written back before eviction, and an eviction racing a read of the same line is a classic corner.</li><li><b>Replacement</b>: LRU, PLRU or random never change results, only timing. A broken replacement policy is a performance bug, unless it evicts a line with a pending fill.</li><li><b>Coherence verification</b> = invariants plus a golden memory: single-writer/multiple-reader per line, data value = last write in a global order, no lost writebacks. Use formal on the protocol tables and random with heavy line sharing.</li><li><b>Virtual memory (Sv32)</b>: 2-level page walk, PTE V/R/W/X/U/A/D bits, page faults (cause 12/13/15). TLB bugs: stale entries after <code>sfence.vma</code>, a missed A/D update, wrong permission on superpages.</li><li><b>Self-modifying code</b>: instruction fetch may be stale after a store until <code>fence.i</code> (Zifencei). The ISS and the DUT must agree on when the new code becomes visible.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Without fences, a single hart still sees its own stores in program order.</li><li>Caches are architecturally invisible: a timing difference only.</li><li><code>fence.i</code> synchronises the instruction and data streams of one hart.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Eviction of a dirty line racing a new miss to the same set: the writeback uses the new tag.</li><li>A snoop hit on a line in transit (fill pending): a stale S state.</li><li><code>sfence.vma</code> doesn't flush the global entries the spec requires: stale translation.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you verify a cache you can't see from the ISA?</p><p>Reference memory model at the cache boundary (every load returns the latest write), invariants as SVA (one owner, dirty implies valid, no hit on two ways), stimulus that forces conflict misses (addresses mapping to one set) and back-to-back evict/refill, and coverage of every state-transition × request type.</p></div>
+  </div>
+</article><section class="part" id="part-IV"><span class="num">IV</span><h2>Verification</h2><p>Proving it, and proving the proof</p></section>
+<article class="plate" id="p17">
+  <header class="ph"><span class="code">PL·17</span>
+    <h3>CPU verification strategy</h3><p class="thesis">No single method closes a CPU. Each layer finds the bugs the others are blind to, and the plan says which layer owns which risk.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 270" role="img" aria-label="Verification layers">
+ <polygon class="boxw" points="310,10 400,60 220,60"/><text class="t tb" x="270" y="50">Silicon</text>
+ <polygon class="boxa" points="220,64 400,64 450,104 170,104"/><text class="t tb" x="214" y="90">Emulation / FPGA: OS boot, 10⁹+ instr</text>
+ <polygon class="boxd" points="170,108 450,108 500,148 120,148"/><text class="t tb" x="160" y="134">SoC: coherence, interrupts, DMA, power</text>
+ <polygon class="boxd" points="120,152 500,152 550,192 70,192"/><text class="t tb" x="100" y="178">Core: ISS lockstep · random streams · compliance · SVA</text>
+ <polygon class="boxd" points="70,196 550,196 600,236 20,236"/><text class="t tb" x="40" y="222">Unit: ALU/decoder/LSQ/predictor · formal · exhaustive · mutation</text>
+ <text class="tm" x="20" y="258">cheap, controllable, fast debug at the bottom · realistic, slow, hard to debug at the top</text>
+</svg></div>
+<table class="grid"><tr><th>Method</th><th>Owns the risk of</th><th>Blind to</th></tr>
+<tr><td>ISS lockstep (commit compare)</td><td>wrong architectural result</td><td>timing, protocol, performance, no-data-effect bugs</td></tr>
+<tr><td>Constrained-random streams (riscv-dv style)</td><td>hazard / interleaving corners</td><td>anything the constraints exclude</td></tr>
+<tr><td>Directed + compliance (riscv-arch-test)</td><td>spec-listed behaviour, regressions</td><td>combinations nobody wrote</td></tr>
+<tr><td>SVA / formal (riscv-formal, RVFI)</td><td>invariants for all inputs, protocol</td><td>long sequences (depth-bound)</td></tr>
+<tr><td>Functional coverage</td><td>"did we try it?"</td><td>"was it checked?"</td></tr>
+<tr><td>Mutation / TB qualification</td><td>"would we notice?"</td><td>bugs unlike the mutants</td></tr></table></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Start from risk, not from tests</b>: list features × failure modes (wrong value, hang, wrong order, lost update, performance) and assign a checker and a stimulus to each cell. That table is the verification plan.</li><li><b>Checker before stimulus</b>: a perfect stimulus with a weak checker finds nothing. The YARP course TB passed with a broken store path because nothing compared stores directly.</li><li><b>Open-source anchors worth naming</b>: riscv-dv (SV/UVM random instruction generator), riscv-arch-test (compliance), Spike / Sail (golden models; Sail is the formal spec), riscv-formal with RVFI (formal ISA checks via a standard retire port).</li><li><b>Sign-off is a set of trends</b>: coverage closed (and the holes waived with reasons), bug-find rate flattened, regressions stable over N nights, mutation score adequate, and every spec rule mapped to a check.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Every spec rule maps to at least one checker, and every checker to at least one test that exercises it (coverage).</li><li>Every waiver of a coverage hole has a written reason and an owner.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Method blind spot in the lab: <span class='tag t-bug'>P2</span> (fetch while pending) has no data effect, so the scoreboard was 0/6; SVA R10 caught it.</li><li>Performance blind spot: pq5 "no prediction" passed every functional test.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: You join a CPU team mid-project. What do you look at first?</p><p>The verification plan's feature × check × coverage map and where it is thin; the bug database trend per unit (where bugs still arrive); whether the golden-model compare covers everything that retires (CSRs, traps, memory); and whether anything checks liveness and performance.</p></div>
+  </div>
+</article>
+<article class="plate" id="p18">
+  <header class="ph"><span class="code">PL·18</span>
+    <h3>Golden model and the commit scoreboard</h3><p class="thesis">Step a reference ISS once per retired instruction and compare everything that instruction changed. Small, fast and exact: this is the backbone of every CPU testbench.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 250" role="img" aria-label="Lockstep scoreboard">
+ <rect class="boxa" x="10" y="20" width="170" height="120" rx="4"/><text class="th" x="22" y="44">DUT</text><text class="tm" x="22" y="64">retire port (RVFI-like):</text>
+ <text class="t tmono" x="22" y="84">pc, instr, rd, wdata</text><text class="t tmono" x="22" y="100">mem addr/size/wdata</text><text class="t tmono" x="22" y="116">trap, csr writes</text>
+ <rect class="boxd" x="220" y="40" width="170" height="80" rx="4"/><text class="th" x="232" y="64">Scoreboard</text><text class="tm" x="232" y="84">per retire:</text><text class="tm" x="232" y="100">step(); compare()</text>
+ <rect class="boxw" x="430" y="20" width="180" height="120" rx="4"/><text class="th" x="442" y="44">ISS (C/C++ via DPI)</text>
+ <text class="t tmono" x="442" y="66">init()</text><text class="t tmono" x="442" y="82">step(instr)</text><text class="t tmono" x="442" y="98">compare_pc(addr)</text><text class="t tmono" x="442" y="114">compare_reg(i,v)</text><text class="t tmono" x="442" y="130">compare_mem(a,sz,wr,d)</text>
+ <path class="wa" d="M180 80 H220"/><path class="wd" d="M390 80 H430"/><path class="wd" d="M430 100 H390"/>
+ <rect class="boxr" x="10" y="160" width="600" height="80" rx="4"/>
+ <text class="th" x="22" y="182">When to compare</text>
+ <text class="t" x="22" y="202">ALU/branch/jump: at the instruction handshake (retires that edge)</text>
+ <text class="t" x="22" y="220">load/store: at the data handshake (retire waits for it); compare address, size, wdata too</text>
+ <text class="tm" x="22" y="236">sample RTL state AFTER the retire edge settles: negedge, or the write-port values themselves (PL-21)</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Lockstep vs end-of-test</b>: comparing only final registers misses overwritten errors and gives no location. Comparing per retire pinpoints the first divergence. That is the instruction you debug.</li><li><b>Compare deltas, not the world</b>: comparing all 32 registers every retire (the course TB) is simple and slow. Comparing the one written register plus a periodic full check is how large cores do it.</li><li><b>Model the same policy as the RTL</b>: reset PC, alignment, illegal-instruction behaviour, unreset registers. In the lab a C++ model was written to the YARP policy and cross-checked against a Python ISS on 213/213 programs before it was trusted.</li><li><b>Non-determinism</b>: interrupts, mcycle/time, memory-mapped I/O and LR/SC success can't be predicted. The ISS follows the DUT for those (inject the interrupt, copy the read value), and separate checks judge whether the DUT's choice was legal.</li><li><b>Memory compare is a separate stream</b>: a correct register result with a phantom access (Y3) or a missing store (D2) passes the register compare.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>One retire event ⇒ exactly one step(). Never step speculatively.</li><li>Compare PC first. A PC mismatch makes every later compare noise.</li><li>Fail on the first mismatch with expected vs actual and the instruction.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>S2</span> Course scoreboard read RTL regs from a thread woken by @cb: a race with the regfile NBA. Fixed by sampling at negedge.</li><li><span class='tag t-bug'>S3</span> No count check: a hung core or a dropped handshake passed.</li><li><span class='tag t-bug'>A1</span> End of test 32 cycles after the generator, not the driver: the last load was still pending, so a false mismatch (or the last instruction went unchecked).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Your ISS and RTL disagree. How do you decide who is wrong?</p><p>Go to the spec text for that instruction and corner, then a second model (Sail or Spike vs your ISS), then the RTL. Model bugs are real: cross-check the model independently before trusting it, as the lab did on 213 programs.</p></div>
+  </div>
+</article>
+<article class="plate" id="p19">
+  <header class="ph"><span class="code">PL·19</span>
+    <h3>Class-based testbench anatomy</h3><p class="thesis">Generator → driver → DUT → monitor → scoreboard, joined by mailboxes and one virtual interface. Every component has one job, so a test can change stimulus without touching any of them.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 640 260" role="img" aria-label="Testbench components">
+ <rect class="boxw" x="10" y="10" width="620" height="240" rx="6"/><text class="tm" x="20" y="28">environment: builds mailboxes, agent, scoreboard; runs them; end_of_test</text>
+ <rect class="boxw" x="20" y="38" width="380" height="140" rx="5"/><text class="tm" x="30" y="56">agent</text>
+ <rect class="boxd" x="30" y="66" width="100" height="56" rx="3"/><text class="th" x="40" y="88">generator</text><text class="tm" x="40" y="108">blueprint.copy()</text>
+ <rect class="boxd" x="160" y="66" width="100" height="56" rx="3"/><text class="th" x="170" y="88">driver</text><text class="tm" x="170" y="108">plays memory</text>
+ <rect class="boxd" x="290" y="66" width="100" height="56" rx="3"/><text class="th" x="300" y="88">monitor</text><text class="tm" x="300" y="108">samples /cycle</text>
+ <path class="wd" d="M130 94 H160"/><text class="tm" x="132" y="86">mbx</text>
+ <rect class="boxa" x="160" y="196" width="230" height="40" rx="3"/><text class="th" x="172" y="221">vif → DUT (YARP)</text>
+ <path class="wa" d="M210 122 V196"/><path class="wa" d="M340 196 V122"/>
+ <rect class="boxd" x="440" y="66" width="180" height="56" rx="3"/><text class="th" x="450" y="88">scoreboard</text><text class="tm" x="450" y="108">ISS via DPI</text>
+ <path class="wd" d="M390 94 H440"/><text class="tm" x="396" y="86">mbx</text>
+ <rect class="boxr" x="440" y="140" width="180" height="96" rx="3"/><text class="t tb" x="450" y="160">test</text><text class="tm" x="450" y="178">env.agent.gen.blueprint</text><text class="tm" x="450" y="194">  = new yarp_tr_cmp;</text><text class="tm" x="450" y="214">no base class edited</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Blueprint pattern</b>: the generator constructs one transaction in new() and calls randomize() + copy() in run(). A test swaps the blueprint for a subclass with extra constraints. This is the pre-UVM version of a factory override.</li><li><b>copy() before put()</b>: putting the blueprint itself means every mailbox entry is the same object, and the driver sees the last randomization N times. The copy must copy every field (bug <b>T3</b>).</li><li><b>Reactive driver</b>: for a CPU, the TB is the memory. The driver waits for a request, waits the transaction's delay, then drives ready and data. Stimulus = instruction + delays.</li><li><b>Monitor samples every cycle</b>; the handshake is decoded in the scoreboard. The monitor must never block (unbounded mailbox) or it skips cycles.</li><li><b>End of test is a protocol</b>: the generator done → the driver done (count) → drain cycles → scoreboard completeness check (retired == num_tr, nothing pending) → a watchdog for hangs.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Components talk only through mailboxes and the interface, never by hierarchical references into each other.</li><li>Construction in new(), activity in run(): that ordering is what makes overrides possible.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>C2</span> agent.sv included before monitor.sv: type used before declaration.</li><li><span class='tag t-bug'>C3</span> scoreboard run() was a function calling mailbox.get(), a blocking task.</li><li><span class='tag t-bug'>A1</span> drain counted from the generator, not the driver.</li><li><span class='tag t-bug'>W1</span> no watchdog: a hung core ran forever (10/10 seeds on mutant P1).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How does this map to UVM?</p><p>Transaction = sequence_item; generator + blueprint = sequence + factory override; mailbox = TLM port/fifo; driver/monitor/agent the same; scoreboard = subscriber; end-of-test drain = objections + drain time; watchdog = global timeout.</p></div>
+  </div>
+</article>
+<article class="plate" id="p20">
+  <header class="ph"><span class="code">PL·20</span>
+    <h3>Constrained-random instruction generation</h3><p class="thesis">A solver picks uniformly among all solutions, not among the opcodes you had in mind. Instruction streams need the opcode chosen first, legal control flow, and a deliberate register and address strategy.</p></header>
+  <div class="pb"><div class="fig">
+<table class="grid"><tr><th>Observed mix (course TB, 3 seeds × 50)</th><th class="n">share</th><th>Why</th></tr>
+<tr><td>JAL (J-type)</td><td class="n bad">49%</td><td>funct3, funct7, rs1, rs2, imm12 all unconstrained → huge solution count</td></tr>
+<tr><td>LUI / AUIPC (U-type)</td><td class="n bad">35%</td><td>same: unused fields still multiply the solutions</td></tr>
+<tr><td>R-type</td><td class="n">1% (2 of 150)</td><td>funct7 pinned to 1–2 values</td></tr>
+<tr><td>Load / store</td><td class="n">2 accesses total</td><td>funct3 and imm restricted</td></tr></table>
+<div class="scroll"><svg viewBox="0 0 620 120" style="margin-top:10px" role="img" aria-label="Fix by choosing the opcode first">
+ <rect class="boxb" x="10" y="10" width="290" height="100" rx="4"/><text class="th" x="22" y="32">Before</text>
+ <text class="t tmono" x="22" y="54">rand opcode, rd, rs1, rs2,</text><text class="t tmono" x="22" y="70">     funct3, funct7, imm…</text><text class="t tmono" x="22" y="90">randomize();  // one solve</text>
+ <rect class="boxd" x="320" y="10" width="290" height="100" rx="4"/><text class="th" x="332" y="32">After</text>
+ <text class="t tmono" x="332" y="54">pre_randomize: randcase w_r: R…</text><text class="t tmono" x="332" y="70">opcode.rand_mode(0);</text><text class="t tmono" x="332" y="90">// or: solve opcode before …</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Uniform over solutions</b> is the LRM rule. <code>solve opcode before funct3, …</code> makes the opcode uniform first; <code>dist</code> adds weights. Verilator ignored both here, so the portable fix was a weighted randcase in pre_randomize plus <code>rand_mode(0)</code>.</li><li><b>Legal control flow</b>: B/J immediates keep bit 1 clear, JALR jumps to an aligned absolute target (rs1 = x0). Otherwise the PC wanders into unaligned or unmapped space.</li><li><b>Alignment constraints on imm are useless</b> when the base register is random: rs1 + imm is what must be aligned. Either constrain the base (x0 window), or make the model and memory handle misalignment.</li><li><b>Register pool</b>: draw from a small pool (x1–x6) so dependences and forwarding happen; reserve registers for addresses and loop counters in streams.</li><li><b>Constraint override by name</b>: a subclass constraint with the same name replaces the base one (used for the b2b and stall delay profiles); different names AND together.</li><li><b>Instruction streams</b> (riscv-dv): build sequences with intent (loops, call/return, load/store patterns), not just independent instructions.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Never generate an encoding the plan has not decided how to check (illegal, reserved, misaligned): either constrain it out or model it.</li><li>Measure the mix every run. A histogram is a one-line check.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>T1</span> opcode skew: R/branch/memory almost untested while every run passed.</li><li><span class='tag t-bug'>T2</span> 2-aligned branch targets: undefined territory for a core without C.</li><li><span class='tag t-bug'>T3</span> copy() skipped the instruction fields.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Your random test passes 1000 seeds. Are you done?</p><p>Only if coverage says the seeds did something. Print the opcode histogram and the corner bins. Here 1000 passing seeds were 70% JAL/LUI, with almost no memory traffic and zero SUBs.</p></div>
+  </div>
+</article>
+<article class="plate" id="p21">
+  <header class="ph"><span class="code">PL·21</span>
+    <h3>Clocking blocks, sampling and races</h3><p class="thesis">Three of the worst testbench bugs in the lab came from when a value is read, not what is read. Know the scheduler well enough to say which value you get.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 240" role="img" aria-label="Clocking block sampling and drive">
+ <path class="w" d="M20 50 H120 V20 H300 V50 H480 V20 H600"/><text class="tm" x="20" y="14">clk</text>
+ <line class="wm" x1="120" y1="10" x2="120" y2="230"/><line class="wm" x1="480" y1="10" x2="480" y2="230"/>
+ <rect class="boxd" x="96" y="62" width="24" height="18"/><text class="dvf" x="20" y="76" style="font-size:11px">#1step</text>
+ <text class="t" x="130" y="76">cb.x reads the value from just BEFORE the edge</text>
+ <rect class="boxa" x="120" y="92" width="18" height="18"/><text class="t" x="146" y="106">cb.y &lt;= v is applied after the edge (output skew)</text>
+ <rect class="boxb" x="10" y="124" width="600" height="104" rx="4"/>
+ <text class="t" x="22" y="146"><tspan class="tb bugf">D2</tspan>  drive cb.ready &lt;= 1, then test cb.ready → still 0 (old sample) → store never written</text>
+ <text class="t" x="22" y="168"><tspan class="tb bugf">D3</tspan>  forked "ready &lt;= 0" and next txn "ready &lt;= 1" wake on the same edge → tool-dependent winner</text>
+ <text class="t" x="22" y="190"><tspan class="tb bugf">S2</tspan>  class thread woken by @cb reads RTL regfile → may run before the NBA update</text>
+ <text class="tm" x="22" y="214">Fix pattern: decide from your own state, drive once per edge inline, sample RTL state half a cycle later</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Inputs are sampled in the Preponed region</b> (<code>#1step</code>): the value the design had just before the edge. That is race-free and correct for monitors, and a trap if you expect to see what you just drove.</li><li><b>Outputs are applied in Re-NBA</b> (with output skew): after the design's NBAs for that edge. Two drives in the same step: the last one wins, and "last" depends on thread order.</li><li><b>Class threads woken by @cb run in the Reactive/Active part of the step</b>. Hierarchical peeks at design flops can see old or new values depending on the simulator. Sample at negedge, or tap the write port (wr_en, rd, data) so the value is the event.</li><li><b>A responder sees req one edge late.</b> A clocked driver that waits to see req before raising ready costs a cycle per transfer; holding ready high in advance is legal and gives back-to-back transfers.</li><li><b>Direction discipline</b>: one clocking block per role (drv_cb with outputs, mon_cb all inputs) plus modports. An all-<code>inout</code> block (the original interface) lets a monitor drive the bus with no complaint.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Drive each signal from exactly one place per clock edge.</li><li>Monitors use clocking-block inputs only; never sample with a bare @(posedge clk) in a class.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li><span class='tag t-bug'>D2</span> stale sampled ready: stores never reached the TB memory model.</li><li><span class='tag t-bug'>D3</span> fork/join_none deassert raced the next assert.</li><li><span class='tag t-bug'>S2</span> regfile read from @cb thread: scheduler-dependent.</li><li><span class='tag t-bug'>D1</span> ready/rd_data left X after reset.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: What does #1step mean in a clocking block?</p><p>Sample in the Preponed region of the clock's time step, i.e. the last value before any update caused by that edge. It removes the race between the design changing a signal on the edge and the testbench reading it.</p></div>
+  </div>
+</article>
+<article class="plate" id="p22">
+  <header class="ph"><span class="code">PL·22</span>
+    <h3>Assertions: protocol rules and microarchitecture invariants</h3><p class="thesis">An assertion checks behaviour at the cycle it happens, for every test that binds it. It is the only checker for bugs that never produce a wrong value.</p></header>
+  <div class="pb"><div class="fig">
+<table class="grid"><tr><th>Kind</th><th>Example</th><th>Caught in the labs</th></tr>
+<tr><td>Protocol hold/stable</td><td class="mono">req &amp;&amp; !ready |=&gt; req &amp;&amp; $stable(addr)</td><td>P3 (R2), P1 (R4)</td></tr>
+<tr><td>Protocol exclusion</td><td class="mono">d_wait |=&gt; !i_req</td><td><b>P2: only this</b></td></tr>
+<tr><td>Decode legality</td><td class="mono">opcode==JALR |-&gt; !data_req</td><td>Y3 (at source)</td></tr>
+<tr><td>Uniqueness</td><td class="mono">$onehot0(lq_tag_match)</td><td>B11 (A7)</td></tr>
+<tr><td>Conservation</td><td class="mono">free + used == DEPTH</td><td>B12 class</td></tr>
+<tr><td>Liveness (bounded)</td><td class="mono">alloc |-&gt; ##[1:MAX] retire</td><td>B04, B05, B08</td></tr>
+<tr><td>Proved-redundant guard</td><td class="mono">a_loaduse</td><td>pq5 dead code</td></tr></table>
+<div class="callout">Pair each important assertion with a <b>cover</b> of its trigger. An assertion whose antecedent never fires is vacuously true: green and useless.</div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Where to put them</b>: protocol SVA in the interface (every env gets them), microarchitecture invariants bound to the RTL with <code>bind</code> (designers can own them), and ISA-level properties in formal (riscv-formal style).</li><li><b>|-&gt; vs |=&gt;</b>: overlapping (same cycle) vs next cycle. Payload stability is <code>|=&gt; $stable</code>; a same-cycle relation (R3: data req starts with the instruction handshake) is <code>|-&gt;</code>.</li><li><b>disable iff (!reset_n)</b> on everything, or every reset becomes a failure.</li><li><b>Assertions find bugs earlier in time</b>: P1 (no instruction latch) was a 10/10 hang in the original TB. With SVA it failed on the exact cycle with "R4 data_mem_req dropped before ready".</li><li><b>Formal on small blocks</b>: decoder, ALU, arbiters, FIFOs and protocol FSMs can be proven completely. Prove the unit, simulate the core.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Every spec protocol rule has one named assertion and one cover.</li><li>Assertions must never fire on correct RTL: run them on the known-good design first (0/9 false fires in the lab).</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Original course interface had no assertions: P2 was invisible to every test.</li><li>Vacuous pass: an assertion on a signal renamed in RTL compiles against a stale wire and never triggers. Covers expose it.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Give an example of a bug only an assertion can catch.</p><p>In the lab: the core kept fetching while a load was pending, which the spec forbids. The memory model happened not to answer, so no result was ever wrong, and the scoreboard passed 6/6. The protocol assertion d_wait |=> !i_req failed at once.</p></div>
+  </div>
+</article>
+<article class="plate" id="p23">
+  <header class="ph"><span class="code">PL·23</span>
+    <h3>Functional coverage that finds bugs</h3><p class="thesis">Coverage answers "did we exercise it?". Model the corners where bugs hide (operand classes, hazard distances, protocol timing), not just opcodes, and close the holes with targeted stimulus.</p></header>
+  <div class="pb"><div class="fig">
+<table class="grid"><tr><th>Bin (scoreboard, clean RTL)</th><th class="n">default s2</th><th class="n">mem s1</th><th class="n">cmp s1</th><th class="n">merged 9 runs</th></tr>
+<tr><td>SLT  a&lt;0≤b</td><td class="n bad">0</td><td class="n bad">0</td><td class="n">16</td><td class="n">41</td></tr>
+<tr><td>SLT  a≥0&gt;b</td><td class="n bad">0</td><td class="n bad">0</td><td class="n">18</td><td class="n">45</td></tr>
+<tr><td>SLT  both neg</td><td class="n bad">0</td><td class="n bad">0</td><td class="n">5</td><td class="n">17</td></tr>
+<tr><td>BLT/BGE both neg</td><td class="n bad">0</td><td class="n bad">0</td><td class="n">3</td><td class="n">9</td></tr>
+<tr><td>SLTU msb set</td><td class="n bad">0</td><td class="n bad">0</td><td class="n">18</td><td class="n">42</td></tr>
+<tr><td>LBU loaded bit 7 set</td><td class="n bad">0</td><td class="n">4</td><td class="n">0 (no loads)</td><td class="n">18</td></tr>
+<tr><td>Holes in this run</td><td class="n bad">yes</td><td class="n bad">yes</td><td class="n bad">yes (loads)</td><td class="n good">none</td></tr></table>
+<div class="callout d">Closure loop that fixed the SLT escape: <b>Y1 caught 5/6</b> → coverage showed SLT sign corners at 0 in the escaped run → added the <code>cmp</code> test → merged holes 0 → <b>Y1 caught 9/9</b>.</div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Instruction × operand class</b> (zero, ±1, max, min, sign mix) for every compare, shift and add. That is where Y1, Y2 and B14 live.</li><li><b>Hazard crosses</b>: producer type × distance × consumer operand × same-rd chains (PL-12). Control: branch type × taken × predicted × resolved-wrong.</li><li><b>Protocol timing</b>: delay 0 / 1 / long on each interface × instruction class (load stalled while... ), back-to-back handshakes, ready without request.</li><li><b>Microarchitecture state</b>: queue full / empty / wrap for ROB, RS, LSQ; every FSM state × input; flush arriving in every state.</li><li><b>Coverage ≠ checking</b>: a hit bin only says the situation occurred. Pair it with a checker that would fail there (mutation testing proves that, PL-24).</li><li><b>Per-test holes are fine</b>: the cmp test has no loads, and mem has few compares. Sign-off uses merged regression coverage.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Each coverage point maps to a plan item, and each hole is closed or waived with a reason.</li><li>Sample coverage at the same event the checker uses (retire), with pre-instruction operand values.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Escape: Y1 missed in the mem run because SLT never saw mixed signs.</li><li>Hidden hole: SLTU with bit 31 set was 0 in every default and mem run; nobody had looked.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: 100% code coverage. Is the design verified?</p><p>No. Code coverage says each line toggled, not that it was checked, or that the right combinations happened. Y1's buggy line executed in every run; only the sign-mixed operands exposed it. Use functional coverage of the corners plus checkers, plus mutation to prove the checkers fire.</p></div>
+  </div>
+</article>
+<article class="plate" id="p24">
+  <header class="ph"><span class="code">PL·24</span>
+    <h3>Qualifying the testbench: mutation testing</h3><p class="thesis">Put known bugs into the RTL and see if the testbench notices. It is the only direct measure of checker strength, and it found five testbench weaknesses that passing tests had hidden.</p></header>
+  <div class="pb"><div class="fig">
+<table class="grid"><tr><th>#</th><th>Injected bug</th><th>Original TB<br>real / false / hung</th><th class="n">Fixed TB</th><th>By</th></tr>
+<tr><td>0</td><td>none</td><td>0 / <b class="bad">4</b> / 0</td><td class="n good">0/9</td><td>–</td></tr>
+<tr><td>1</td><td>SLT magnitude</td><td>3 / 3 / 0</td><td class="n good">9/9</td><td>reg</td></tr>
+<tr><td>2</td><td>branch signedness</td><td class="bad">0 / 4 / 0</td><td class="n good">9/9</td><td>PC</td></tr>
+<tr><td>3</td><td>JALR phantom load</td><td>9 / 1 / 0</td><td class="n good">9/9</td><td>mem</td></tr>
+<tr><td>4</td><td>no instr latch</td><td class="bad">0 / 0 / 10</td><td class="n">6/9</td><td>SVA R4</td></tr>
+<tr><td>5</td><td>fetch while pending</td><td class="bad">0 / 4 / 0</td><td class="n">6/9</td><td>SVA R10</td></tr>
+<tr><td>6</td><td>PC ignores ready</td><td>10 / 0 / 0</td><td class="n good">9/9</td><td>SVA R2</td></tr>
+<tr><td>7</td><td>load retires early</td><td>9 / 1 / 0</td><td class="n">6/9</td><td>PC</td></tr>
+<tr><td>8</td><td>SUB as ADD</td><td class="bad">0 / 4 / 0</td><td class="n">6/9</td><td>reg</td></tr>
+<tr><td>9</td><td>LBU sign-extends</td><td class="bad">0 / 4 / 0</td><td class="n">3/9</td><td>reg (mem test)</td></tr></table>
+<p class="tm" style="margin:6px 0 0;font-size:12px">Original: 50 instr × 10 seeds. Fixed: 500 instr × {default, mem, cmp} × 3 seeds. Every mutant is caught by the fixed regression; misses are tests that by design have no loads (cmp) or no SUB.</p></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Run the clean design first</b>: the original TB failed 4/10 seeds on correct RTL (misalignment $fatal). A testbench with false failures trains people to rerun until green.</li><li><b>Classify each failure</b>: real mismatch vs TB crash vs hang. Counting all three as "detected" inflates the score; the original TB's hangs and $fatals were not detection.</li><li><b>One build, runtime select</b>: <code>+MUT=n</code> picks the bug, so 10 mutants cost 2 builds instead of 20 (the first attempt hung for an hour rebuilding per mutant, without a watchdog).</li><li><b>Pick mutants like real bugs</b>: signedness, missing gating, wrong default, dropped latch, protocol shortcut. Random operator flips mostly produce instantly obvious failures.</li><li><b>A surviving mutant is a plan item</b>: either a missing checker (P2 → SVA), missing stimulus (Y1 → cmp test, P6 → mem test), or an equivalent mutant (then document it).</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Mutation score is per regression, not per test.</li><li>Every surviving mutant gets a reason: fixed, equivalent, or waived.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>TB weaknesses found this way: weak stimulus (T1), broken store path (D2), early end (A1), no SVA (P2), no watchdog (W1).</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: How do you know your testbench is good enough?</p><p>Coverage says what was exercised; mutation says what would be noticed. I inject realistic bugs, require the regression to catch every one with zero false failures on clean RTL, and treat each survivor as a missing checker or stimulus. On YARP that took detection from 4 of 9 bugs to 9 of 9.</p></div>
+  </div>
+</article><section class="part" id="part-V"><span class="num">V</span><h2>Interview</h2><p>Bugs, debug, and the answers</p></section>
+<article class="plate" id="p25">
+  <header class="ph"><span class="code">PL·25</span>
+    <h3>Bug catalog: symptom → cause → what caught it</h3><p class="thesis">Interviewers ask for bug stories. These are real ones from three cores and one testbench, grouped by the mechanism that failed. Learn the pattern, not the instance.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><table class="grid" style="min-width:600px">
+<tr><th>Pattern</th><th>Bug</th><th>Symptom</th><th>Caught by</th></tr>
+<tr><td rowspan="3"><b>Signedness</b></td><td>Y1 SLT |a|&lt;|b|</td><td>wrong 0/1 on mixed signs</td><td>ISS + sign coverage</td></tr>
+<tr><td>Y2 branch compares</td><td>wrong path</td><td>ISS PC compare</td></tr>
+<tr><td>B02 zero-ext imm</td><td>addi −1 → 0xFFF</td><td>directed</td></tr>
+<tr><td rowspan="2"><b>Missing gate</b></td><td>Y4 first-cycle write</td><td>first instr ×2</td><td>hostile imem</td></tr>
+<tr><td>Y3 JALR data_req</td><td>phantom load</td><td>mem-access compare</td></tr>
+<tr><td rowspan="3"><b>Lost / never woken</b></td><td>B04 ROB tag 0</td><td>deadlock</td><td>watchdog, liveness SVA</td></tr>
+<tr><td>B08 3rd load to addr</td><td>deadlock</td><td>directed distillation</td></tr>
+<tr><td>B05 2nd DIV overwrites</td><td>deadlock</td><td>directed</td></tr>
+<tr><td rowspan="2"><b>Two sources of truth</b></td><td>B12 free-list vs busy</td><td>random deadlock</td><td>random (79/120 seeds)</td></tr>
+<tr><td>B11 entry consumed twice</td><td>passes, but SVA</td><td>uniqueness SVA</td></tr>
+<tr><td rowspan="2"><b>Ordering</b></td><td>B07 no disambiguation</td><td>stale load data</td><td>random aliasing</td></tr>
+<tr><td>B13 store queue</td><td>orphan / bypassed store</td><td>random → b18, b19</td></tr>
+<tr><td><b>Corner value</b></td><td>B14 Booth −2³¹</td><td>wrong product</td><td>random seed r13</td></tr>
+<tr><td><b>Spec table</b></td><td>B06 x/0</td><td>+1 not −1</td><td>ISS (spec table)</td></tr>
+<tr><td><b>Performance</b></td><td>B15 BTB PLRU</td><td>none functionally</td><td>unit test</td></tr>
+<tr><td rowspan="4"><b>Testbench</b></td><td>D2 stale cb sample</td><td>stores lost</td><td>mem-heavy test</td></tr>
+<tr><td>T1 opcode skew</td><td>everything "passes"</td><td>histogram</td></tr>
+<tr><td>A1 early end of test</td><td>false fail / unchecked</td><td>log forensics</td></tr>
+<tr><td>M1 misaligned $fatal</td><td>40% false fails</td><td>clean-RTL mutant 0</td></tr>
+</table></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Telling a bug story</b>: symptom (what failed, where), first divergence (cycle, instruction), root cause (the line and why), fix, and the lesson (what checker or coverage now prevents the class). 60–90 seconds.</li><li><b>Most valuable stories show judgment</b>: a pass that was hiding a bug (T1 + D2), a fail that was the testbench (A1), a bug no result exposes (P2 → SVA), and a random failure distilled into a 10-instruction directed test (B13 → b19).</li><li><b>Deadlocks</b> (B04, B05, B08, B12) all share one shape: a resource or event is lost and something waits forever. That is why liveness watchdogs and conservation assertions find them by the dozen.</li><li><b>The cheapest bugs to find are at the interface</b> (Y3, D2): compare every transaction, not just the end state.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Every fixed bug gets a regression test, ideally the minimal distilled one.</li><li>Every escape gets a post-mortem: which checker, coverage or stimulus would have caught it?</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>IDs: Y = YARP RTL, B = Tomasulo core, T/D/M/A/S/W = YARP course testbench, P = injected mutants.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: Tell me about the hardest bug you found.</p><p>B14: random seed r13 failed on mulh of (−2³¹)×(−2³¹): RTL 0xC0000000, ISS 0x40000000. Radix-4 Booth digit −2 needs −2M = +2³², which needs 34 bits, but partial products were 33 bits wide, so it wrapped. Fixed the width, distilled the seed into b17_booth_min_neg. Lesson: extreme-value operand coverage (min, max, −1, 0) on every datapath input.</p></div>
+  </div>
+</article>
+<article class="plate" id="p26">
+  <header class="ph"><span class="code">PL·26</span>
+    <h3>Debug playbook: from a red regression to a root cause</h3><p class="thesis">Debug is a search. Shrink the space fast: first divergence, then the instruction, then the cycle, then the signal. Classify early: DUT, testbench, model or spec.</p></header>
+  <div class="pb"><div class="fig">
+<div class="scroll"><svg viewBox="0 0 620 270" role="img" aria-label="Debug flow">
+ <rect class="boxb" x="10" y="10" width="140" height="50" rx="4"/><text class="th" x="22" y="32">Failure</text><text class="tm" x="22" y="50">mismatch / hang / SVA</text>
+ <path class="w" d="M150 35 H180"/>
+ <rect class="box" x="180" y="10" width="140" height="50" rx="4"/><text class="th" x="192" y="32">First divergence</text><text class="tm" x="192" y="50">retire #, pc, instr</text>
+ <path class="w" d="M320 35 H350"/>
+ <rect class="box" x="350" y="10" width="120" height="50" rx="4"/><text class="th" x="362" y="32">Reproduce</text><text class="tm" x="362" y="50">seed, +MUT, short N</text>
+ <path class="w" d="M470 35 H500"/>
+ <rect class="box" x="500" y="10" width="110" height="50" rx="4"/><text class="th" x="512" y="32">Waves</text><text class="tm" x="512" y="50">window around it</text>
+ <rect class="boxr" x="10" y="80" width="600" height="80" rx="4"/>
+ <text class="th" x="22" y="102">Classify before fixing</text>
+ <text class="t" x="22" y="122"><tspan class="tb">DUT</tspan> spec + model agree, RTL differs   ·   <tspan class="tb">Model</tspan> second ISS disagrees with yours</text>
+ <text class="t" x="22" y="142"><tspan class="tb">TB</tspan> stimulus illegal, timing of sampling, end of test   ·   <tspan class="tb">Spec</tspan> ambiguous: ask, then document</text>
+ <rect class="boxw" x="10" y="176" width="600" height="86" rx="4"/>
+ <text class="th" x="22" y="198">Signals to pull for a CPU</text>
+ <text class="t tmono" x="22" y="218">retire valid/pc/instr · rf wr_en/rd/data · fetch req/ready/addr · data req/ready/addr/wr</text>
+ <text class="t tmono" x="22" y="236">stall/flush/redirect · forwarding selects · ROB head/tail, LSQ heads · FSM state</text>
+ <text class="tm" x="22" y="254">For a hang: what is the oldest thing waiting, and what is it waiting for?</text>
+</svg></div></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>Read the log you have before rerunning</b>: the A1 "lbu mismatch" was diagnosed from timestamps alone. The load was accepted at 29.59 µs, and end of test ran at 29.64 µs with a 16-cycle data delay.</li><li><b>Impossible values point to the testbench</b>: an LBU result of 0x7b5babbc cannot come from a zero-extended byte, so the compare happened at the wrong time, not the ALU.</li><li><b>One-line experiments</b>: remove one suspected condition and rerun the same seeds (the D2 store fix took mem from 3/3 failing to 4/5 passing, exposing A1 as the remaining cause).</li><li><b>Hangs</b>: find the oldest unfinished item (ROB head, pending request) and what it waits for (tag, ready, credit). Watchdogs should print that state when they fire.</li><li><b>Make it smaller</b>: shrink N, shrink the seed's program, then hand-write the minimal directed test. The regression keeps the small test forever.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>A fix is not done until the failing seed passes, the new directed test passes, and the full regression is still clean.</li><li>Never change the checker to make a failure go away without a spec reference.</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Rerunning until green: the original TB failed 40% of clean seeds. A flaky TB hides real bugs in noise.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">Q: A random test fails once in 500 seeds. What do you do?</p><p>Reproduce with the exact seed, find the first divergence, classify it (DUT, TB, model, spec), shrink it to a directed test, fix it, then ask why it was 1/500: add coverage for that corner and bias stimulus toward it so the class is hit every night.</p></div>
+  </div>
+</article>
+<article class="plate" id="p27">
+  <header class="ph"><span class="code">PL·27</span>
+    <h3>Rapid-fire interview drills</h3><p class="thesis">Short answers a senior CPU verification engineer gives without thinking. Each one points back to the plate with the depth.</p></header>
+  <div class="pb"><div class="fig">
+<dl class="kv">
+<dt>01</dt><dd><b>Why in-order commit in an OOO core?</b> Precise exceptions, simple recovery, and the ISA's sequential model. (PL-14)</dd>
+<dt>02</dt><dd><b>What does renaming remove?</b> WAR and WAW. Only true RAW dependences remain. (PL-14)</dd>
+<dt>03</dt><dd><b>Load-use penalty in 5-stage?</b> 1 bubble: data exists after MEM, needed at start of EX. (PL-12)</dd>
+<dt>04</dt><dd><b>Mispredict penalty in pq5?</b> 2 cycles: resolved in EX. (PL-13)</dd>
+<dt>05</dt><dd><b>Why does x0 need care in forwarding?</b> A write to x0 in flight must not forward; reads of x0 are 0. (PL-12)</dd>
+<dt>06</dt><dd><b>sltiu x1,x2,−1?</b> imm sign-extends to 0xFFFFFFFF, compared unsigned → 1 unless x2 = 0xFFFFFFFF. (PL-03)</dd>
+<dt>07</dt><dd><b>jalr target?</b> (rs1 + imm) &amp; ~1, using the old rs1 even if rd = rs1. (PL-03)</dd>
+<dt>08</dt><dd><b>Signed divide by zero?</b> Quotient −1, remainder = dividend, no trap. (PL-01)</dd>
+<dt>09</dt><dd><b>Where do you compare against the ISS?</b> At retire: pc, rd/wdata, memory ops, traps, CSR writes. (PL-18)</dd>
+<dt>10</dt><dd><b>How do you handle interrupts in lockstep?</b> The DUT decides; inject the same interrupt into the ISS at that retire boundary; check legality separately. (PL-05)</dd>
+<dt>11</dt><dd><b>Why is randomize() skewed?</b> Uniform over all solutions; opcodes with more free fields win. solve-before or pick the opcode first. (PL-20)</dd>
+<dt>12</dt><dd><b>What does #1step sample?</b> The value just before the clock edge (Preponed). (PL-21)</dd>
+<dt>13</dt><dd><b>A bug only SVA can find?</b> One with no data effect, e.g. a protocol violation the responder tolerates. (PL-22)</dd>
+<dt>14</dt><dd><b>Code coverage 100%: done?</b> No: executed ≠ checked ≠ right combinations. (PL-23)</dd>
+<dt>15</dt><dd><b>How do you qualify a testbench?</b> Mutation: inject realistic bugs, require 100% caught and 0 false fails. (PL-24)</dd>
+<dt>16</dt><dd><b>Store-to-load forwarding corner?</b> Partial overlap (sb then lw): wait or merge bytes. (PL-15)</dd>
+<dt>17</dt><dd><b>What's RVFI?</b> RISC-V Formal Interface: a standard retire trace port used by riscv-formal and handy for scoreboards. (PL-17)</dd>
+<dt>18</dt><dd><b>How do you find deadlocks?</b> Watchdog + per-resource liveness and conservation assertions + full-queue stimulus. (PL-14)</dd>
+</dl></div>
+    <div class="deep"><h4>Deep dive</h4><ul><li><b>"How would you verify X?" template</b>: (1) spec and risks, (2) reference model, (3) checkers: scoreboard + SVA + liveness, (4) stimulus: directed corners + constrained random, (5) coverage model, (6) closure: holes, mutation, regression trend.</li><li><b>Say numbers</b>: "4 of 9 to 9 of 9 bugs caught", "79 of 120 seeds", "CPI 1.17 vs 1.66". Measured results are what separate a senior answer.</li><li><b>Name trade-offs</b>: lockstep compare (precise, slower) vs end-of-test (fast, blind), formal (complete, depth-bound) vs simulation (deep, incomplete).</li><li><b>Close with the lesson</b>: every bug story ends with which checker or coverage point you added so the bug class cannot return.</li></ul></div></div>
+  <div class="pf">
+    <div class="rules"><h4>Spec rules &amp; constraints</h4><ul><li>Answer the question asked first, in one sentence, then add depth.</li><li>When unsure about a spec detail, say what you would check and where (the spec chapter, Sail, Spike).</li></ul></div>
+    <div class="bugs"><h4>Bugs that live here</h4><ul><li>Common interview mistake: describing a test that would pass on the buggy design, e.g. a slt test with only positive operands.</li></ul></div>
+    <div class="ask"><h4>Interview</h4><p class="q">60-second pitch</p><p>"I verified RV32I cores from single-cycle to Tomasulo. On YARP I found four RTL bugs against a C++ ISS over DPI, then fixed the class-based testbench itself: a store path that never wrote, 70% skewed stimulus and an early end of test. I added coverage closure and protocol SVA and proved it with mutation testing: 9 of 9 bugs caught, zero false alarms."</p></div>
+  </div>
+</article>
+<p class="foot">Lab IDs: Y1–Y4 = YARP RTL bugs · B01–B15 = Tomasulo core bugs · T/D/M/A/S = YARP class-testbench bugs · P1–P6 = injected mutants.
+Measured numbers come from the labs in the Design_Verification repo, branch cpu-ooo-interview-lab.</p>
+</div></body></html>
