@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GIC from Zero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;1,6..12,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a step-by-step "learning ladder". One column of numbered levels, each = one idea + one picture + one check.
+   Same signal colours as the GIC Field Guide so the two pages read as a set. */
+:root{
+  --bg:#f3f6fb; --surface:#ffffff; --ink:#172033; --muted:#56627a; --line:#d3dbe8; --tint:#e8eef8; --accent:#2f5bd3;
+  --sgi:#6a4cc0; --ppi:#2161ad; --spi:#a86a07; --lpi:#0b7f6d; --virt:#b2346f; --warn:#c0461b; --ok:#1f7a45;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",Arial,sans-serif;
+  --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1420; --surface:#171e2d; --ink:#e4e9f3; --muted:#9aa6bd; --line:#2b3549; --tint:#1e2739; --accent:#7f9df5;
+  --sgi:#a28cf2; --ppi:#6ea8ef; --spi:#e6a743; --lpi:#45c7b0; --virt:#ef7aae; --warn:#f08a5d; --ok:#5fcf8c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1420; --surface:#171e2d; --ink:#e4e9f3; --muted:#9aa6bd; --line:#2b3549; --tint:#1e2739; --accent:#7f9df5;
+  --sgi:#a28cf2; --ppi:#6ea8ef; --spi:#e6a743; --lpi:#45c7b0; --virt:#ef7aae; --warn:#f08a5d; --ok:#5fcf8c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 80px;display:grid;gap:0}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.4rem,7vw,4rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.5rem,4vw,2rem);font-weight:750}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0;max-width:66ch}
+code{font-family:var(--f-mono);font-size:.84em;background:var(--tint);padding:.08em .36em;border-radius:4px}
+.hero{display:grid;gap:16px;padding-bottom:28px}
+.hero .lede{font-size:1.15rem;color:var(--muted)}
+.ladder{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ladder a{font-size:13px;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.ladder a:hover,.ladder a:focus-visible{color:var(--ink);border-color:var(--accent);outline:none}
+.level{display:grid;grid-template-columns:56px minmax(0,1fr);gap:18px;padding-block:34px;border-top:1px solid var(--line);scroll-margin-top:12px}
+@media (max-width:560px){.level{grid-template-columns:minmax(0,1fr);gap:10px}}
+.badge{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:1.25rem}
+.body{display:grid;gap:14px;min-width:0}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.story{background:var(--tint);border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.story b{font-family:var(--f-display)}
+.real{border-left:3px solid var(--accent);padding:2px 0 2px 14px;display:grid;gap:6px}
+.real .lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:520px}
+.cap{font-size:13px;color:var(--muted);margin-top:6px}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quad{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:620px){.pair,.quad{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:6px;align-content:start;min-width:0}
+.card .who{font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+.card .num{font-family:var(--f-mono);font-size:12px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px;vertical-align:0}
+.check{background:var(--surface);border:1px dashed var(--accent);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.check .q{font-weight:700}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:14.5px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.right{border-color:var(--ok);color:var(--ok);font-weight:700}
+button.wrong{border-color:var(--warn);color:var(--warn);text-decoration:line-through}
+.fb{font-size:14.5px;color:var(--muted);min-height:1.2em}
+.remember{font-size:14.5px;font-weight:700}
+.remember::before{content:"Remember: ";color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:480px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--tint)}
+tr:last-child td{border-bottom:0}
+/* simulator */
+.sim{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px}
+.sim-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.sim-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.src{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:6px;background:var(--bg)}
+.src .nm{font-weight:700;font-size:14px}
+.src .pr{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.state{font-family:var(--f-mono);font-size:11.5px;padding:2px 8px;border-radius:999px;justify-self:start;border:1px solid var(--line);color:var(--muted)}
+.state.p{border-color:var(--spi);color:var(--spi)}
+.state.a{border-color:var(--ok);color:var(--ok)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.controls label{font-size:14px;font-weight:600}
+input[type=range]{accent-color:var(--accent);width:180px;max-width:100%}
+.cpu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.cpu{grid-template-columns:minmax(0,1fr)}}
+.meter{background:var(--tint);border-radius:10px;padding:10px 12px}
+.meter .k{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.meter .v{font-family:var(--f-mono);font-size:15px;font-variant-numeric:tabular-nums}
+.irq-on{color:var(--warn);font-weight:700}
+.log{font-family:var(--f-mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:170px;overflow:auto;white-space:pre-wrap;margin:0}
+.next{margin-top:30px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:8px}
+svg text{font-family:var(--f-body);fill:var(--ink)}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-family:var(--f-display);font-weight:700;font-size:14px}
+svg .m{font-family:var(--f-mono);font-size:11px}
+svg .bx{fill:var(--surface);stroke:var(--line);stroke-width:1.3}
+svg .bt{fill:var(--tint);stroke:var(--line);stroke-width:1}
+svg .ln{stroke:var(--muted);stroke-width:1.5;fill:none}
+svg .ah{fill:var(--muted)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Interrupts for beginners · Arm GICv3 / v4</div>
+  <h1>GIC from Zero</h1>
+  <p class="lede">You do not need to know anything about chips to start. Each level adds one small idea, first as an everyday story, then as the real chip word. By the end you will understand how an Arm processor's Generic Interrupt Controller (GIC) works and how engineers test it.</p>
+  <nav class="ladder" aria-label="Levels">
+    <a href="#l1">1 · What is an interrupt</a><a href="#l2">2 · Why a controller</a><a href="#l3">3 · Four kinds</a><a href="#l4">4 · Ring or light</a><a href="#l5">5 · Life of one interrupt</a><a href="#l6">6 · Who goes first</a><a href="#l7">7 · Try it</a><a href="#l8">8 · The four helpers</a><a href="#l9">9 · Addresses</a><a href="#l10">10 · The post office</a><a href="#l11">11 · Secret rooms</a><a href="#l12">12 · Pretend computers</a><a href="#l13">13 · Sleeping cores</a><a href="#l14">14 · Testing it</a><a href="#words">Word list</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section class="level" id="l1"><div class="badge">1</div><div class="body">
+  <div class="kicker">The very first idea</div>
+  <h2>What is an interrupt?</h2>
+  <div class="story"><b>Story.</b><p>You are doing homework and waiting for a friend. You could get up every two minutes to check the door. Or you could keep working and let the <b>doorbell</b> tell you when they arrive. The doorbell is an interrupt.</p></div>
+  <div class="fig"><svg viewBox="0 0 640 170" role="img" aria-label="Polling means checking again and again; an interrupt means the device tells you.">
+    <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+    <text x="10" y="24" class="h">Checking again and again (polling)</text>
+    <rect x="10" y="38" width="90" height="40" rx="8" class="bx"/><text x="55" y="63" text-anchor="middle" class="s">CPU</text>
+    <rect x="230" y="38" width="90" height="40" rx="8" class="bx"/><text x="275" y="63" text-anchor="middle" class="s">Keyboard</text>
+    <path d="M100 48 H230" class="ln" marker-end="url(#a1)"/><path d="M100 58 H230" class="ln" marker-end="url(#a1)"/><path d="M100 68 H230" class="ln" marker-end="url(#a1)"/>
+    <text x="110" y="98" class="s">"Anything yet?" × 1000. Wastes time.</text>
+    <text x="350" y="24" class="h">Being told (interrupt)</text>
+    <rect x="350" y="38" width="90" height="40" rx="8" class="bx" style="stroke:var(--accent);stroke-width:2"/><text x="395" y="63" text-anchor="middle" class="s">CPU</text>
+    <rect x="540" y="38" width="90" height="40" rx="8" class="bx"/><text x="585" y="63" text-anchor="middle" class="s">Keyboard</text>
+    <path d="M540 58 H440" class="ln" style="stroke:var(--warn);stroke-width:2.2" marker-end="url(#a1)"/>
+    <text x="450" y="98" class="s">One "key pressed!" signal.</text>
+    <text x="350" y="118" class="s">CPU does useful work until then.</text>
+    <text x="10" y="150" class="s">Every keyboard press, network packet, timer tick and disk finish arrives at the CPU as an interrupt.</text>
+  </svg></div>
+  <div class="real"><span class="lab">The real words</span><p>An <b>interrupt</b> is a signal that says "stop what you are doing for a moment, something needs you". The CPU pauses its current program, runs a small piece of code called the <b>interrupt handler</b>, then goes back to where it was.</p></div>
+  <div class="check" data-q><div class="q">Why are interrupts better than checking again and again?</div><div class="opts">
+    <button type="button" data-ok>The CPU can do other work until it is needed</button><button type="button">Interrupts make the keyboard faster</button><button type="button">The CPU never has to run any code</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- 2 -->
+<section class="level" id="l2"><div class="badge">2</div><div class="body">
+  <div class="kicker">Why we need a helper</div>
+  <h2>Why a controller?</h2>
+  <div class="story"><b>Story.</b><p>A big school has hundreds of bells, phones and alarms, and many classrooms. If every bell rang in every classroom, nobody could study. So the school has a <b>front office</b>. Every bell rings at the office first. The office decides <i>which classroom</i> should hear it and <i>how urgent</i> it is.</p></div>
+  <div class="real"><span class="lab">The real words</span><p>A modern chip has many <b>cores</b> (small CPUs, each one is called a <b>PE</b>, processing element) and hundreds or thousands of interrupt sources. The <b>Generic Interrupt Controller (GIC)</b> is the front office. Arm wrote one rule book for it, the <b>GIC architecture specification</b>, so every Arm chip's GIC behaves the same way for software.</p></div>
+  <div class="remember">The GIC collects interrupts, picks the right core and the most urgent one, and tells that core.</div>
+</div></section>
+
+<!-- 3 -->
+<section class="level" id="l3"><div class="badge">3</div><div class="body">
+  <div class="kicker">Different kinds of bells</div>
+  <h2>The four kinds of interrupt</h2>
+  <p>Every interrupt has a number called its <b>INTID</b> (interrupt ID). The number tells you which kind it is.</p>
+  <div class="quad">
+    <div class="card"><span class="who"><i class="dot" style="background:var(--sgi)"></i>SGI · a note from a classmate</span><span class="num">INTID 0 – 15</span><p><b>Software Generated Interrupt.</b> One core sends a message to another core: "please wake up" or "please refresh your list".</p></div>
+    <div class="card"><span class="who"><i class="dot" style="background:var(--ppi)"></i>PPI · your own alarm clock</span><span class="num">INTID 16 – 31</span><p><b>Private Peripheral Interrupt.</b> Belongs to one core only, like that core's own timer. Every core has its own copy with the same number.</p></div>
+    <div class="card"><span class="who"><i class="dot" style="background:var(--spi)"></i>SPI · the school phone</span><span class="num">INTID 32 – 1019</span><p><b>Shared Peripheral Interrupt.</b> Comes from a shared device (UART, USB, DMA). The GIC can send it to any core you choose.</p></div>
+    <div class="card"><span class="who"><i class="dot" style="background:var(--lpi)"></i>LPI · a letter in the post</span><span class="num">INTID 8192 and up</span><p><b>Locality-specific Peripheral Interrupt.</b> Not a wire, a <i>message</i> written to memory by devices like PCIe cards. There can be thousands.</p></div>
+  </div>
+  <p class="cap">Numbers 1020–1023 are special "answers", not real interrupts. 1023 means "nothing for you right now". Newer GICs also have extra PPI and SPI number ranges (1056–1119 and 4096–5119).</p>
+  <div class="check" data-q><div class="q">A core's own timer fires. Which kind is it?</div><div class="opts">
+    <button type="button">SGI</button><button type="button" data-ok>PPI</button><button type="button">SPI</button><button type="button">LPI</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- 4 -->
+<section class="level" id="l4"><div class="badge">4</div><div class="body">
+  <div class="kicker">How the signal looks</div>
+  <h2>A doorbell press or a light left on</h2>
+  <div class="fig"><svg viewBox="0 0 640 170" role="img" aria-label="Edge-triggered is a short pulse; level-sensitive stays high until cleared.">
+    <text x="10" y="24" class="h">Edge: a short press</text>
+    <path d="M10 100 H90 V50 H110 V100 H290" style="stroke:var(--spi);stroke-width:2.5;fill:none"/>
+    <text x="80" y="40" class="s">ding!</text>
+    <text x="10" y="130" class="s">The GIC remembers "it rang once".</text>
+    <text x="340" y="24" class="h">Level: a light left on</text>
+    <path d="M340 100 H400 V50 H560 V100 H630" style="stroke:var(--ppi);stroke-width:2.5;fill:none"/>
+    <text x="420" y="40" class="s">on until the device is served</text>
+    <text x="340" y="130" class="s">Stays on until software fixes the cause.</text>
+    <text x="10" y="160" class="s">Each interrupt is set as edge or level in the GIC's configuration register (ICFGR).</text>
+  </svg></div>
+  <div class="real"><span class="lab">The real words</span><p><b>Edge-triggered</b>: the GIC notices the moment the signal goes up. <b>Level-sensitive</b>: the interrupt is "on" for as long as the wire is high. With level, the handler must make the device lower the wire, or the interrupt comes straight back.</p></div>
+</div></section>
+
+<!-- 5 -->
+<section class="level" id="l5"><div class="badge">5</div><div class="body">
+  <div class="kicker">Hand up, answered, done</div>
+  <h2>The life of one interrupt</h2>
+  <div class="story"><b>Story.</b><p>A student raises a hand (<b>pending</b>). The teacher says "yes?" (<b>acknowledge</b>), and now the teacher is busy with that student (<b>active</b>). When the question is answered, the teacher says "done" (<b>end of interrupt</b>) and the student puts the hand down (<b>inactive</b>).</p></div>
+  <div class="fig"><svg viewBox="0 0 640 210" role="img" aria-label="Inactive to Pending when the interrupt happens, Pending to Active when the CPU acknowledges, Active back to Inactive when the CPU says done.">
+    <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+    <rect x="10" y="40" width="150" height="54" rx="27" class="bx" style="stroke-width:2"/><text x="85" y="72" text-anchor="middle" class="h">Inactive</text>
+    <rect x="245" y="40" width="150" height="54" rx="27" class="bx" style="stroke:var(--spi);stroke-width:2"/><text x="320" y="72" text-anchor="middle" class="h">Pending</text>
+    <rect x="480" y="40" width="150" height="54" rx="27" class="bx" style="stroke:var(--ok);stroke-width:2"/><text x="555" y="72" text-anchor="middle" class="h">Active</text>
+    <path d="M160 67 H245" class="ln" marker-end="url(#a5)"/><text x="168" y="58" class="s">it happens</text>
+    <path d="M395 67 H480" class="ln" marker-end="url(#a5)"/><text x="402" y="58" class="s">"yes?"</text><text x="402" y="112" class="m" style="fill:var(--muted)">read IAR</text>
+    <path d="M555 94 C555 170 85 170 85 94" class="ln" marker-end="url(#a5)"/><text x="250" y="160" class="s">"done"</text><text x="300" y="160" class="m" style="fill:var(--muted)">write EOIR</text>
+    <text x="10" y="200" class="s">If it happens again while Active, it becomes "Active and Pending" and is served once more afterwards.</text>
+  </svg></div>
+  <div class="real"><span class="lab">The real words</span><p>The CPU reads a register called <code>ICC_IAR1_EL1</code> (<b>Interrupt Acknowledge Register</b>). The value it reads is the INTID it should handle. When it is finished, it writes that INTID to <code>ICC_EOIR1_EL1</code> (<b>End Of Interrupt Register</b>). Message interrupts (LPIs) are simpler: they only have Inactive and Pending, so reading IAR finishes their state change.</p></div>
+  <div class="check" data-q><div class="q">The CPU has read IAR but has not written EOIR yet. What state is the interrupt in?</div><div class="opts">
+    <button type="button">Inactive</button><button type="button">Pending</button><button type="button" data-ok>Active</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- 6 -->
+<section class="level" id="l6"><div class="badge">6</div><div class="body">
+  <div class="kicker">Fire alarm beats lunch bell</div>
+  <h2>Who goes first: priority</h2>
+  <div class="story"><b>Story.</b><p>If the fire alarm and the lunch bell ring together, you go with the fire alarm. And if you are in the middle of lunch and the fire alarm rings, you stop eating. But if a friend calls while you are handling a fire, they wait.</p></div>
+  <div class="fig"><svg viewBox="0 0 640 140" role="img" aria-label="Priority scale from 0 most urgent to 255 least urgent, with a do-not-disturb line called PMR.">
+    <defs><linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="var(--warn)"/><stop offset="1" stop-color="var(--ppi)"/></linearGradient></defs>
+    <rect x="20" y="40" width="600" height="22" rx="11" fill="url(#pg)"/>
+    <text x="20" y="30" class="m">0 = most urgent</text><text x="620" y="30" text-anchor="end" class="m">255 = least urgent</text>
+    <circle cx="60" cy="51" r="7" style="fill:var(--surface);stroke:var(--ink);stroke-width:2"/><text x="60" y="84" text-anchor="middle" class="s">fire alarm 0x10</text>
+    <circle cx="190" cy="51" r="7" style="fill:var(--surface);stroke:var(--ink);stroke-width:2"/><text x="190" y="84" text-anchor="middle" class="s">teacher 0x40</text>
+    <circle cx="460" cy="51" r="7" style="fill:var(--surface);stroke:var(--ink);stroke-width:2"/><text x="460" y="84" text-anchor="middle" class="s">lunch 0xC0</text>
+    <path d="M400 34 V72" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:4 3"/><text x="400" y="104" text-anchor="middle" class="h" style="font-size:12px">PMR = 0xA0</text>
+    <text x="400" y="122" text-anchor="middle" class="s">"do not disturb unless more urgent than this"</text>
+  </svg></div>
+  <div class="real"><span class="lab">The real words</span><p>Each interrupt has an 8-bit <b>priority</b>. <b>A smaller number means more urgent.</b> The core has a <b>Priority Mask Register</b> (<code>ICC_PMR_EL1</code>): only interrupts with a number <i>smaller</i> than the mask can reach it. While the core is handling one interrupt, its <b>running priority</b> is that interrupt's priority, and only something more urgent can <b>preempt</b> (interrupt the interrupt).</p></div>
+  <div class="check" data-q><div class="q">PMR is 0xA0. A lunch bell with priority 0xC0 rings. What happens?</div><div class="opts">
+    <button type="button">The core takes it</button><button type="button" data-ok>It waits, because 0xC0 is not smaller than 0xA0</button><button type="button">It is deleted</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- 7 simulator -->
+<section class="level" id="l7"><div class="badge">7</div><div class="body">
+  <div class="kicker">Play with it</div>
+  <h2>Try it: be the CPU</h2>
+  <p>Ring some interrupts, move the mask, then press <b>Read IAR</b> to take the most urgent one and <b>Write EOIR</b> to finish it. Watch the IRQ light: it turns on only when something is allowed through.</p>
+  <div class="sim" id="sim">
+    <div class="sim-grid" id="srcs"></div>
+    <div class="controls">
+      <label for="pmr">Mask (PMR): <span id="pmrv" class="mono">0xFF</span></label>
+      <input id="pmr" type="range" min="0" max="256" step="16" value="256">
+      <button type="button" id="ack">Read IAR</button>
+      <button type="button" id="eoi">Write EOIR</button>
+      <button type="button" id="reset">Start again</button>
+    </div>
+    <div class="cpu">
+      <div class="meter"><div class="k">IRQ line to core</div><div class="v" id="irq">off</div></div>
+      <div class="meter"><div class="k">Running priority</div><div class="v" id="rpr">idle (0xFF)</div></div>
+      <div class="meter"><div class="k">Last IAR value</div><div class="v" id="iar">—</div></div>
+    </div>
+    <pre class="log" id="log" aria-live="polite"></pre>
+  </div>
+  <p class="cap">Things to try: ring Lunch then Fire and read IAR (Fire wins). Read IAR on Teacher, then ring Fire (it preempts, IRQ lights). Set the mask to 0x30 and ring Teacher (IRQ stays off, IAR returns 1023).</p>
+</div></section>
+
+<!-- 8 -->
+<section class="level" id="l8"><div class="badge">8</div><div class="body">
+  <div class="kicker">The office has departments</div>
+  <h2>The four helpers inside the GIC</h2>
+  <div class="fig"><svg viewBox="0 0 640 260" role="img" aria-label="Devices go to the Distributor or ITS, then to a Redistributor per core, then to the CPU interface inside the core.">
+    <defs><marker id="a8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+    <rect x="10" y="30" width="110" height="56" rx="8" class="bt"/><text x="22" y="54" class="h" style="font-size:13px">Shared devices</text><text x="22" y="72" class="s">wires (SPI)</text>
+    <rect x="10" y="130" width="110" height="56" rx="8" class="bt"/><text x="22" y="154" class="h" style="font-size:13px">PCIe devices</text><text x="22" y="172" class="s">messages (LPI)</text>
+    <rect x="160" y="22" width="140" height="72" rx="8" class="bx" style="stroke:var(--spi);stroke-width:2"/><text x="172" y="46" class="h">Distributor</text><text x="172" y="64" class="s">head office,</text><text x="172" y="80" class="s">one for the chip</text>
+    <rect x="160" y="122" width="140" height="72" rx="8" class="bx" style="stroke:var(--lpi);stroke-width:2"/><text x="172" y="146" class="h">ITS</text><text x="172" y="164" class="s">post office,</text><text x="172" y="180" class="s">sorts letters</text>
+    <rect x="340" y="22" width="140" height="72" rx="8" class="bx" style="stroke:var(--ppi);stroke-width:2"/><text x="352" y="46" class="h">Redistributor</text><text x="352" y="64" class="s">class monitor,</text><text x="352" y="80" class="s">one per core</text>
+    <rect x="340" y="122" width="140" height="72" rx="8" class="bx" style="stroke:var(--ppi);stroke-width:2"/><text x="352" y="146" class="h">Redistributor</text><text x="352" y="164" class="s">for core 2</text>
+    <rect x="520" y="22" width="110" height="72" rx="8" class="bx" style="stroke:var(--accent);stroke-width:2"/><text x="532" y="46" class="h">CPU interface</text><text x="532" y="64" class="s">the core's ear,</text><text x="532" y="80" class="s">inside core 1</text>
+    <rect x="520" y="122" width="110" height="72" rx="8" class="bx" style="stroke:var(--accent);stroke-width:2"/><text x="532" y="146" class="h">CPU interface</text><text x="532" y="164" class="s">inside core 2</text>
+    <path d="M120 58 H160" class="ln" marker-end="url(#a8)"/><path d="M120 158 H160" class="ln" marker-end="url(#a8)"/>
+    <path d="M300 58 H340" class="ln" marker-end="url(#a8)"/><path d="M300 70 C320 70 320 150 340 150" class="ln" marker-end="url(#a8)"/>
+    <path d="M300 158 H340" class="ln" marker-end="url(#a8)"/><path d="M300 146 C320 146 320 76 340 76" class="ln" marker-end="url(#a8)"/>
+    <path d="M480 58 H520" class="ln" marker-end="url(#a8)"/><path d="M480 158 H520" class="ln" marker-end="url(#a8)"/>
+    <text x="10" y="230" class="s">SGIs and each core's own PPIs start at the Redistributor. Messages between Redistributor and CPU interface</text>
+    <text x="10" y="248" class="s">travel on a small link called the GIC Stream Protocol.</text>
+  </svg></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Helper</th><th>School version</th><th>What it really does</th><th>Register names start with</th></tr></thead>
+    <tbody>
+      <tr><td><b>Distributor</b></td><td>Head office</td><td>Holds settings for shared interrupts (SPIs): on/off, priority, which core.</td><td><code>GICD_…</code></td></tr>
+      <tr><td><b>Redistributor</b></td><td>Class monitor</td><td>One per core. Holds SGI, PPI and LPI settings for that core and picks its most urgent pending interrupt.</td><td><code>GICR_…</code></td></tr>
+      <tr><td><b>CPU interface</b></td><td>Your ear</td><td>Inside the core. Applies the mask and priority rules, raises the IRQ or FIQ signal, gives you the INTID.</td><td><code>ICC_…</code></td></tr>
+      <tr><td><b>ITS</b></td><td>Post office</td><td>Turns device messages into LPIs and sends them to the right Redistributor.</td><td><code>GITS_…</code></td></tr>
+    </tbody></table></div>
+  <div class="check" data-q><div class="q">How many Redistributors does a chip with 8 cores have?</div><div class="opts">
+    <button type="button">1</button><button type="button" data-ok>8, one per core</button><button type="button">It depends on the number of SPIs</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- 9 -->
+<section class="level" id="l9"><div class="badge">9</div><div class="body">
+  <div class="kicker">Finding the right classroom</div>
+  <h2>Every core has an address</h2>
+  <div class="story"><b>Story.</b><p>To deliver a note in a big school you need four parts: campus, building, floor, room. "Campus 0, building 1, floor 2, room 3" points to exactly one room.</p></div>
+  <div class="real"><span class="lab">The real words</span><p>Each core has an <b>affinity</b> address with four numbers: <code>Aff3.Aff2.Aff1.Aff0</code>, for example <code>0.0.1.3</code>. The Distributor has one <code>GICD_IROUTER</code> register per SPI that stores the address of the core that should get it. You can also set a mode that means "any one free core", which spreads work around.</p><p>To send an SGI, a core writes the target addresses into <code>ICC_SGI1R_EL1</code>. It can also say "everyone except me".</p></div>
+</div></section>
+
+<!-- 10 -->
+<section class="level" id="l10"><div class="badge">10</div><div class="body">
+  <div class="kicker">Letters, not wires</div>
+  <h2>The post office: LPIs and the ITS</h2>
+  <div class="story"><b>Story.</b><p>A letter arrives with a sender name (which device) and a letter number (which event). The post office has address books. It looks up the sender, then the letter number, and finds out which room it must go to and what to call it.</p></div>
+  <div class="fig"><svg viewBox="0 0 640 150" role="img" aria-label="DeviceID and EventID go through three lookup tables to find the INTID and the target Redistributor.">
+    <defs><marker id="a10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="ah"/></marker></defs>
+    <rect x="10" y="30" width="120" height="64" rx="8" class="bt"/><text x="20" y="54" class="h" style="font-size:13px">Letter</text><text x="20" y="72" class="s">device 7, event 3</text>
+    <rect x="165" y="30" width="135" height="64" rx="8" class="bx"/><text x="175" y="54" class="h" style="font-size:13px">Device table</text><text x="175" y="72" class="s">device 7 → its book</text>
+    <rect x="335" y="30" width="135" height="64" rx="8" class="bx"/><text x="345" y="54" class="h" style="font-size:13px">Device's book (ITT)</text><text x="345" y="72" class="s">event 3 → LPI 8200</text>
+    <rect x="505" y="30" width="125" height="64" rx="8" class="bx"/><text x="515" y="54" class="h" style="font-size:13px">Collection table</text><text x="515" y="72" class="s">→ core 2's RD</text>
+    <path d="M130 62 H165" class="ln" marker-end="url(#a10)"/><path d="M300 62 H335" class="ln" marker-end="url(#a10)"/><path d="M470 62 H505" class="ln" marker-end="url(#a10)"/>
+    <text x="10" y="122" class="s">Software fills these tables with commands in a queue: MAPD (add a device),</text><text x="10" y="140" class="s">MAPTI (add an event), MAPC (point a group of interrupts at a core).</text>
+  </svg></div>
+  <div class="real"><span class="lab">The real words</span><p>A device writes to the ITS register <code>GITS_TRANSLATER</code>. The ITS uses the <b>DeviceID</b> and <b>EventID</b> to find the LPI number and the target Redistributor. LPI settings (priority, enable) are kept in a table in normal memory, so there can be many thousands of LPIs without huge chip area.</p></div>
+</div></section>
+
+<!-- 11 -->
+<section class="level" id="l11"><div class="badge">11</div><div class="body">
+  <div class="kicker">The principal's office</div>
+  <h2>Secret rooms: groups and security</h2>
+  <div class="story"><b>Story.</b><p>Some messages are for the principal only, some for the teachers, and some for everyone. Normal students cannot even read the principal's mail.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Group</th><th>School version</th><th>Who handles it</th></tr></thead>
+    <tbody>
+      <tr><td><b>Group 0</b></td><td>Principal's own mail</td><td>The most trusted firmware (EL3). Always arrives as <b>FIQ</b>.</td></tr>
+      <tr><td><b>Secure Group 1</b></td><td>Locked staff room</td><td>The secure world (for example a trusted OS that keeps keys safe).</td></tr>
+      <tr><td><b>Non-secure Group 1</b></td><td>Regular classroom</td><td>The normal OS, such as Linux or Android.</td></tr>
+    </tbody></table></div>
+  <div class="real"><span class="lab">The real words</span><p>Arm cores have two "doorbell" signals: <b>IRQ</b> and <b>FIQ</b>. Simple rule: an interrupt for the world the core is in right now arrives as IRQ. An interrupt for a different world arrives as FIQ, which goes to the firmware so it can switch worlds. Normal software cannot see or change secure interrupts.</p></div>
+</div></section>
+
+<!-- 12 -->
+<section class="level" id="l12"><div class="badge">12</div><div class="body">
+  <div class="kicker">Make-believe classrooms</div>
+  <h2>Pretend computers: virtualization</h2>
+  <div class="story"><b>Story.</b><p>One big classroom is split into pretend classrooms. A helper (the <b>hypervisor</b>) takes real messages and puts <b>sticky notes</b> on the right pretend desk. Later, the school gets a smarter post office that can stick notes on pretend desks by itself, without bothering the helper.</p></div>
+  <div class="real"><span class="lab">The real words</span><p>A <b>virtual machine (VM)</b> is a pretend computer running on real cores. In GICv3 the hypervisor writes <b>virtual interrupts</b> into <b>list registers</b> (<code>ICH_LR&lt;n&gt;_EL2</code>), the sticky notes. The VM reads them as if they were real. In <b>GICv4</b>, the ITS can deliver message interrupts straight to a VM (<b>direct injection</b>). If that VM is not running right now, a <b>doorbell</b> interrupt tells the hypervisor to schedule it.</p></div>
+</div></section>
+
+<!-- 13 -->
+<section class="level" id="l13"><div class="badge">13</div><div class="body">
+  <div class="kicker">Saving battery</div>
+  <h2>Sleeping cores</h2>
+  <div class="story"><b>Story.</b><p>Before a student naps, they tell the class monitor "I'm going to sleep". The monitor says "OK, I'll hold your messages". If something important comes, the monitor wakes them up.</p></div>
+  <div class="real"><span class="lab">The real words</span><p>Software sets <code>ProcessorSleep</code> in the <code>GICR_WAKER</code> register, then waits until <code>ChildrenAsleep</code> shows the CPU interface is quiet. Then power can be turned off. An interrupt for that core now creates a <b>wake request</b> to the power controller instead of an IRQ.</p></div>
+</div></section>
+
+<!-- 14 -->
+<section class="level" id="l14"><div class="badge">14</div><div class="body">
+  <div class="kicker">Being a detective</div>
+  <h2>How engineers test a GIC</h2>
+  <p>Design verification (DV) engineers make sure the chip follows the rule book before it is built, using simulation. Their job is to imagine what could go wrong and prove it does not.</p>
+  <div class="pair">
+    <div class="card"><span class="who">The basic recipe</span><ol style="margin:0;padding-left:18px;display:grid;gap:4px">
+      <li><b>Stimulus</b>: make interrupts happen (wiggle wires, send messages, write registers).</li>
+      <li><b>Reference model</b>: a simple program that knows the rules and predicts the right answer.</li>
+      <li><b>Checker</b> (scoreboard): compares what the chip did with the prediction.</li>
+      <li><b>Coverage</b>: a checklist proving every kind of situation was tried.</li></ol></div>
+    <div class="card"><span class="who">Detective questions to ask</span><ul style="margin:0;padding-left:18px;display:grid;gap:4px">
+      <li>What if two interrupts ring at exactly the same time?</li>
+      <li>What if the mask changes while the IRQ light is on?</li>
+      <li>What if a level light turns off just after "yes?"</li>
+      <li>What if a core goes to sleep while a message is on the way?</li>
+      <li>What if the post office's address book changes while a letter is being sorted?</li>
+      <li>Can normal software peek at a secret interrupt?</li></ul></div>
+  </div>
+  <div class="remember">Good testers check what software can see (the IAR value, the IRQ line, register values), not tiny internal timing.</div>
+  <div class="check" data-q><div class="q">What is a reference model for?</div><div class="opts">
+    <button type="button">It makes the chip run faster</button><button type="button" data-ok>It predicts the correct behaviour so the chip can be checked against it</button><button type="button">It replaces the real chip</button></div>
+    <div class="fb" aria-live="polite"></div></div>
+</div></section>
+
+<!-- words -->
+<section class="level" id="words"><div class="badge" style="font-size:.9rem">A–Z</div><div class="body">
+  <div class="kicker">Keep this handy</div>
+  <h2>Word list</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Word</th><th>Simple meaning</th></tr></thead>
+    <tbody>
+      <tr><td><b>PE / core</b></td><td>One small CPU inside the chip.</td></tr>
+      <tr><td><b>INTID</b></td><td>The number of an interrupt.</td></tr>
+      <tr><td><b>Pending</b></td><td>Hand raised, waiting.</td></tr>
+      <tr><td><b>Active</b></td><td>Being handled right now.</td></tr>
+      <tr><td><b>IAR</b></td><td>Register the CPU reads to say "yes?" and learn the INTID.</td></tr>
+      <tr><td><b>EOI / EOIR</b></td><td>Register the CPU writes to say "done".</td></tr>
+      <tr><td><b>Priority</b></td><td>How urgent. Smaller number = more urgent.</td></tr>
+      <tr><td><b>PMR</b></td><td>Do-not-disturb line for one core.</td></tr>
+      <tr><td><b>Preempt</b></td><td>A more urgent interrupt interrupts the current one.</td></tr>
+      <tr><td><b>Edge / level</b></td><td>Doorbell press / light left on.</td></tr>
+      <tr><td><b>Affinity</b></td><td>A core's four-part address.</td></tr>
+      <tr><td><b>ITS</b></td><td>Post office that turns device messages into LPIs.</td></tr>
+      <tr><td><b>IRQ / FIQ</b></td><td>The two interrupt signals into an Arm core.</td></tr>
+      <tr><td><b>Hypervisor / VM</b></td><td>Helper that runs pretend computers / a pretend computer.</td></tr>
+      <tr><td><b>List register</b></td><td>Sticky note holding a virtual interrupt for a VM.</td></tr>
+      <tr><td><b>Spurious (1023)</b></td><td>"Nothing for you right now."</td></tr>
+    </tbody></table></div>
+  <div class="next"><h3>Ready for the next step?</h3><p>Once these 14 levels feel easy, move to the <b>GIC Field Guide</b>, which covers the same ideas at senior-engineer depth: register details, ITS commands, GICv4, corner-case bugs and interview questions.</p></div>
+</div></section>
+</div>
+
+<script>
+(function(){
+  /* self-checks */
+  document.querySelectorAll('[data-q]').forEach(function(box){
+    var fb=box.querySelector('.fb');
+    box.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(b.hasAttribute('data-ok')){b.classList.add('right');fb.textContent='Correct!';}
+        else{b.classList.add('wrong');fb.textContent='Not quite. Try another answer.';}
+      });
+    });
+  });
+
+  /* simulator */
+  var SRC=[
+    {id:20,name:'Fire alarm',prio:0x10},
+    {id:45,name:'Teacher call',prio:0x40},
+    {id:50,name:'Friend note',prio:0x80},
+    {id:60,name:'Lunch bell',prio:0xC0}
+  ];
+  var st, stack, logEl=document.getElementById('log');
+  function hex(n){return '0x'+n.toString(16).toUpperCase().padStart(2,'0');}
+  function reset(){st={};SRC.forEach(function(s){st[s.id]='inactive';});stack=[];logEl.textContent='';log('Everything is quiet. Ring a bell.');render();}
+  function log(m){logEl.textContent+=m+'\n';logEl.scrollTop=logEl.scrollHeight;}
+  function pmr(){return +document.getElementById('pmr').value;}
+  function running(){return stack.length?stack[stack.length-1].prio:0xFF;}
+  function best(){
+    var b=null;
+    SRC.forEach(function(s){ if(st[s.id]==='pending'||st[s.id]==='active+pending'){ if(st[s.id]==='active+pending')return; if(!b||s.prio<b.prio)b=s; }});
+    return b;
+  }
+  function allowed(s){return s && s.prio<pmr() && s.prio<running();}
+  function render(){
+    var g=document.getElementById('srcs');g.innerHTML='';
+    SRC.forEach(function(s){
+      var d=document.createElement('div');d.className='src';
+      var cls=st[s.id]==='inactive'?'':(st[s.id]==='pending'?'p':'a');
+      d.innerHTML='<span class="nm"></span><span class="pr">INTID '+s.id+' · priority '+hex(s.prio)+'</span><span class="state '+cls+'">'+st[s.id]+'</span>';
+      d.querySelector('.nm').textContent=s.name;
+      var b=document.createElement('button');b.type='button';b.textContent='Ring';
+      b.addEventListener('click',function(){
+        if(st[s.id]==='inactive'){st[s.id]='pending';}
+        else if(st[s.id]==='active'){st[s.id]='active+pending';}
+        log(s.name+' rings → '+st[s.id]);render();
+      });
+      d.appendChild(b);g.appendChild(d);
+    });
+    document.getElementById('pmrv').textContent=hex(Math.min(pmr(),255));
+    var b=best(), on=allowed(b);
+    var irq=document.getElementById('irq');irq.textContent=on?'ON  ('+b.name+')':'off';irq.className='v'+(on?' irq-on':'');
+    document.getElementById('rpr').textContent=stack.length?hex(running())+' ('+stack[stack.length-1].name+')':'idle (0xFF)';
+  }
+  document.getElementById('pmr').addEventListener('input',function(){render();});
+  document.getElementById('pmr').addEventListener('change',function(){log('Mask set to '+hex(Math.min(pmr(),255)));});
+  document.getElementById('ack').addEventListener('click',function(){
+    var b=best();
+    if(!allowed(b)){document.getElementById('iar').textContent='1023';log('Read IAR → 1023 (nothing allowed through: check the mask or what is running)');render();return;}
+    st[b.id]='active';stack.push(b);document.getElementById('iar').textContent=String(b.id);
+    log('Read IAR → '+b.id+' ('+b.name+'). It is now active'+(stack.length>1?' and preempted '+stack[stack.length-2].name:'')+'.');render();
+  });
+  document.getElementById('eoi').addEventListener('click',function(){
+    if(!stack.length){log('Write EOIR: nothing is active, so nothing to finish.');return;}
+    var s=stack.pop();
+    st[s.id]=st[s.id]==='active+pending'?'pending':'inactive';
+    log('Write EOIR '+s.id+' → '+s.name+' is '+st[s.id]+'.');render();
+  });
+  document.getElementById('reset').addEventListener('click',function(){document.getElementById('pmr').value=256;document.getElementById('iar').textContent='—';reset();});
+  reset();
+})();
+</script>
+
+</body>
+</html>

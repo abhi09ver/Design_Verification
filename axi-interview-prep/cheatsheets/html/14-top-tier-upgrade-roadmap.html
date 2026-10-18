@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Upgrade Roadmap for Top-Tier DV Interviews</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:14px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:14.5px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.2px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:11px 13px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.pr{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#FFFFFF}
+.p0{background:#B91C1C}.p1{background:#C2410C}.p2{background:#0F766E}.p3{background:#2F4B7C}
+.rd{display:flex;flex-direction:column;gap:6px;border-radius:8px;padding:12px 14px;background:#F6F7F4;border:1px solid #D3D8D2}
+.rdh{font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:17px;color:#16202B}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="13-project-bugs-and-fixes.html">← Bugs in the Repo: Evidence & Fixes</a><a href="../../README.md">Index</a><a href="15-uvm-core-and-project-qa.html">UVM Core + Project Deep-Dive Q&A →</a></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 20px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">Project sheet 3 · from "student project" to "hire signal"</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 54px; line-height: 1; color: #FFFFFF">Upgrade Roadmap for Top-Tier DV Interviews</h1>
+    <div style="font-size: 17px; color: #C9D2D8">What to add to the repo, in priority order, and what big silicon DV interview loops commonly test.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 280px">
+    <div style="display: flex; gap: 8px; align-items: center"><span class="pr p0">P0</span><span style="font-size: 14px; color: #C9D2D8">correctness — do first</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="pr p1">P1</span><span style="font-size: 14px; color: #C9D2D8">strongest interview signal</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="pr p2">P2</span><span style="font-size: 14px; color: #C9D2D8">industry methodology</span></div>
+    <div style="display: flex; gap: 8px; align-items: center"><span class="pr p3">P3</span><span style="font-size: 14px; color: #C9D2D8">stand-out extras</span></div>
+  </div>
+</div>
+
+<!-- ROADMAP TABLE -->
+<div class="card">
+  <h2 class="h2"><span class="num">1</span>Roadmap</h2>
+  <table class="t">
+    <tr><th style="width: 54px">Pri</th><th style="width: 290px">Add</th><th>What it demonstrates</th><th style="width: 320px">Interview question it prepares you for</th></tr>
+    <tr><td><span class="pr p0">P0</span></td><td>Make failures fatal; check pass count &gt; 0</td><td>You trust nothing that can't fail</td><td>"How does your regression decide pass/fail?"</td></tr>
+    <tr><td><span class="pr p0">P0</span></td><td>Fix W-before-AW deadlock + SLVERR (bugs #2, #3)</td><td>Protocol knowledge, real bug-finding</td><td>"Tell me about a bug you found."</td></tr>
+    <tr><td><span class="pr p0">P0</span></td><td>Get the UVM layer compiling and running on a real simulator (EDA Playground has free UVM)</td><td>Your resume claim is true</td><td>"Walk me through your env's build/connect phases."</td></tr>
+    <tr><td><span class="pr p1">P1</span></td><td>SVA protocol checker, bound to the DUT</td><td>Assertions, bind, temporal logic</td><td>"Write an assertion for the VALID/READY rule."</td></tr>
+    <tr><td><span class="pr p1">P1</span></td><td>Driver knobs: random AW/W skew, BREADY/RREADY back-pressure (config object)</td><td>Stimulus that hunts corner cases</td><td>"How would you find a deadlock?"</td></tr>
+    <tr><td><span class="pr p1">P1</span></td><td>Protocol coverage: handshake order, stall lengths, resp × direction, all 15 strobes</td><td>Coverage plan driven by risk, not by fields</td><td>"You're at 100% coverage but still found a bug. Why?"</td></tr>
+    <tr><td><span class="pr p2">P2</span></td><td>UVM RAL model + AXI-Lite adapter + predictor</td><td>AXI-Lite is a register bus — RAL is how industry tests it</td><td>"Frontdoor vs backdoor? Explicit vs implicit prediction?"</td></tr>
+    <tr><td><span class="pr p2">P2</span></td><td>Regression script: N seeds, log parsing, merged coverage, failure triage</td><td>Scale and automation (Python/Make)</td><td>"Test fails 1 in 1000 seeds. What do you do?"</td></tr>
+    <tr><td><span class="pr p3">P3</span></td><td>Formal: prove the SVA properties (e.g. SymbiYosys free, or JasperGold/VC Formal at work)</td><td>Formal mindset — growing fast in CPU/GPU teams</td><td>"Which blocks suit formal, and why?"</td></tr>
+    <tr><td><span class="pr p3">P3</span></td><td>Full AXI4 slave: bursts, IDs, outstanding (sheets 5–11 of this canvas)</td><td>Real protocol complexity</td><td>"Scoreboard with out-of-order responses?"</td></tr>
+  </table>
+</div>
+
+<!-- SVA + KNOBS -->
+<div style="display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>P1 · AXI4-Lite SVA checker (bind it, don't edit the RTL)</h2>
+    <pre class="code">module axi_lite_sva (input logic aclk, aresetn,
+  input logic awvalid, awready, wvalid, wready, bvalid, bready,
+  input logic arvalid, arready, rvalid, rready,
+  input logic [31:0] awaddr, wdata, rdata, input logic [3:0] wstrb,
+  input logic [1:0]  bresp, rresp);
+
+  default clocking cb @(posedge aclk); endclocking
+  default disable iff (!aresetn);
+
+  // VALID held + payload stable until READY (all 5 channels)
+  a_aw: assert property (awvalid &amp;&amp; !awready |=&gt; awvalid &amp;&amp; $stable(awaddr));
+  a_w : assert property (wvalid &amp;&amp; !wready |=&gt; wvalid &amp;&amp; $stable({wdata, wstrb}));
+  a_b : assert property (bvalid &amp;&amp; !bready |=&gt; bvalid &amp;&amp; $stable(bresp));
+  a_r : assert property (rvalid &amp;&amp; !rready |=&gt; rvalid &amp;&amp; $stable({rdata, rresp}));
+  a_x : assert property (!$isunknown({awvalid, wvalid, bvalid, arvalid, rvalid}));
+
+  // B only after both AW and W were accepted; then within 8 cycles
+  logic [7:0] aw_n, w_n, b_n;
+  always_ff @(posedge aclk or negedge aresetn)
+    if (!aresetn) {aw_n, w_n, b_n} &lt;= '0;
+    else begin
+      aw_n &lt;= aw_n + (awvalid &amp;&amp; awready);
+      w_n  &lt;= w_n  + (wvalid  &amp;&amp; wready);
+      b_n  &lt;= b_n  + (bvalid  &amp;&amp; bready);
+    end
+  a_b_order: assert property (bvalid |-&gt; aw_n != b_n &amp;&amp; w_n != b_n);
+  a_b_live : assert property (aw_n != b_n &amp;&amp; w_n != b_n |-&gt; ##[0:8] bvalid);
+endmodule
+
+bind axi4_slave_ram axi_lite_sva u_sva (.*);   // port names match</pre>
+    <div class="key"><span class="m">a_b_live</span> fires on the original RTL in the W-before-AW case — the assertion would have caught bug #2 on day one.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 20px">
+    <div class="card">
+      <h2 class="h2"><span class="num">3</span>P1 · Driver knobs</h2>
+      <pre class="code">class axi_cfg extends uvm_object;
+  `uvm_object_utils(axi_cfg)
+  rand int unsigned max_skew  = 4;  // AW vs W start delay
+  rand int unsigned max_bstall = 6;  // BREADY low cycles
+  rand int unsigned max_rstall = 6;  // RREADY low cycles
+  function new(string name = "axi_cfg"); super.new(name); endfunction
+endclass
+
+// in drive_write(): channels start independently
+fork
+  begin repeat ($urandom_range(0, cfg.max_skew)) @(vif.driver_cb);
+        drive_aw(txn); end
+  begin repeat ($urandom_range(0, cfg.max_skew)) @(vif.driver_cb);
+        drive_w(txn);  end
+join
+repeat ($urandom_range(0, cfg.max_bstall)) @(vif.driver_cb);
+vif.driver_cb.bready &lt;= 1;</pre>
+      <div class="p">Set via <span class="m">uvm_config_db#(axi_cfg)::set</span> from the test, so one test can be "no stalls" and another "heavy back-pressure" without touching the driver.</div>
+    </div>
+
+    <div class="card">
+      <h2 class="h2"><span class="num">4</span>P1 · Protocol coverage (sample in the monitor)</h2>
+      <pre class="code">typedef enum {AW_FIRST, W_FIRST, SAME_CYCLE} order_e;
+covergroup cg_proto with function sample(order_e ord,
+                       int bstall, int rstall, bit wr, bit [1:0] resp);
+  cp_ord : coverpoint ord;
+  cp_bst : coverpoint bstall { bins none = {0}; bins short_ = {[1:3]};
+                               bins long_ = {[4:$]}; }
+  cp_rst : coverpoint rstall { bins none = {0}; bins short_ = {[1:3]};
+                               bins long_ = {[4:$]}; }
+  cp_resp: coverpoint resp   { bins okay = {0}; bins slverr = {2}; }
+  x_ord_bst : cross cp_ord, cp_bst;
+  x_dir_resp: cross wr, cp_resp;
+endgroup</pre>
+    </div>
+  </div>
+</div>
+
+<!-- RAL -->
+<div class="card">
+  <h2 class="h2"><span class="num">5</span>P2 · RAL — the standard way to verify an AXI-Lite register/memory block</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px">
+    <pre class="code">class axi_lite_adapter extends uvm_reg_adapter;
+  `uvm_object_utils(axi_lite_adapter)
+  function new(string name = "axi_lite_adapter"); super.new(name); endfunction
+
+  virtual function uvm_sequence_item reg2bus(const ref uvm_reg_bus_op rw);
+    axi4_seq_item t = axi4_seq_item::type_id::create("t");
+    t.txn_type = (rw.kind == UVM_WRITE) ? axi4_seq_item::AXI4_WRITE
+                                        : axi4_seq_item::AXI4_READ;
+    t.addr = rw.addr;  t.data = rw.data;  t.wstrb = 4'hF;
+    return t;
+  endfunction
+
+  virtual function void bus2reg(uvm_sequence_item item, ref uvm_reg_bus_op rw);
+    axi4_seq_item t;
+    if (!$cast(t, item)) `uvm_fatal("ADPT", "bad item type")
+    rw.kind   = (t.txn_type == axi4_seq_item::AXI4_WRITE) ? UVM_WRITE : UVM_READ;
+    rw.addr   = t.addr;
+    rw.data   = (rw.kind == UVM_READ) ? t.rdata : t.data;
+    rw.status = (((rw.kind == UVM_WRITE) ? t.bresp : t.rresp) == 2'b00)
+                ? UVM_IS_OK : UVM_NOT_OK;
+  endfunction
+endclass</pre>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <ul class="ul">
+        <li><b>Model:</b> <span class="m">uvm_reg_block</span> with a <span class="m">uvm_mem</span> (256 × 32) — or a few <span class="m">uvm_reg</span>s if you add CSRs.</li>
+        <li><b>Connect:</b> <span class="m">map.set_sequencer(agent.sequencer_h, adapter)</span>.</li>
+        <li><b>Predictor:</b> <span class="m">uvm_reg_predictor</span> fed by the monitor → <b>explicit prediction</b>, mirror tracks bus traffic from any master.</li>
+        <li><b>Built-in sequences:</b> <span class="m">uvm_reg_hw_reset_seq</span>, <span class="m">uvm_reg_bit_bash_seq</span>, <span class="m">uvm_mem_walk_seq</span> — free tests.</li>
+        <li><b>Backdoor:</b> <span class="m">add_hdl_path</span> → peek/poke the RAM without bus traffic, useful to preload or to check.</li>
+      </ul>
+      <div class="key"><b>Know cold:</b> <span class="m">write/read</span> (bus) vs <span class="m">set/get</span> (desired value) vs <span class="m">update/mirror</span> vs <span class="m">peek/poke</span> (backdoor).</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT TOP TEAMS PROBE -->
+<div class="card" style="flex: 1">
+  <h2 class="h2"><span class="num">6</span>What big silicon DV interview loops commonly cover</h2>
+  <div class="p">Based on widely shared candidate experiences; exact rounds vary by team and level — ask your recruiter for the format.</div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+    <div class="rd"><div class="rdh">SystemVerilog &amp; UVM depth</div><div class="p">OOP (virtual methods, polymorphism, deep vs shallow copy), constraints &amp; <span class="m">solve…before</span>, coverage, factory, config_db, phases, TLM, sequences.</div></div>
+    <div class="rd"><div class="rdh">Assertions &amp; formal</div><div class="p">Write SVA live: handshakes, one-hot, req→ack within N, FIFO never overflows. When formal beats simulation.</div></div>
+    <div class="rd"><div class="rdh">"Verify this block"</div><div class="p">Async FIFO, arbiter, cache, AXI slave, credit-based link. Testplan → checker → coverage → corner cases.</div></div>
+    <div class="rd"><div class="rdh">Architecture &amp; protocols</div><div class="p">AXI/AHB/APB, caches &amp; coherency (MESI/MOESI), memory ordering, pipelines and hazards, CDC/RDC. Especially deep at CPU/GPU companies.</div></div>
+    <div class="rd"><div class="rdh">Debug scenarios</div><div class="p">Fails in batch not GUI; 1-in-1000 seed; X propagation; race conditions; "scoreboard mismatch — DUT or model?"</div></div>
+    <div class="rd"><div class="rdh">Coding</div><div class="p">C/C++ or Python data-structure problems (some loops include a general software round), plus SV coding: constraints, a small scoreboard, a reference model.</div></div>
+  </div>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px">
+    <div class="tip"><b>Project deep-dive is near-universal:</b> expect 20–40 minutes on one resume project, with "why" after every answer. This canvas's bugs sheet is your preparation for that round.</div>
+    <div class="key"><b>2-week plan:</b> days 1–3 P0 fixes + push; 4–6 SVA + knobs + coverage; 7–9 RAL; 10–11 regression script; 12–14 mock interviews on sheets 1–4 of this row.</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

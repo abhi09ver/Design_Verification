@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CoreSight Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: datasheet-style field guide. Left rail of chapters, one reading column, interface colours used as a code throughout. */
+:root{
+  --bg:#F2F4F3; --surface:#FFFFFF; --sunk:#E8ECEA; --ink:#16201D; --muted:#56635F; --line:#D2DAD7;
+  --accent:#0E6767;
+  --apb:#2457A6; --atb:#B86200; --evt:#B02D68; --auth:#6447B0; --ts:#2B7A4B; --bad:#C0392B; --ok:#2B7A4B;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1513; --surface:#161E1B; --sunk:#1D2723; --ink:#E2E9E6; --muted:#9AA8A3; --line:#2B3632;
+  --accent:#4FC0BA; --apb:#82A9F2; --atb:#F2A64C; --evt:#EE7BAE; --auth:#AE98F0; --ts:#6CCB92; --bad:#F07A6C; --ok:#6CCB92; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#161E1B; --sunk:#1D2723; --ink:#E2E9E6; --muted:#9AA8A3; --line:#2B3632;
+  --accent:#4FC0BA; --apb:#82A9F2; --atb:#F2A64C; --evt:#EE7BAE; --auth:#AE98F0; --ts:#6CCB92; --bad:#F07A6C; --ok:#6CCB92; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.6;margin:0}
+.shell{display:grid;grid-template-columns:210px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:13.5px}
+nav.rail .brand{font-family:var(--f-display);font-weight:800;font-stretch:80%;letter-spacing:.02em;font-size:15px;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:ch}
+nav.rail a{display:flex;gap:10px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:4px}
+nav.rail a:hover,nav.rail a:focus-visible{color:var(--ink);background:var(--sunk);outline:none}
+nav.rail a span.k{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);min-width:22px;padding-top:1px}
+main{min-width:0}
+header.hero{padding:6px 0 26px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:800;font-stretch:78%;font-size:clamp(40px,7vw,76px);line-height:.95;margin:10px 0 14px;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{max-width:68ch;font-size:17px;color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{display:inline-block;width:22px;height:4px;border-radius:2px}
+section{padding-top:46px;scroll-margin-top:16px}
+h2{font-family:var(--f-display);font-weight:750;font-stretch:85%;font-size:clamp(26px,3.6vw,36px);line-height:1.05;margin:0 0 6px;text-wrap:balance;display:flex;gap:14px;align-items:baseline}
+h2 .k{font-family:var(--f-mono);font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+h3{font-family:var(--f-display);font-weight:700;font-stretch:95%;font-size:19px;margin:26px 0 8px;text-wrap:balance}
+p{max-width:72ch;margin:0 0 12px}
+.sub{color:var(--muted);max-width:72ch;margin-bottom:18px}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+code{background:var(--sunk);padding:1px 5px;border-radius:3px}
+.ref{font-family:var(--f-mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px;white-space:nowrap;vertical-align:1px}
+.ext{font-family:var(--f-mono);font-size:10.5px;color:var(--auth);border:1px dashed var(--auth);border-radius:3px;padding:0 4px;white-space:nowrap;vertical-align:1px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:14px 0 8px}
+.fig figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg text{font-family:var(--f-body)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-width:0}
+.card h4{margin:0 0 6px;font-family:var(--f-display);font-weight:700;font-size:16px;font-stretch:95%}
+.card p,.card li{font-size:14px}
+.card ul{margin:0;padding-left:18px}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;background:var(--sunk);color:var(--muted);margin-bottom:6px}
+.pitch{border-left:4px solid var(--accent);background:var(--surface);padding:14px 18px;border-radius:0 var(--r) var(--r) 0;font-size:16px;max-width:none}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
+td.mono,td code{white-space:nowrap}
+.tbl{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto;margin:12px 0}
+.tbl table{min-width:560px}
+/* register frame */
+.regmap{display:grid;grid-template-columns:86px minmax(0,1fr);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.regmap>div{padding:6px 10px;border-bottom:1px solid var(--line)}
+.regmap .o{font-family:var(--f-mono);font-size:12px;color:var(--muted);background:var(--sunk)}
+.regmap .big{padding-block:18px}
+.regmap .mgmt{border-left:3px solid var(--apb)}
+.regmap b{font-family:var(--f-mono);font-size:12.5px}
+/* widgets */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:14px 0}
+.widget .wh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
+.widget .wh strong{font-family:var(--f-display);font-size:17px;font-stretch:90%}
+.switches{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);cursor:pointer;font-family:var(--f-mono);font-size:12px;color:var(--ink);user-select:none}
+.sw[aria-pressed="true"]{border-color:var(--auth);background:color-mix(in srgb,var(--auth) 14%,var(--surface))}
+.sw .pin{width:34px;height:18px;border-radius:9px;background:var(--line);position:relative}
+.sw .pin::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);transition:left .15s}
+.sw[aria-pressed="true"] .pin{background:var(--auth)}
+.sw[aria-pressed="true"] .pin::after{left:18px}
+.sw:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.perm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.perm div{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-size:13px}
+.perm .st{font-family:var(--f-mono);font-weight:600;font-size:12px;display:block}
+.perm .on{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.perm .on .st{color:var(--ok)}
+.perm .off .st{color:var(--muted)}
+.eq{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.out{font-family:var(--f-mono);font-size:13px;margin-top:12px;padding:10px 12px;background:var(--sunk);border-radius:var(--r);overflow-x:auto}
+.warn{color:var(--bad)}
+.okc{color:var(--ok)}
+input[type=text],select{font-family:var(--f-mono);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-family:var(--f-mono);min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+button{font-family:var(--f-body);font-weight:600;font-size:13.5px;padding:8px 14px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:10px}
+/* formatter grid */
+.frame{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:12px 0;max-width:560px}
+.frame div{border:1px solid var(--line);border-radius:4px;padding:6px 4px;text-align:center;font-family:var(--f-mono);font-size:12px;background:var(--bg)}
+.frame div small{display:block;font-size:10px;color:var(--muted)}
+.frame .mix{border-color:var(--atb)}
+.frame .aux{background:color-mix(in srgb,var(--atb) 18%,var(--surface));border-color:var(--atb)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-family:var(--f-mono);font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid var(--line);background:var(--bg)}
+.chip.id{border-style:dashed;color:var(--muted)}
+/* steps */
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start;font-size:14.5px}
+ol.steps li::before{content:counter(s);font-family:var(--f-mono);font-weight:600;font-size:12px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--accent);color:var(--accent)}
+pre{font-family:var(--f-mono);font-size:12.5px;line-height:1.55;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;overflow-x:auto;margin:10px 0}
+pre .c{color:var(--muted)}
+/* Q&A */
+details.qa{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:8px 0}
+details.qa summary{cursor:pointer;padding:12px 14px;font-weight:600;font-size:15px;list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:baseline}
+details.qa summary::-webkit-details-marker{display:none}
+details.qa summary .lvl{font-family:var(--f-mono);font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em}
+.lvl.f{background:color-mix(in srgb,var(--apb) 15%,var(--surface));color:var(--apb)}
+.lvl.d{background:color-mix(in srgb,var(--atb) 15%,var(--surface));color:var(--atb)}
+.lvl.v{background:color-mix(in srgb,var(--ts) 15%,var(--surface));color:var(--ts)}
+.lvl.s{background:color-mix(in srgb,var(--evt) 15%,var(--surface));color:var(--evt)}
+details.qa .a{padding:0 14px 14px 14px;font-size:14.5px}
+details.qa .a p{max-width:80ch}
+details.qa[open] summary{border-bottom:1px solid var(--line);margin-bottom:10px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.filters button{background:transparent;color:var(--muted);border-color:var(--line);font-weight:500;padding:5px 10px}
+.filters button[aria-pressed="true"]{color:var(--surface);background:var(--ink);border-color:var(--ink)}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.fact .v{font-family:var(--f-mono);font-weight:600;font-size:15px;color:var(--accent);display:block;word-break:break-all}
+.fact .d{font-size:12.5px;color:var(--muted)}
+.frame-q{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;counter-reset:fq}
+.frame-q div{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:var(--r);padding:10px 12px;font-size:13.5px}
+.frame-q b{display:block;font-family:var(--f-display);font-stretch:90%;font-size:15px}
+footer{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  nav.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+  nav.rail .brand{display:none}
+  nav.rail ol{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
+  nav.rail a{white-space:nowrap;border:1px solid var(--line);padding:4px 9px}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+  .frame-q{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .switches{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .perm{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .frame-q{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+
+<div class="shell">
+<nav class="rail" aria-label="Chapters">
+  <div class="brand">CoreSight v3.0</div>
+  <ol>
+    <li><a href="#pitch"><span class="k">00</span>The pitch</a></li>
+    <li><a href="#map"><span class="k">01</span>System map</a></li>
+    <li><a href="#pm"><span class="k">02</span>Programmers' model</a></li>
+    <li><a href="#rom"><span class="k">03</span>Discovery &amp; ROM</a></li>
+    <li><a href="#if"><span class="k">04</span>Interfaces</a></li>
+    <li><a href="#auth"><span class="k">05</span>Authentication</a></li>
+    <li><a href="#fmt"><span class="k">06</span>Trace formatter</a></li>
+    <li><a href="#cti"><span class="k">07</span>Cross-trigger</a></li>
+    <li><a href="#pwr"><span class="k">08</span>Power &amp; reset</a></li>
+    <li><a href="#dv"><span class="k">09</span>Verification plan</a></li>
+    <li><a href="#bugs"><span class="k">10</span>Bug catalog</a></li>
+    <li><a href="#qa"><span class="k">11</span>Interview Q&amp;A</a></li>
+    <li><a href="#cheat"><span class="k">12</span>Cheat sheet</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">ARM IHI 0029E · CoreSight Architecture v3.0 · Senior CPU DV prep</div>
+  <h1>CoreSight <em>Field Guide</em></h1>
+  <p class="lede">Debug and trace from architecture to sign-off: how a debugger finds, powers, unlocks and programs every component, how trace gets from a core to a pin, and what a senior verification engineer is expected to break along the way.</p>
+  <div class="legend" aria-label="Colour code used in every diagram">
+    <span><i style="background:var(--apb)"></i>APB · program &amp; discover</span>
+    <span><i style="background:var(--atb)"></i>ATB · trace data</span>
+    <span><i style="background:var(--evt)"></i>Event / channel · triggers</span>
+    <span><i style="background:var(--auth)"></i>Authentication</span>
+    <span><i style="background:var(--ts)"></i>Timestamp</span>
+  </div>
+  <p style="margin-top:14px;font-size:13px;color:var(--muted)">Section refs like <span class="ref">§C5.4</span> point into the spec. Material marked <span class="ext">beyond spec</span> comes from neighbouring ARM specs (ADI, ETM, CTI, TMC, ATB) that interviews expect you to know.</p>
+</header>
+
+<!-- 00 -->
+<section id="pitch">
+  <h2><span class="k">00</span>The 60-second pitch</h2>
+  <p class="pitch">CoreSight is a <b>plug-together debug and trace fabric</b>. Every component exposes the same 4KB register frame so tools can <b>identify</b> it, a <b>ROM table</b> lets a debugger <b>discover</b> everything from one base pointer, <b>APB</b> programs it, <b>ATB</b> carries trace from sources through links to sinks, <b>channels</b> carry cross-triggers between CTIs, <b>authentication signals</b> gate what is allowed, and a shared <b>64-bit timestamp</b> correlates it all. All of it must keep working while parts of the SoC are powered off.</p>
+
+  <h3>Three layers of the architecture <span class="ref">§A1.2</span></h3>
+  <div class="grid3">
+    <div class="card"><span class="tag">Part B · mandatory</span><h4>Visible component</h4><p>What a tool sees: the programmers' model (CIDR/PIDR, management registers at <code>0xF00–0xFFC</code>) and topology-detection registers.</p></div>
+    <div class="card"><span class="tag">Part C · optional</span><h4>Reusable component</h4><p>Physical interfaces so IP from different vendors connects: APB, ATB, event, channel, authentication, timestamp. Skip it and tools still work, but integration and detection may fail.</p></div>
+    <div class="card"><span class="tag">Part D · system</span><h4>System architecture</h4><p>Clock and power domains, auth control, memory map views, connectors, trace formatter, ROM tables, topology detection and compliance classes.</p></div>
+  </div>
+
+  <h3>Requirements to quote in an interview</h3>
+  <div class="grid2">
+    <div class="card"><h4>The architecture must let you…</h4><ul>
+      <li>Access debug with no software running on the target</li>
+      <li>Connect to a running system <b>without a reset</b></li>
+      <li>Trace <b>non-invasively</b>, with no effect on behaviour</li>
+      <li>Keep debug logic at minimal power when unused</li>
+      <li>Capture trace over long periods</li></ul></div>
+    <div class="card"><h4>…in a world where</h4><ul>
+      <li>Clocks and power of SoC regions change independently</li>
+      <li>On-chip monitors need the same access as an external debugger</li>
+      <li>Pins and trace storage are shared to save silicon</li>
+      <li>Platforms are nested and must hide their internals</li>
+      <li>Access must be controllable in the field</li></ul></div>
+  </div>
+</section>
+
+<!-- 01 -->
+<section id="map">
+  <h2><span class="k">01</span>System map</h2>
+  <p class="sub">One SoC, every interface. Learn to draw this from memory on a whiteboard; most interview questions are a walk along one of these coloured paths.</p>
+  <figure class="fig scroll" style="margin:0">
+  <svg viewBox="0 0 1000 500" width="100%" style="min-width:760px" role="img" aria-label="CoreSight system map showing DAP, Debug APB, ROM table, clusters with ETM and CTI, cross-trigger matrix, and trace path through funnel, ETF, replicator to ETR and TPIU">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path style="fill:var(--atb)" d="M0 0L10 5L0 10z"/></marker>
+      <marker id="ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path style="fill:var(--muted)" d="M0 0L10 5L0 10z"/></marker>
+    </defs>
+    <style>
+      .bx{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}
+      .bxs{fill:var(--sunk);stroke:var(--line);stroke-width:1}
+      .t{fill:var(--ink);font-size:13px;font-weight:600}
+      .ts{fill:var(--muted);font-size:11px}
+      .apb{stroke:var(--apb);stroke-width:2.5;fill:none}
+      .atb{stroke:var(--atb);stroke-width:2.5;fill:none}
+      .evt{stroke:var(--evt);stroke-width:2;fill:none}
+      .neu{stroke:var(--muted);stroke-width:1.5;fill:none}
+    </style>
+    <!-- probe + DAP -->
+    <rect class="bx" x="20" y="40" width="120" height="44" rx="5"/><text class="t" x="80" y="60" text-anchor="middle">Debug probe</text><text class="ts" x="80" y="76" text-anchor="middle">JTAG · SWD</text>
+    <line class="neu" x1="140" y1="62" x2="186" y2="62" marker-end="url(#ahk)"/>
+    <rect style="stroke:var(--muted)" x="176" y="16" width="148" height="244" rx="8" fill="none" stroke-dasharray="4 4"/>
+    <text class="ts" x="186" y="32">DAP (ADI)</text>
+    <rect class="bx" x="188" y="40" width="124" height="44" rx="5"/><text class="t" x="250" y="60" text-anchor="middle">SWJ-DP</text><text class="ts" x="250" y="76" text-anchor="middle">BASEPTR → ROM</text>
+    <rect class="bx" x="188" y="108" width="124" height="36" rx="5" style="stroke:var(--apb)"/><text class="t" x="250" y="131" text-anchor="middle">APB-AP</text>
+    <rect class="bx" x="188" y="156" width="124" height="36" rx="5"/><text class="t" x="250" y="179" text-anchor="middle">AXI-AP</text>
+    <rect class="bx" x="188" y="204" width="124" height="36" rx="5"/><text class="t" x="250" y="227" text-anchor="middle">JTAG-AP</text>
+    <line class="neu" x1="188" y1="174" x2="142" y2="174" marker-end="url(#ahk)"/>
+    <rect class="bxs" x="20" y="156" width="120" height="36" rx="5"/><text class="ts" x="80" y="178" text-anchor="middle">System memory</text>
+    <line class="neu" x1="188" y1="222" x2="142" y2="222" marker-end="url(#ahk)"/>
+    <rect class="bxs" x="20" y="204" width="120" height="36" rx="5"/><text class="ts" x="80" y="226" text-anchor="middle">Legacy JTAG TAPs</text>
+
+    <!-- Debug APB bus -->
+    <path class="apb" d="M312 126 H985"/>
+    <text style="fill:var(--apb)" x="900" y="118" font-size="11.5" font-weight="600" text-anchor="end">Debug APB · PADDRDBG/PSLVERRDBG</text>
+    <rect class="bx" x="350" y="40" width="120" height="44" rx="5"/><text class="t" x="410" y="60" text-anchor="middle">ROM table</text><text class="ts" x="410" y="76" text-anchor="middle">class 0x1 or 0x9</text>
+    <path class="apb" d="M410 84 V126"/>
+    <rect class="bx" x="490" y="40" width="136" height="44" rx="5"/><text class="t" x="558" y="60" text-anchor="middle">Power requestor</text><text class="ts" x="558" y="76" text-anchor="middle">or ROM 0x9 DBGPCR</text>
+    <path class="apb" d="M558 84 V126"/>
+    <rect class="bx" x="646" y="40" width="130" height="44" rx="5" style="stroke:var(--ts)"/><text class="t" x="711" y="60" text-anchor="middle">Timestamp gen</text><text class="ts" x="711" y="76" text-anchor="middle">TSVALUEB[63:0] → all</text>
+    <path class="apb" d="M711 84 V126"/>
+    <rect class="bx" x="796" y="40" width="186" height="44" rx="5" style="stroke:var(--auth)"/><text class="t" x="889" y="60" text-anchor="middle">Auth control</text><text class="ts" x="889" y="76" text-anchor="middle">fuses · challenge-resp → *EN</text>
+
+    <!-- cluster 0 -->
+    <path class="apb" d="M455 126 V160"/>
+    <rect style="stroke:var(--ink)" x="360" y="160" width="190" height="120" rx="7" fill="none" stroke-width="1.2"/>
+    <text class="ts" x="368" y="176">Cluster 0 · PE</text>
+    <rect class="bxs" x="372" y="184" width="80" height="32" rx="4"/><text class="ts" x="412" y="204" text-anchor="middle">Debug regs</text>
+    <rect class="bxs" x="460" y="184" width="78" height="32" rx="4" style="stroke:var(--evt)"/><text class="t" x="499" y="205" text-anchor="middle" style="fill:var(--evt)">CTI 0</text>
+    <rect class="bxs" x="372" y="232" width="80" height="34" rx="4" style="stroke:var(--atb)"/><text class="t" x="412" y="254" text-anchor="middle" style="fill:var(--atb)">ETM 0</text>
+    <rect class="bxs" x="460" y="232" width="78" height="34" rx="4"/><text class="ts" x="499" y="253" text-anchor="middle">PMU</text>
+    <!-- cluster 1 -->
+    <path class="apb" d="M665 126 V160"/>
+    <rect style="stroke:var(--ink)" x="570" y="160" width="190" height="120" rx="7" fill="none" stroke-width="1.2"/>
+    <text class="ts" x="578" y="176">Cluster 1 · PE</text>
+    <rect class="bxs" x="582" y="184" width="80" height="32" rx="4"/><text class="ts" x="622" y="204" text-anchor="middle">Debug regs</text>
+    <rect class="bxs" x="670" y="184" width="78" height="32" rx="4" style="stroke:var(--evt)"/><text class="t" x="709" y="205" text-anchor="middle" style="fill:var(--evt)">CTI 1</text>
+    <rect class="bxs" x="582" y="232" width="80" height="34" rx="4" style="stroke:var(--atb)"/><text class="t" x="622" y="254" text-anchor="middle" style="fill:var(--atb)">ETM 1</text>
+    <rect class="bxs" x="670" y="232" width="78" height="34" rx="4"/><text class="ts" x="709" y="253" text-anchor="middle">PMU</text>
+    <!-- STM -->
+    <path class="apb" d="M825 126 V160"/>
+    <rect class="bx" x="780" y="160" width="90" height="50" rx="5" style="stroke:var(--atb)"/><text class="t" x="825" y="182" text-anchor="middle" style="fill:var(--atb)">STM</text><text class="ts" x="825" y="198" text-anchor="middle">SW events</text>
+
+    <!-- cross trigger -->
+    <path class="evt" d="M538 200 H560 V296 H680"/>
+    <path class="evt" d="M748 200 H770 V296 H760"/>
+    <rect style="fill:var(--surface);stroke:var(--evt)" x="680" y="284" width="80" height="24" rx="4" stroke-width="1.5"/><text style="fill:var(--evt)" x="720" y="300" text-anchor="middle" font-size="12" font-weight="700">CTM</text>
+    <path class="evt" d="M745 308 V440"/>
+    <rect style="fill:var(--surface);stroke:var(--evt)" x="690" y="440" width="120" height="36" rx="5" stroke-width="1.5"/><text style="fill:var(--evt)" x="750" y="462" text-anchor="middle" font-size="12.5" font-weight="700">CTI (sinks)</text>
+    <path class="evt" d="M810 458 H900 V418" stroke-dasharray="4 3"/>
+    <text style="fill:var(--evt)" x="690" y="494" font-size="10.5">→ TRIGIN · FLUSHIN on sinks</text>
+
+    <!-- trace path -->
+    <path class="atb" d="M412 266 V350 H466" marker-end="url(#ah)"/>
+    <path class="atb" d="M622 266 V312 H540 V326" marker-end="url(#ah)"/>
+    <path class="atb" d="M825 210 V320 H565 V326" marker-end="url(#ah)"/>
+    <rect class="bx" x="470" y="330" width="110" height="40" rx="5" style="stroke:var(--atb)"/><text class="t" x="525" y="355" text-anchor="middle">Funnel</text>
+    <path class="atb" d="M580 350 H616" marker-end="url(#ah)"/>
+    <rect class="bx" x="620" y="330" width="110" height="40" rx="5" style="stroke:var(--atb)"/><text class="t" x="675" y="348" text-anchor="middle">TMC · ETF</text><text class="ts" x="675" y="363" text-anchor="middle">FIFO / buffer</text>
+    <path class="atb" d="M730 350 H766" marker-end="url(#ah)"/>
+    <rect class="bx" x="770" y="330" width="100" height="40" rx="5" style="stroke:var(--atb)"/><text class="t" x="820" y="355" text-anchor="middle">Replicator</text>
+    <path class="atb" d="M870 345 H880 V318 H886" marker-end="url(#ah)"/>
+    <path class="atb" d="M870 355 H880 V398 H886" marker-end="url(#ah)"/>
+    <rect class="bx" x="890" y="300" width="96" height="36" rx="5" style="stroke:var(--atb)"/><text class="t" x="938" y="316" text-anchor="middle">ETR</text><text class="ts" x="938" y="330" text-anchor="middle">→ DRAM (AXI)</text>
+    <rect class="bx" x="890" y="382" width="96" height="36" rx="5" style="stroke:var(--atb)"/><text class="t" x="938" y="398" text-anchor="middle">TPIU</text><text class="ts" x="938" y="412" text-anchor="middle">formatter</text>
+    <path class="atb" d="M938 418 V446" marker-end="url(#ah)"/>
+    <rect class="bxs" x="890" y="450" width="96" height="36" rx="5"/><text class="ts" x="938" y="472" text-anchor="middle">Trace port → TPA</text>
+    <text style="fill:var(--atb)" x="448" y="400" font-size="11" font-weight="600">ATB: ATDATA · ATID · ATVALID/ATREADY · AFVALID/AFREADY</text>
+    <text style="fill:var(--muted)" x="20" y="300" font-size="11.5">Sources → links → sinks.</text>
+    <text style="fill:var(--muted)" x="20" y="316" font-size="11.5">Every box on APB carries the</text>
+    <text style="fill:var(--muted)" x="20" y="332" font-size="11.5">same ID frame at 0xFD0–0xFFC.</text>
+  </svg>
+  <figcaption>Typical multi-core system (compare spec Figures D9-6 and D9-7). Source/link/sink taxonomy from <span class="ref">§A1.3</span>; ETF/ETR are TMC configurations <span class="ext">beyond spec</span>.</figcaption>
+  </figure>
+
+  <h3>Component taxonomy, and how DEVTYPE encodes it <span class="ref">§B2.3.8</span></h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Role</th><th>Examples</th><th>DEVTYPE MAJOR / SUB</th><th>Verification angle</th></tr></thead>
+    <tbody>
+      <tr><td><b>Trace source</b></td><td>ETM, PTM, STM, HTM (AHB)</td><td class="mono">0x3 / 0x1 core, 0x4 bus, 0x6 software</td><td>Packet correctness vs retired-instruction model; non-invasiveness</td></tr>
+      <tr><td><b>Trace link</b></td><td>Funnel, replicator, ATB bridge, ETF</td><td class="mono">0x2 / 0x1 funnel, 0x2 filter, 0x3 FIFO</td><td>Lossless merge, arbitration fairness, flush propagation, ID preservation</td></tr>
+      <tr><td><b>Trace sink</b></td><td>TPIU, ETB, TMC (ETR)</td><td class="mono">0x1 / 0x1 port, 0x2 buffer, 0x3 router</td><td>Formatter, wrap, stop-on-trigger, drain on flush, AXI errors</td></tr>
+      <tr><td><b>Debug control</b></td><td>CTI/CTM, auth module, power requestor</td><td class="mono">0x4 / 0x1 trig matrix, 0x2 auth, 0x3 pwr req</td><td>Trigger routing latency, CDC merge, gating</td></tr>
+      <tr><td><b>Debug logic</b></td><td>PE external debug, bus debug, BIST</td><td class="mono">0x5 / 0x1 core … 0x5 memory</td><td>Halt/restart, DBGACK, access while powered down</td></tr>
+      <tr><td><b>Perf monitor</b></td><td>PMU, SMMU PMU</td><td class="mono">0x6 / 0x1 PE … 0x5 SMMU</td><td>Event counting vs model, overflow interrupts</td></tr>
+      <tr><td><b>Access</b></td><td>SW-DP, JTAG-DP, SWJ-DP; APB/AHB/AXI/JTAG-AP</td><td class="mono">ADI-defined</td><td>Sticky errors, power-up handshake, AP select <span class="ext">beyond spec</span></td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 02 -->
+<section id="pm">
+  <h2><span class="k">02</span>Programmers' model</h2>
+  <p class="sub">Every CoreSight component is a word-aligned, little-endian 4KB register frame. The top 256 bytes are the same in every component, which is what makes generic tools possible. <span class="ref">§B2.1</span></p>
+
+  <div class="grid2">
+    <div>
+      <div class="regmap" role="table" aria-label="4KB CoreSight register frame">
+        <div class="o">0x000 ↓</div><div class="big">Component control registers grow upward</div>
+        <div class="o">… 0xEFC ↑</div><div>Integration registers grow downward (recommended)</div>
+        <div class="o">0xF00</div><div class="mgmt"><b>ITCTRL</b> · IME=1 enters integration / topology mode</div>
+        <div class="o">0xFA0/A4</div><div class="mgmt"><b>CLAIMSET / CLAIMCLR</b> · agent ownership tags</div>
+        <div class="o">0xFA8/AC</div><div class="mgmt"><b>DEVAFF0/1</b> · affinity, e.g. MPIDR of attached PE</div>
+        <div class="o">0xFB0/B4</div><div class="mgmt"><b>LAR / LSR</b> · software lock (deprecated v3.0)</div>
+        <div class="o">0xFB8</div><div class="mgmt" style="border-left-color:var(--auth)"><b>AUTHSTATUS</b> · what the auth signals allow</div>
+        <div class="o">0xFBC</div><div class="mgmt"><b>DEVARCH</b> · architect + ARCHID</div>
+        <div class="o">0xFC0–C8</div><div class="mgmt"><b>DEVID2 / DEVID1 / DEVID</b> · capabilities</div>
+        <div class="o">0xFCC</div><div class="mgmt"><b>DEVTYPE</b> · MAJOR / SUB type</div>
+        <div class="o">0xFD0–EC</div><div class="mgmt"><b>PIDR4–7, PIDR0–3</b> · JEP106 designer, part, revision</div>
+        <div class="o">0xFF0–FC</div><div class="mgmt"><b>CIDR0–3</b> · preamble + CLASS</div>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;align-content:start">
+      <div class="card"><h4>Component class · CIDR1[7:4]</h4>
+        <p><code>0x1</code> ROM table · <code>0x9</code> CoreSight component · <code>0xF</code> CoreLink/PrimeCell/system · <code>0xE</code> generic IP · <code>0xB</code> peripheral test block · <code>0x0</code> generic verification component.</p>
+        <p style="margin:0">Preamble bytes: CIDR0=<code>0x0D</code>, CIDR1[3:0]=<code>0x0</code>, CIDR2=<code>0x05</code>, CIDR3=<code>0xB1</code>.</p></div>
+      <div class="card"><h4>Unique Component Identifier <span class="ref">§B2.1.2</span></h4>
+        <p style="margin:0">CLASS + PART (12b) + JEP106 designer + REVISION + REVAND, plus DEVARCH and DEVTYPE for class 0x9. CMOD can no longer distinguish parts in v3.0. Any change to a component must bump REVISION or REVAND.</p></div>
+      <div class="card"><h4>Reserved-space rules <span class="ref">§B2.1.5</span></h4>
+        <p style="margin:0">Unimplemented registers are <b>RAZ/WI</b>. Reads of WO and writes to RO count as reserved accesses. Anything unimplemented in <code>0xF00–0xFFF</code> must read zero. Bigger components use 2<sup>n</sup> contiguous 4KB blocks (max 16,384 = 64MB); <code>PIDR4.SIZE</code> is deprecated.</p></div>
+    </div>
+  </div>
+
+  <h3>Four mechanisms that get confused in interviews</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Mechanism</th><th>Protects against</th><th>How</th><th>Watch out</th></tr></thead>
+    <tbody>
+      <tr><td><b>Authentication</b> <span class="ref">§C5</span></td><td>Unauthorized people</td><td>DBGEN/NIDEN/SPIDEN/SPNIDEN/HIDEN/HNIDEN disable <i>functionality</i>; registers stay readable</td><td>AUTHSTATUS must reflect real gating</td></tr>
+      <tr><td><b>Software lock</b> <span class="ref">§B2.3.10</span></td><td>Rogue or buggy on-chip code</td><td>Write <code>0xC5ACCE55</code> to LAR to unlock; LSR.SLK=1 at reset</td><td>External debugger accesses should bypass it; deprecated in v3.0</td></tr>
+      <tr><td><b>Claim tags</b> <span class="ref">§B2.3.2</span></td><td>Two debug agents fighting</td><td>Cooperative protocol on CLAIMSET/CLR bits; CLAIMCLR resets to 0</td><td>Spec gives 3 protocols; #3 adds race back-off</td></tr>
+      <tr><td><b>OS lock / double lock</b> <span class="ext">beyond spec</span></td><td>Debugger corrupting state across power-down save/restore</td><td>OS sets lock while saving/restoring debug registers</td><td>Needs separate internal vs external views <span class="ref">§D2.3</span></td></tr>
+    </tbody></table></div>
+
+  <div class="widget" id="iddec">
+    <div class="wh"><strong>ID register decoder</strong><span class="eyebrow">Pre-filled with illustrative values for an ARM-designed CTI</span></div>
+    <div class="fields">
+      <label class="f">CIDR0<input type="text" id="c0" value="0x0D"></label>
+      <label class="f">CIDR1<input type="text" id="c1" value="0x90"></label>
+      <label class="f">CIDR2<input type="text" id="c2" value="0x05"></label>
+      <label class="f">CIDR3<input type="text" id="c3" value="0xB1"></label>
+      <label class="f">PIDR0<input type="text" id="p0" value="0x06"></label>
+      <label class="f">PIDR1<input type="text" id="p1" value="0xB9"></label>
+      <label class="f">PIDR2<input type="text" id="p2" value="0x4B"></label>
+      <label class="f">PIDR3<input type="text" id="p3" value="0x00"></label>
+      <label class="f">PIDR4<input type="text" id="p4" value="0x04"></label>
+      <label class="f">DEVARCH<input type="text" id="da" value="0x47701A14"></label>
+      <label class="f">DEVTYPE<input type="text" id="dt" value="0x14"></label>
+    </div>
+    <div class="row"><button id="iddecBtn" type="button">Decode</button></div>
+    <div class="out" id="iddecOut" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="rom">
+  <h2><span class="k">03</span>Discovery: ROM tables &amp; topology</h2>
+  <p class="sub">A debugger knows nothing about your SoC. From one absolute pointer it must find every component. ROM entries are always <b>relative</b>; only the top-level pointer (MEM-AP <code>BASE</code> or DP <code>BASEPTR</code>) is absolute. <span class="ref">§D5.5</span></p>
+
+  <figure class="fig scroll" style="margin:0">
+  <svg viewBox="0 0 920 250" width="100%" style="min-width:720px" role="img" aria-label="Legal ROM table hierarchy and two prohibited cases: duplicate reference and circular reference">
+    <style>
+      .rb{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}
+      .rr{fill:var(--surface);stroke:var(--apb);stroke-width:1.6}
+      .rt{fill:var(--ink);font-size:12px;font-weight:600}
+      .rl{stroke:var(--apb);stroke-width:1.6;fill:none}
+      .bl{stroke:var(--bad);stroke-width:1.8;fill:none}
+      .cap{fill:var(--muted);font-size:11px}
+    </style>
+    <text class="cap" x="10" y="16" font-weight="600">LEGAL HIERARCHY</text>
+    <rect class="rb" x="10" y="108" width="92" height="36" rx="4"/><text class="rt" x="56" y="124" text-anchor="middle">MEM-AP</text><text class="cap" x="56" y="138" text-anchor="middle">BASE (abs)</text>
+    <path class="rl" d="M102 126 H136"/>
+    <rect class="rr" x="136" y="108" width="92" height="36" rx="4"/><text class="rt" x="182" y="131" text-anchor="middle">ROM A</text>
+    <path class="rl" d="M228 126 H248 V48 H272"/>
+    <path class="rl" d="M248 126 V118 H272"/>
+    <path class="rl" d="M248 126 V166 H272"/>
+    <path class="rl" d="M248 126 V212 H272"/>
+    <rect class="rr" x="272" y="32" width="96" height="32" rx="4"/><text class="rt" x="320" y="53" text-anchor="middle">ROM B</text>
+    <rect class="rb" x="272" y="102" width="96" height="32" rx="4"/><text class="rt" x="320" y="123" text-anchor="middle">PE debug</text>
+    <rect class="rb" x="272" y="150" width="96" height="32" rx="4"/><text class="rt" x="320" y="171" text-anchor="middle">CTI</text>
+    <rect class="rb" x="272" y="196" width="96" height="32" rx="4"/><text class="rt" x="320" y="217" text-anchor="middle">Funnel</text>
+    <path class="rl" d="M368 48 H384 V30 H400"/>
+    <path class="rl" d="M384 48 V74 H400"/>
+    <rect class="rb" x="400" y="16" width="80" height="28" rx="4"/><text class="rt" x="440" y="35" text-anchor="middle">ETM</text>
+    <rect class="rb" x="400" y="60" width="80" height="28" rx="4"/><text class="rt" x="440" y="79" text-anchor="middle">PMU</text>
+    <text class="cap" x="400" y="130">addr = ROM_base +</text>
+    <text class="cap" x="400" y="145">(OFFSET &lt;&lt; 12)</text>
+    <text class="cap" x="400" y="160">OFFSET may be negative</text>
+
+    <line style="stroke:var(--line)" x1="520" y1="10" x2="520" y2="240"/>
+    <text style="fill:var(--bad)" class="cap" x="536" y="16" font-weight="600">✕ DUPLICATE REFERENCE</text>
+    <rect class="rr" x="536" y="56" width="80" height="30" rx="4"/><text class="rt" x="576" y="76" text-anchor="middle">ROM B</text>
+    <rect class="rr" x="536" y="150" width="80" height="30" rx="4"/><text class="rt" x="576" y="170" text-anchor="middle">ROM C</text>
+    <rect class="rr" x="640" y="103" width="70" height="30" rx="4" style="stroke:var(--bad)"/><text class="rt" x="675" y="123" text-anchor="middle">ROM D</text>
+    <path class="bl" d="M616 71 H628 V112 H640"/>
+    <path class="bl" d="M616 165 H628 V124 H640"/>
+    <text class="cap" x="536" y="214">Each component appears</text>
+    <text class="cap" x="536" y="229">once per visible hierarchy</text>
+
+    <line style="stroke:var(--line)" x1="730" y1="10" x2="730" y2="240"/>
+    <text style="fill:var(--bad)" class="cap" x="746" y="16" font-weight="600">✕ CIRCULAR</text>
+    <rect class="rr" x="746" y="80" width="70" height="30" rx="4"/><text class="rt" x="781" y="100" text-anchor="middle">ROM A</text>
+    <rect class="rr" x="840" y="80" width="70" height="30" rx="4"/><text class="rt" x="875" y="100" text-anchor="middle">ROM B</text>
+    <path class="rl" d="M816 95 H840"/>
+    <path class="bl" d="M875 110 V150 H781 V112"/>
+    <text class="cap" x="746" y="190">No entry may point back up.</text>
+    <text class="cap" x="746" y="205">OFFSET=0 with PRESENT set</text>
+    <text class="cap" x="746" y="220">is illegal: it points to self.</text>
+  </svg>
+  <figcaption>Rules from <span class="ref">§D5.6.3</span>. Components in separate hierarchies (different APs or DPs) can still be connected, e.g. an ETM under AP1 tracing into a sink under AP2.</figcaption>
+  </figure>
+
+  <h3>Class 0x1 vs class 0x9 ROM tables <span class="ref">§D6 §D7</span></h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Class 0x1 (legacy)</th><th>Class 0x9 (v3.0)</th></tr></thead>
+    <tbody>
+      <tr><td>Identified by</td><td>CIDR1.CLASS = 0x1</td><td>CLASS = 0x9, DEVARCH.ARCHID = <code>0x0AF7</code></td></tr>
+      <tr><td>Entries</td><td>32-bit, up to 960, area to <code>0xEFC</code></td><td>32-bit ×512 or 64-bit ×256 (DEVID.FORMAT), area to <code>0x7FC</code></td></tr>
+      <tr><td>Entry fields</td><td>OFFSET[31:12] · POWERID[8:4] · POWERIDVALID[2] · FORMAT[1]=1 · PRESENT[0]</td><td>OFFSET[31:12] or [63:12] · POWERID[8:4] · POWERIDVALID[2] · PRESENT[1:0]</td></tr>
+      <tr><td>End of table</td><td>Entry == <code>0x00000000</code>, or entry at 0xEFC</td><td>PRESENT=0b00 (all zero), or last slot</td></tr>
+      <tr><td>Not present, keep scanning</td><td>PRESENT=0 but entry ≠ 0</td><td>PRESENT=0b10</td></tr>
+      <tr><td>Power &amp; reset</td><td>Needs a separate power requestor (GPR) in the same table</td><td>Built in: DBGPCR/DBGPSR, SYSPCR/SYSPSR, PRIDR0, DBGRSTRR/AR, SYSRSTRR/AR (if DEVID.PRR=1)</td></tr>
+      <tr><td>Extras</td><td>MEMTYPE.SYSMEM at 0xFCC</td><td>DEVID.SYSMEM: 0 means only ROM-listed addresses are valid</td></tr>
+    </tbody></table></div>
+
+  <div class="widget" id="romdec">
+    <div class="wh"><strong>ROMENTRY decoder</strong><span class="eyebrow">Spec example: class 0x1 entry 0x00003017</span></div>
+    <div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <label class="f">ROM table class<select id="rclass"><option value="1">Class 0x1</option><option value="9">Class 0x9 (32-bit)</option></select></label>
+      <label class="f">ROM base address<input type="text" id="rbase" value="0x80000000"></label>
+      <label class="f">ROMENTRY value<input type="text" id="rent" value="0x00003017"></label>
+    </div>
+    <div class="row"><button id="romBtn" type="button">Decode entry</button><button class="ghost" type="button" id="romNeg">Try a negative offset</button></div>
+    <div class="out" id="romOut" aria-live="polite"></div>
+  </div>
+
+  <h3>Cold connect: what the debugger does <span class="ref">§A1.4.2 §D8.2</span></h3>
+  <ol class="steps">
+    <li><span>Connect the physical interface (JTAG/SWD) and talk to the DP.</span></li>
+    <li><span>Request debug and system power-up; confirm clocks are running.</span></li>
+    <li><span>Read the top-level ROM table pointer and its PIDR. Look up a <b>saved description</b> keyed by that PIDR; if found, stop here (non-invasive reconnect).</span></li>
+    <li><span>Otherwise walk every ROM table, read CIDR/PIDR/DEVARCH/DEVTYPE of each entry, and look up the interfaces each known part has. Unknown parts are reported by JEP106 code and class, then ignored.</span></li>
+    <li><span>Run topology detection: set <code>ITCTRL.IME=1</code>, drive each master's detection signal, see which slaves observe it, then clear IME.</span></li>
+    <li><span><b>Reset the system</b> (detection is invasive) and save the description.</span></li>
+  </ol>
+<pre><span class="c">// §D8.4 detection algorithm (condensed)</span>
+for each component c: ITCTRL.IME = 1                 <span class="c">// component preamble</span>
+for each interface type t:
+  master_preamble(all m); slave_preamble(all s)
+  for each master m:
+    assert(m)                                        <span class="c">// ATB: ATVALID←1   Channel: CHOUT[0]←1</span>
+    for each slave s: if check_asserted(s) record(m→s)
+    slave_post_assert(all s); deassert(m)
+    for each slave s: if !check_deasserted(s) error  <span class="c">// stuck or shorted net</span>
+    slave_post_deassert(all s)
+for each component c: ITCTRL.IME = 0                 <span class="c">// then reset the system</span></pre>
+  <p style="font-size:14px">Why ATVALID? An intermediate bridge passes no control through while ATVALID is low, so it must be drivable for detection to cross non-programmable components <span class="ref">§C7.3.1</span>. DBGACK on the CoreETM interface may not be controllable on some cores, so <b>DEVAFF</b> registers can establish the PE↔ETM link instead.</p>
+</section>
+
+<!-- 04 -->
+<section id="if">
+  <h2><span class="k">04</span>Reusable interfaces</h2>
+  <p class="sub">Part C defines the wires. For each one, know what it carries, its clamp value when powered down, and the corner case it is famous for.</p>
+  <div class="grid2">
+    <div class="card" style="border-top:3px solid var(--apb)"><h4>AMBA APB · Debug APB <span class="ref">§C2.1</span></h4>
+      <ul><li>32-bit, non-pipelined, slave stall (PREADYDBG), error (PSLVERRDBG)</li>
+      <li>PSLVERRDBG is <b>only</b> for "component not available", e.g. powered down</li>
+      <li>Clamps when off: PREADYDBG=1, PSLVERRDBG=1, PRDATA=0, so a dead slave answers with an error instead of hanging the bus</li>
+      <li>PADDRDBG[31] external/internal split is deprecated; use an address bit (bit 12 in the spec example) to separate views</li></ul></div>
+    <div class="card" style="border-top:3px solid var(--atb)"><h4>AMBA ATB · trace transport <span class="ref">§C2.2</span></h4>
+      <ul><li>Valid/ready stalling, byte-granular data (ATBYTES), source ID per beat (ATID)</li>
+      <li>Protocol-agnostic payload; check-pointing via flush (AFVALID/AFREADY) <span class="ext">beyond spec</span></li>
+      <li>IDs 0x7B (flush response) and 0x7D (trigger) are also legal on ATB</li>
+      <li>Topology master wire: ATVALID; slave wires: ATVALID, ATREADY</li></ul></div>
+    <div class="card" style="border-top:3px solid var(--evt)"><h4>Event interface <span class="ref">§C3</span></h4>
+      <ul><li>Event = <b>rising edge</b> on EVENT, so at most one per two EVENTCLK cycles</li>
+      <li>Falling edge marks completion if the event has duration</li>
+      <li><b>No back-pressure</b>: close events merge, especially when crossing into a slower clock</li></ul></div>
+    <div class="card" style="border-top:3px solid var(--evt)"><h4>Channel interface <span class="ref">§C4</span></h4>
+      <ul><li>Bidirectional, N channels (≥4 recommended), sync (CHCLK) or async (4-phase ACK)</li>
+      <li>A component's outputs reach every other component's inputs, never its own; inputs must not be reflected to outputs</li>
+      <li>Mismatched widths: connect a contiguous subset starting at channel 0</li>
+      <li>Not for counting fast events (instruction counts); fine for one-shot triggers and slow, handshaked signals such as IRQs</li></ul></div>
+    <div class="card" style="border-top:3px solid var(--ts)"><h4>Timestamp interface <span class="ref">§C6</span></h4>
+      <ul><li>TSVALUEB[63:0], natural binary, same value distributed to all components</li>
+      <li><b>0 means UNKNOWN</b> (source disabled or reset)</li>
+      <li>Components may use a subset of bits; resolution should be at least 10% of the fastest PE clock</li>
+      <li>Skew between domains is allowed and must be bounded in your system spec</li></ul></div>
+    <div class="card" style="border-top:3px solid var(--auth)"><h4>Authentication interface <span class="ref">§C5</span></h4>
+      <ul><li>DBGEN, NIDEN, SPIDEN, SPNIDEN, HIDEN, HNIDEN (+AUTHCLK/RESETn if synchronous)</li>
+      <li>Using a non-invasive enable requires importing its invasive pair</li>
+      <li>When a change takes effect is IMPLEMENTATION DEFINED; not precise around code regions</li>
+      <li>Async authentication is deprecated</li></ul></div>
+  </div>
+
+  <figure class="fig scroll">
+  <svg viewBox="0 0 900 190" width="100%" style="min-width:700px" role="img" aria-label="Waveforms: asynchronous channel four-phase handshake, and two fast-clock events merging into one slow-clock event">
+    <style>.wl{stroke:var(--evt);stroke-width:2;fill:none}.wk{stroke:var(--muted);stroke-width:1.2;fill:none}.wt{fill:var(--ink);font-size:12px;font-family:var(--f-mono)}.wc{fill:var(--muted);font-size:11px}.num{fill:var(--evt);font-size:11px;font-weight:700}</style>
+    <text class="wc" x="10" y="16" font-weight="600">ASYNC CHANNEL · 4-PHASE HANDSHAKE §C4.3</text>
+    <text class="wt" x="10" y="64">CHIN[m]</text>
+    <path class="wl" d="M100 70 H150 V40 H290 V70 H420"/>
+    <text class="wt" x="10" y="124">CHINACK[m]</text>
+    <path class="wl" d="M100 130 H200 V100 H340 V130 H420"/>
+    <path class="wk" d="M152 72 L198 98" stroke-dasharray="3 3"/><text class="num" x="166" y="92">1</text>
+    <path class="wk" d="M202 98 L288 72" stroke-dasharray="3 3"/><text class="num" x="236" y="80">2</text>
+    <path class="wk" d="M292 72 L338 98" stroke-dasharray="3 3"/><text class="num" x="306" y="92">3</text>
+    <text class="wc" x="100" y="160">1 req ↑ → ack ↑   2 ack ↑ → req ↓   3 req ↓ → ack ↓</text>
+    <text class="wc" x="100" y="176">Ack output clamps to 1 when powered down so a sender never waits forever.</text>
+
+    <line style="stroke:var(--line)" x1="460" y1="10" x2="460" y2="180"/>
+    <text class="wc" x="480" y="16" font-weight="600">EVENT MERGE ACROSS CLOCKS §C4.1</text>
+    <text class="wt" x="480" y="50">clk A</text>
+    <path class="wk" d="M560 54 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10 v-14 h10 v14 h10"/>
+    <text class="wt" x="480" y="86">chan A</text>
+    <path class="wl" d="M560 90 H600 V70 H620 V90 H640 V70 H660 V90 H860"/>
+    <text class="wt" x="480" y="122">clk B</text>
+    <path class="wk" d="M560 126 h40 v-14 h40 v14 h40 v-14 h40 v14 h40 v-14 h40 v14 h20"/>
+    <text class="wt" x="480" y="158">chan B</text>
+    <path class="wl" d="M560 162 H640 V142 H720 V162 H860"/>
+    <text class="wc" x="740" y="152">2 events → 1</text>
+  </svg>
+  <figcaption>Async handshake (left) and why the channel interface cannot count events (right).</figcaption>
+  </figure>
+</section>
+
+<!-- 05 -->
+<section id="auth">
+  <h2><span class="k">05</span>Authentication</h2>
+  <p class="sub">CoreSight prevents unauthorized debug by <b>disabling functionality, not by hiding registers</b> <span class="ref">§D2.2</span>. Signals are tied low (production), tied high (prototype), fused, or driven by a challenge-response module.</p>
+
+  <div class="grid2">
+    <div class="card"><h4>Definitions <span class="ref">§C5.2</span></h4>
+      <p><b>Invasive</b>: changes defined behaviour (memory writes, injecting instructions). Changing cycle counts is not invasive unless the cycles are architecturally defined.</p>
+      <p style="margin:0"><b>Non-secure debug</b>: anything Non-secure software could do on-chip. Measuring how long a Secure routine takes is Non-secure; changing how long it takes is Secure.</p></div>
+    <div class="card"><h4>Equations to memorise <span class="ref">Tables C5-2…C5-4</span></h4>
+<pre style="margin:0;border:0;padding:0;background:none">NS invasive     = DBGEN
+NS non-invasive = DBGEN | NIDEN
+S  invasive     = DBGEN & SPIDEN
+S  non-invasive = (SPIDEN|SPNIDEN) & (DBGEN|NIDEN)
+H  invasive     = DBGEN & HIDEN
+H  non-invasive = (HIDEN|HNIDEN) & (DBGEN|NIDEN)</pre></div>
+  </div>
+  <p style="font-size:14px">Three ideas generate all of these: invasive implies non-invasive; Secure requires the matching Non-secure enable; Secure and hypervisor enables are independent of each other.</p>
+
+  <div class="widget" id="authsim">
+    <div class="wh"><strong>Authentication simulator</strong><span class="eyebrow">Your reference model for AUTHSTATUS checks</span></div>
+    <div class="switches" id="sws"></div>
+    <div class="perm" id="perms"></div>
+    <div class="out" id="authOut" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="fmt">
+  <h2><span class="k">06</span>Trace formatter</h2>
+  <p class="sub">A sink receives many ATB sources but a trace port has no ATID pins. The formatter wraps source IDs into a single stream of <b>16-byte frames</b> that can be decoded even if the start is lost. <span class="ref">§D4</span></p>
+
+  <div class="grid2">
+    <div>
+      <div class="frame" aria-label="Formatter frame layout, 16 bytes">
+        <div class="mix">byte 3<small>data</small></div><div class="mix">byte 2<small>ID / data · F</small></div><div>byte 1<small>data</small></div><div class="mix">byte 0<small>ID / data · F</small></div>
+        <div>byte 7<small>data</small></div><div class="mix">byte 6<small>ID / data · F</small></div><div>byte 5<small>data</small></div><div class="mix">byte 4<small>ID / data · F</small></div>
+        <div>byte 11<small>data</small></div><div class="mix">byte 10<small>ID / data · F</small></div><div>byte 9<small>data</small></div><div class="mix">byte 8<small>ID / data · F</small></div>
+        <div class="aux">byte 15<small>aux bits J…A</small></div><div class="mix">byte 14<small>ID / data · F</small></div><div>byte 13<small>data</small></div><div class="mix">byte 12<small>ID / data · F</small></div>
+      </div>
+      <p style="font-size:13.5px">Even bytes: bit 0 = F. F=1 → bits[7:1] are a new ID. F=0 → bits[7:1] are data and the missing bit 0 lives in byte 15. For an ID byte, the aux bit says whether the <b>next</b> byte still belongs to the old ID (1) or the new one (0). ID in byte 14 takes effect next frame.</p>
+    </div>
+    <div style="display:grid;gap:10px;align-content:start">
+      <div class="card"><h4>Special IDs <span class="ref">§D4.2.4</span></h4>
+        <p style="margin:0"><code>0x00</code> null (padding) · <code>0x01–0x6F</code> usable sources · <code>0x70–0x7A</code> reserved · <code>0x7B</code> flush response · <code>0x7C</code> reserved · <code>0x7D</code> trigger · <code>0x7E</code> reserved · <code>0x7F</code> never (clashes with sync)</p></div>
+      <div class="card"><h4>Sync packets</h4>
+        <p style="margin:0">Full frame sync: <code>0x7FFFFFFF</code> (LSB first). Halfword sync: <code>0x7FFF</code>, continuous mode only, marks an idle port and is discarded by the TPA.</p></div>
+      <div class="card"><h4>Cost</h4>
+        <p style="margin:0">~6% bandwidth (1 aux byte per 16) plus 1 byte per ID change. Repeat the current ID about every 10 frames so a decoder that lost the start can recover.</p></div>
+    </div>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Mode</th><th>Formatter</th><th>TRACECTL pin</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td><b>Bypass</b></td><td>Off, raw trace</td><td>Required, TPA must support it</td><td>Single source ID; no 0x7D trigger; cannot use ID-switch alignment</td></tr>
+      <tr><td><b>Normal</b></td><td>On</td><td>Marks trigger and idle</td><td>Easiest for ETM-era TPAs; no halfword syncs</td></tr>
+      <tr><td><b>Continuous</b></td><td>On</td><td>Not used</td><td>TPA decodes sync and trigger from the stream. ETB need not support it</td></tr>
+    </tbody></table></div>
+  <p style="font-size:14px"><b>End of trace</b> <span class="ref">§D4.4</span>: in bypass, append a single <code>1</code> bit then zeros (strip before decode). In normal or continuous, finish the current frame with null ID <code>0x00</code>. After a resume, leftover flush bytes may come first, so decoders must hunt for sync.</p>
+
+  <div class="widget" id="fmtdec">
+    <div class="wh"><strong>Frame decoder</strong><span class="eyebrow">Pre-filled with the spec's two-source example (IDs 0x03, 0x15)</span></div>
+    <label class="f">16 bytes in stream order, byte 0 first<input type="text" id="fbytes" value="07 AA A6 A7 2B A8 54 52 52 54 07 CA C6 C7 C8 1C"></label>
+    <div class="row"><label class="f" style="max-width:180px">ID before this frame<input type="text" id="fprev" value="none"></label><button id="fBtn" type="button">Decode frame</button></div>
+    <div class="chips" id="fchips" aria-live="polite"></div>
+    <div class="out" id="fOut"></div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="cti">
+  <h2><span class="k">07</span>Cross-triggering: CTI and CTM</h2>
+  <p class="sub">The embedded cross trigger makes "halt every core when any core hits a breakpoint" and "stop trace capture on this event" possible in hardware. CTIs map local triggers onto shared channels; the CTM broadcasts channels between CTIs.</p>
+  <figure class="fig scroll" style="margin:0">
+  <svg viewBox="0 0 900 200" width="100%" style="min-width:720px" role="img" aria-label="Cross trigger flow from PE0 debug event through CTI0, channels in CTM, CTI1 to halt PE1, and CTI2 to trace sink trigger">
+    <style>.cb{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}.ce{fill:var(--surface);stroke:var(--evt);stroke-width:1.6}.ct{fill:var(--ink);font-size:12.5px;font-weight:600}.cs{fill:var(--muted);font-size:11px}.cl{stroke:var(--evt);stroke-width:2;fill:none}</style>
+    <defs><marker id="ae" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path style="fill:var(--evt)" d="M0 0L10 5L0 10z"/></marker></defs>
+    <rect class="cb" x="10" y="30" width="120" height="50" rx="5"/><text class="ct" x="70" y="52" text-anchor="middle">PE 0</text><text class="cs" x="70" y="68" text-anchor="middle">breakpoint → halted</text>
+    <path class="cl" d="M130 55 H176" marker-end="url(#ae)"/><text class="cs" x="134" y="46">TRIGIN</text>
+    <rect class="ce" x="180" y="20" width="150" height="70" rx="5"/><text class="ct" x="255" y="44" text-anchor="middle">CTI 0</text><text class="cs" x="255" y="62" text-anchor="middle">CTIINEN[n]: trig → chan</text><text class="cs" x="255" y="78" text-anchor="middle">CTIGATE: chan → CTM</text>
+    <path class="cl" d="M330 55 H376" marker-end="url(#ae)"/>
+    <rect class="ce" x="380" y="20" width="140" height="160" rx="6"/><text class="ct" x="450" y="44" text-anchor="middle">CTM</text>
+    <text class="cs" x="450" y="66" text-anchor="middle">channel 0 · halt</text><text class="cs" x="450" y="84" text-anchor="middle">channel 1 · restart</text><text class="cs" x="450" y="102" text-anchor="middle">channel 2 · trace stop</text><text class="cs" x="450" y="120" text-anchor="middle">channel 3 · free</text>
+    <text class="cs" x="450" y="150" text-anchor="middle">broadcast to all</text><text class="cs" x="450" y="164" text-anchor="middle">other CTIs</text>
+    <path class="cl" d="M520 55 H566" marker-end="url(#ae)"/>
+    <rect class="ce" x="570" y="20" width="150" height="70" rx="5"/><text class="ct" x="645" y="44" text-anchor="middle">CTI 1</text><text class="cs" x="645" y="62" text-anchor="middle">CTIOUTEN[n]: chan → trig</text><text class="cs" x="645" y="78" text-anchor="middle">CTIINTACK clears output</text>
+    <path class="cl" d="M720 55 H766" marker-end="url(#ae)"/><text class="cs" x="724" y="46">TRIGOUT</text>
+    <rect class="cb" x="770" y="30" width="120" height="50" rx="5"/><text class="ct" x="830" y="52" text-anchor="middle">PE 1</text><text class="cs" x="830" y="68" text-anchor="middle">debug request → halt</text>
+    <path class="cl" d="M520 140 H566" marker-end="url(#ae)"/>
+    <rect class="ce" x="570" y="112" width="150" height="56" rx="5"/><text class="ct" x="645" y="135" text-anchor="middle">CTI 2</text><text class="cs" x="645" y="153" text-anchor="middle">chan 2 → TRIGIN, FLUSHIN</text>
+    <path class="cl" d="M720 140 H766" marker-end="url(#ae)"/>
+    <rect class="cb" x="770" y="115" width="120" height="50" rx="5"/><text class="ct" x="830" y="137" text-anchor="middle">ETF / TPIU</text><text class="cs" x="830" y="153" text-anchor="middle">stop after N words</text>
+    <text class="cs" x="10" y="130">Software can also fire a channel:</text>
+    <text class="cs" x="10" y="146">CTIAPPPULSE / CTIAPPSET</text>
+    <text class="cs" x="10" y="170">CTI register names: CTI architecture</text>
+  </svg>
+  <figcaption>Halt-all-cores and stop-trace flows. Channel rules from <span class="ref">§C4</span>; compliance requires every event I/O to reach a CTI and all channel interfaces to be connected <span class="ref">§D9.2.1</span>. CTI register names are <span class="ext">beyond spec</span>.</figcaption>
+  </figure>
+  <div class="grid2" style="margin-top:12px">
+    <div class="card"><h4>What makes cross-trigger hard to verify</h4><ul>
+      <li><b>Skid</b>: how many instructions PE1 retires after PE0 halts. Measure it, bound it, cover it.</li>
+      <li><b>CDC</b>: async channels between clusters at different DVFS points can merge or stretch pulses.</li>
+      <li><b>Level vs pulse</b>: an output left asserted re-halts the core after restart until acknowledged.</li>
+      <li><b>Loops</b>: input reflected to output on the same CTI is forbidden; check it.</li></ul></div>
+    <div class="card"><h4>Coverage that interviewers like</h4><ul>
+      <li>Every trigger-in × channel × trigger-out mapping, including many-to-one</li>
+      <li>Simultaneous triggers from multiple PEs in the same cycle</li>
+      <li>Channel gated off, CTI disabled globally, source PE powered down</li>
+      <li>Trigger arriving while target PE is in WFI, reset, or already halted</li></ul></div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="pwr">
+  <h2><span class="k">08</span>Power, clocks and reset</h2>
+  <p class="sub">Debug must survive the SoC powering itself down. CoreSight defines three default domains and three debugger requests. <span class="ref">§D2.1</span></p>
+  <figure class="fig scroll" style="margin:0">
+  <svg viewBox="0 0 900 200" width="100%" style="min-width:700px" role="img" aria-label="Always-on, debug and system power domains with power-up and reset requests">
+    <style>.pd{stroke-width:1.5;rx:8}.pt{fill:var(--ink);font-size:14px;font-weight:700}.ps{fill:var(--muted);font-size:11.5px}.pa{stroke:var(--accent);stroke-width:2;fill:none}</style>
+    <defs><marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path style="fill:var(--accent)" d="M0 0L10 5L0 10z"/></marker></defs>
+    <rect style="fill:var(--surface);stroke:var(--ink)" class="pd" x="10" y="20" width="230" height="160"/>
+    <text class="pt" x="26" y="46">Always-on</text>
+    <text class="ps" x="26" y="68">Debug port + power controller</text>
+    <text class="ps" x="26" y="86">Never powered off, so a debugger</text>
+    <text class="ps" x="26" y="102">can connect to a dormant device</text>
+    <text style="font-family:var(--f-mono)" class="ps" x="26" y="140">CDBGPWRUPREQ/ACK</text>
+    <text style="font-family:var(--f-mono)" class="ps" x="26" y="156">CSYSPWRUPREQ/ACK</text>
+    <text style="font-family:var(--f-mono)" class="ps" x="26" y="172">CDBGRSTREQ/ACK</text>
+    <path class="pa" d="M240 70 H326" marker-end="url(#ap)"/><text class="ps" x="250" y="62">debug power-up</text>
+    <path class="pa" d="M240 140 H616" marker-end="url(#ap)"/><text class="ps" x="250" y="132">system power-up</text>
+    <rect style="fill:var(--surface);stroke:var(--apb)" class="pd" x="330" y="20" width="250" height="100"/>
+    <text class="pt" x="346" y="46">Debug domain</text>
+    <text class="ps" x="346" y="68">ROM tables, CTI/CTM, funnels, sinks</text>
+    <text class="ps" x="346" y="86">Off when unused to save power</text>
+    <text class="ps" x="346" y="104">Must stay up and accessible once requested</text>
+    <rect style="fill:var(--surface);stroke:var(--atb)" class="pd" x="620" y="20" width="270" height="160"/>
+    <text class="pt" x="636" y="46">System domain</text>
+    <text class="ps" x="636" y="68">PEs, memory, interconnect</text>
+    <text class="ps" x="636" y="86">Clocks may vary or stop; power loss</text>
+    <text class="ps" x="636" y="104">loses all state</text>
+    <text class="ps" x="636" y="140">May be subdivided, but every part must</text>
+    <text class="ps" x="636" y="156">honour a System Power Up request</text>
+  </svg>
+  <figcaption>Requests are signalled through the DP (ADI). Signal names <span class="ext">beyond spec</span>.</figcaption>
+  </figure>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="card"><h4>Power-domain IDs in ROM entries <span class="ref">§D6.3 §D7.3</span></h4>
+      <p>If an entry has POWERIDVALID=1, the debugger must request power for domain POWERID <b>before</b> touching that component, otherwise it may be off or power off at any time.</p>
+      <ul><li>Class 0x1: use the power requestor (GPR) listed in the same table, which itself has no power ID and shares the ROM's domain.</li>
+      <li>Class 0x9 with DEVID.PRR=1: set <code>DBGPCR&lt;p&gt;.PR</code>, poll <code>DBGPSR&lt;p&gt;.PS</code> until 0b11 (powered, held on).</li></ul></div>
+    <div class="card"><h4>Reset request handshake <span class="ref">§D7.4</span></h4>
+      <ol style="margin:0;padding-left:18px">
+        <li>Write <code>DBGRSTRR.DBGRR=1</code></li>
+        <li>Poll <code>DBGRSTAR.DBGRA</code> until 1</li>
+        <li>Write <code>DBGRR=0</code></li>
+        <li>Poll <code>DBGRA</code> until 0. Done.</li></ol>
+      <p style="margin-top:8px;margin-bottom:0">With <code>SYSRSTRR.SYSRR=1</code> the system is held in reset, but debug logic may only be reset briefly so the debugger can configure it (e.g. vector catch) before release.</p></div>
+  </div>
+  <p style="font-size:14px;margin-top:12px"><b>Compliance demands</b> <span class="ref">§D9.2.1</span>: all debug functionality visible with clocks running when Debug Power Up is requested, operational when System Power Up is requested, and reset to initial state on Debug Reset, except where hidden by security.</p>
+</section>
+
+<!-- 09 -->
+<section id="dv">
+  <h2><span class="k">09</span>Verification plan</h2>
+  <p class="sub">How a senior DV engineer turns this spec into sign-off. Use the four-beat answer below for any "how would you verify X" question.</p>
+  <div class="frame-q">
+    <div><b>1 · Spec intent</b>Quote the rule and why it exists.</div>
+    <div><b>2 · Design hazard</b>Where RTL usually gets it wrong: CDC, power, arbitration, reset.</div>
+    <div><b>3 · Stimulus</b>Constrained-random plus directed corners; who drives it (DAP VIP, core tests, both).</div>
+    <div><b>4 · Checker + coverage</b>Reference model, SVA, formal; what closes the loop.</div>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Area</th><th>What must hold</th><th>Stimulus</th><th>Checker</th><th>Coverage / closure</th></tr></thead>
+    <tbody>
+      <tr><td><b>ID &amp; register frame</b></td><td>Preamble, CLASS, PIDR, DEVARCH, DEVTYPE match the IP-XACT; reserved space RAZ/WI; widths</td><td>Generated register sequences, walking 1s, reads of every word in 0xF00–0xFFF</td><td>RAL mirror + auto-generated ID table from the design database</td><td>Every register × access type × security view; formal for RAZ/WI</td></tr>
+      <tr><td><b>ROM discovery</b></td><td>Every component reachable once; no cycles; offsets non-zero; end marker; power IDs correct</td><td>"Debugger-in-a-box" sequence that walks the hierarchy from BASE like real tools</td><td>Compare discovered list against the integration netlist / SoC config</td><td>Each SoC config and fuse variant; top-level PIDR changes when the set changes</td></tr>
+      <tr><td><b>Authentication</b></td><td>Six equations; AUTHSTATUS truthful; trace stops cleanly on disable</td><td>All 64 static combos + toggling mid-trace, mid-halt, around world switches</td><td>Equation model (see §05) + SVA; scoreboard asserts no Secure packets when not allowed</td><td>64 combos × each component; transitions 0→1, 1→0 per signal; formal on gating cone</td></tr>
+      <tr><td><b>Trace path</b></td><td>Lossless or flagged loss; ID preserved; order per source; flush completes</td><td>Random ATREADY back-pressure, many sources, bursty STM, sink stop/start</td><td>Packet scoreboard: model stream per ATID → formatter model → sink memory → decode back</td><td>Overflow, wrap, every funnel port, priority settings, IDs at range edges</td></tr>
+      <tr><td><b>Formatter</b></td><td>Frame rules, aux bits, delayed ID switch, sync cadence, end-of-trace padding</td><td>ID changes at every byte position 0…14 incl. byte 14; flush mid-frame</td><td>Golden decoder (like §06) run on captured sink data</td><td>ID-change position × aux value; 3 modes × flush; port widths</td></tr>
+      <tr><td><b>Cross-trigger</b></td><td>Mapping correct; no reflection; bounded latency; ack clears</td><td>Random channel maps, simultaneous triggers, async clocks</td><td>Channel model; SVA on 4-phase handshake; latency bound</td><td>trigger × channel × target; gate on/off; target in WFI/off</td></tr>
+      <tr><td><b>Power</b></td><td>Access to off domain errors (PSLVERR), never hangs; state retention rules</td><td>Power down mid-access, mid-trace, mid-halt; DBGPCR requests</td><td>Bus timeout monitor; UPF-aware sim; clamp checks</td><td>Each domain × each access path (DAP, CPU, CTI)</td></tr>
+      <tr><td><b>Non-invasiveness</b></td><td>Enabling trace or PMU never changes architectural results</td><td>Run each test twice: trace off vs fully on with max back-pressure</td><td>Compare retire log / final state; allow only cycle differences</td><td>Test suite parity; stalls induced by full FIFOs where allowed</td></tr>
+      <tr><td><b>Timestamp</b></td><td>Monotonic, shared, 0 = unknown, bounded skew</td><td>DVFS changes, TS gen disable/enable, reset</td><td>Cross-stream correlation checker</td><td>Wrap of implemented subset; disabled state</td></tr>
+    </tbody></table></div>
+
+  <h3>Sample assertions</h3>
+<pre><span class="c">// ATB: once valid, payload is stable until accepted</span>
+a_atb_stable: assert property (@(posedge atclk) disable iff(!atresetn)
+  atvalid && !atready |=> atvalid && $stable({atdata, atid, atbytes}));
+
+<span class="c">// ATB: legal source IDs only (0x00/0x70–0x7F never from a normal source)</span>
+a_atid_legal: assert property (@(posedge atclk) atvalid |-> atid inside {[7'h01:7'h6F], 7'h7B, 7'h7D});
+
+<span class="c">// Auth: secure non-invasive gating matches the architecture</span>
+a_snid: assert property (@(posedge clk) secure_trace_active |-> (spiden|spniden) && (dbgen|niden));
+
+<span class="c">// Async channel: 4-phase, ack follows request</span>
+a_chin_hs: assert property (@(posedge clk) $rose(chin[m]) |-> ##[1:MAXLAT] chinack[m]);
+a_chin_hold: assert property (@(posedge clk) chin[m] && !chinack[m] |=> chin[m]);</pre>
+  <p style="font-size:14px">ATB signal names and the flush handshake are from the AMBA ATB spec <span class="ext">beyond spec</span>. Treat <code>MAXLAT</code> as a design parameter you negotiate with the micro-architect.</p>
+</section>
+
+<!-- 10 -->
+<section id="bugs">
+  <h2><span class="k">10</span>Bug catalog</h2>
+  <p class="sub">Real failure patterns to bring up when asked "tell me about a hard debug/trace bug". Each one maps to a check above.</p>
+  <div class="grid2">
+    <div class="card"><span class="tag">power</span><h4>Debugger hangs reading a sleeping core</h4><p>Off-domain slave not clamped to PREADY=1/PSLVERR=1, so APB never completes and the DAP times out. Fix: clamp at isolation; test: access during every power state.</p></div>
+    <div class="card"><span class="tag">auth</span><h4>AUTHSTATUS lies</h4><p>A bus trace source wired to a Secure bus reports only Non-secure capability. The spec warns debuggers must tolerate this, but your SoC should not ship it. Test: equation model vs actual packet emission.</p></div>
+    <div class="card"><span class="tag">formatter</span><h4>Delayed ID switch off by one</h4><p>Aux bit for an ID byte inverted, so one byte per switch lands on the wrong source. Silent until decode. Test: ID change at each even byte with both aux values.</p></div>
+    <div class="card"><span class="tag">flush</span><h4>Flush never completes</h4><p>A funnel port starved during AFVALID, or a replicator waits on a disabled branch. Trace capture "stops" with data stuck in FIFOs. Test: flush with each port idle, busy, disabled.</p></div>
+    <div class="card"><span class="tag">trace ID</span><h4>Two sources share an ATID</h4><p>Software or reset default programs equal IDs, or uses 0x00/0x70+. Decoder interleaves streams. Check: unique-ID assertion across all enabled sources.</p></div>
+    <div class="card"><span class="tag">CDC</span><h4>Cross-trigger lost at low DVFS</h4><p>Pulse from fast cluster merges or vanishes crossing into a slow cluster; one core never halts. Test: random clock ratios, back-to-back triggers.</p></div>
+    <div class="card"><span class="tag">CTI</span><h4>Core re-halts right after restart</h4><p>TRIGOUT held as a level until CTIINTACK; tools forgot the ack or RTL ignores it. Test: restart without ack and with ack.</p></div>
+    <div class="card"><span class="tag">ROM</span><h4>Debugger powers the wrong domain</h4><p>POWERID tie-off swapped between two clusters, so accesses work only when both are on. Test: power each domain alone and access every component.</p></div>
+    <div class="card"><span class="tag">timestamp</span><h4>Streams disagree on time</h4><p>Timestamp sampled through an unsynchronised path or reset to 0 mid-run, so cross-core ordering inverts. Test: correlation checker with DVFS and TS gating.</p></div>
+    <div class="card"><span class="tag">integration</span><h4>Integration mode left on</h4><p>After ITCTRL.IME tests, outputs remain under register control and functional trace is dead until reset. Test: functional run after topology detection without reset should be flagged.</p></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="qa">
+  <h2><span class="k">11</span>Interview Q&amp;A</h2>
+  <p class="sub">Answer out loud first, then open the card. Levels: <span class="lvl f" style="font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px">fundamentals</span> <span class="lvl d" style="font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px">design</span> <span class="lvl v" style="font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px">verification</span> <span class="lvl s" style="font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px">scenario</span></p>
+  <div class="filters" role="group" aria-label="Filter questions">
+    <button type="button" data-f="all" aria-pressed="true">All</button>
+    <button type="button" data-f="f" aria-pressed="false">Fundamentals</button>
+    <button type="button" data-f="d" aria-pressed="false">Design</button>
+    <button type="button" data-f="v" aria-pressed="false">Verification</button>
+    <button type="button" data-f="s" aria-pressed="false">Scenario</button>
+  </div>
+  <div id="qalist"></div>
+</section>
+
+<!-- 12 -->
+<section id="cheat">
+  <h2><span class="k">12</span>Cheat sheet</h2>
+  <p class="sub">The numbers people ask you to recall.</p>
+  <div class="facts">
+    <div class="fact"><span class="v">0xC5ACCE55</span><span class="d">LAR key to unlock software lock</span></div>
+    <div class="fact"><span class="v">0D · x0 · 05 · B1</span><span class="d">CIDR0–3 preamble; x = CLASS</span></div>
+    <div class="fact"><span class="v">0x1 · 0x9 · 0xF</span><span class="d">CLASS: ROM table · CoreSight · CoreLink/PrimeCell</span></div>
+    <div class="fact"><span class="v">0x4 / 0x3B → 0x23B</span><span class="d">ARM JEP106 continuation / ID; DEVARCH.ARCHITECT</span></div>
+    <div class="fact"><span class="v">0x0AF7</span><span class="d">DEVARCH.ARCHID of a class 0x9 ROM table</span></div>
+    <div class="fact"><span class="v">0x1A14 · 0x4A13 · 0x0A63</span><span class="d">ARCHID: CTI · ETM · STM</span></div>
+    <div class="fact"><span class="v">0xF00 – 0xFFC</span><span class="d">CoreSight management registers</span></div>
+    <div class="fact"><span class="v">4KB · 2ⁿ blocks · 64MB</span><span class="d">Frame size; multi-block rule; maximum</span></div>
+    <div class="fact"><span class="v">960 · 512 · 256</span><span class="d">Max entries: class 0x1 · 0x9 32-bit · 0x9 64-bit</span></div>
+    <div class="fact"><span class="v">OFFSET &lt;&lt; 12</span><span class="d">Component = ROM base + offset (signed)</span></div>
+    <div class="fact"><span class="v">16 B frame · ~6%</span><span class="d">Formatter frame size and overhead</span></div>
+    <div class="fact"><span class="v">0x01 – 0x6F</span><span class="d">Usable trace source IDs</span></div>
+    <div class="fact"><span class="v">00 · 7B · 7D · 7F</span><span class="d">Null · flush response · trigger · forbidden</span></div>
+    <div class="fact"><span class="v">0x7FFFFFFF / 0x7FFF</span><span class="d">Full / halfword sync packet</span></div>
+    <div class="fact"><span class="v">~10 frames</span><span class="d">Repeat source ID cadence</span></div>
+    <div class="fact"><span class="v">≥ 4 channels</span><span class="d">Recommended per channel interface</span></div>
+    <div class="fact"><span class="v">64-bit · 0 = unknown</span><span class="d">TSVALUEB timestamp</span></div>
+    <div class="fact"><span class="v">32 domains</span><span class="d">POWERID[8:4]; DBGPCR/SYSPCR 0–31</span></div>
+    <div class="fact"><span class="v">ITCTRL.IME</span><span class="d">Integration / topology mode; reset afterwards</span></div>
+    <div class="fact"><span class="v">PSLVERRDBG</span><span class="d">Only for "component not available"</span></div>
+  </div>
+  <footer>Built from ARM IHI 0029E, CoreSight Architecture Specification v3.0. Material marked beyond spec reflects the ADI, ETM, CTI, TMC and AMBA ATB specifications; confirm details against your IP's TRM. Study aid only.</footer>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  function hx(s){ if(s==null) return NaN; s=String(s).trim().replace(/_/g,''); if(!s) return NaN; return s.toLowerCase().startsWith('0x')?parseInt(s,16):parseInt(s,16); }
+  function h(n,w){ return '0x'+n.toString(16).toUpperCase().padStart(w||2,'0'); }
+  function esc(s){ return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  /* ---------- ID decoder ---------- */
+  const CLASS={0x0:'Generic verification component',0x1:'ROM table',0x9:'CoreSight component',0xB:'Peripheral test block',0xE:'Generic IP component',0xF:'CoreLink / PrimeCell / system component'};
+  const ARCH={0x0A00:'RAS',0x1A01:'ITM',0x1A02:'DWT',0x1A03:'FPB',0x2A04:'Processor debug (v8-M)',0x6A05:'Processor debug (v8-R)',0x0A10:'PC sample-based profiling',0x4A13:'ETM',0x1A14:'CTI',0x6A15:'Processor debug (v8.0-A)',0x7A15:'Processor debug (v8.1-A)',0x8A15:'Processor debug (v8.2-A)',0x2A16:'PMU',0x0A17:'MEM-AP v2',0x0A27:'JTAG-AP v2',0x0A31:'Basic trace router',0x0A37:'Power requestor',0x0A47:'Unknown AP v2',0x0A50:'HSSTP',0x0A63:'STM',0x0A75:'CoreSight ELA',0x0AF7:'CoreSight ROM table'};
+  const MAJ={0:['Miscellaneous',{0:'Other',4:'Validation component'}],1:['Trace sink',{0:'Other',1:'Trace port (TPIU)',2:'Buffer (ETB)',3:'Basic trace router'}],2:['Trace link',{0:'Other',1:'Funnel / router',2:'Filter',3:'FIFO / large buffer'}],3:['Trace source',{0:'Other',1:'Processor core',2:'DSP',3:'Data engine / coprocessor',4:'Bus',6:'Software'}],4:['Debug control',{0:'Other',1:'Trigger matrix (ECT)',2:'Debug authentication module',3:'Power requestor'}],5:['Debug logic',{0:'Other',1:'Processor core',2:'DSP',3:'Data engine / coprocessor',4:'Bus',5:'Memory (BIST)'}],6:['Performance monitor',{0:'Other',1:'Processor',2:'DSP',3:'Data engine / coprocessor',4:'Bus',5:'SMMU'}]};
+  function decId(){
+    const g=id=>hx(document.getElementById(id).value);
+    const c=[g('c0'),g('c1'),g('c2'),g('c3')], p=[g('p0'),g('p1'),g('p2'),g('p3'),g('p4')];
+    const out=[];
+    if([...c,...p].some(isNaN)){ document.getElementById('iddecOut').innerHTML='<span class="warn">Enter all CIDR and PIDR values as hex.</span>'; return; }
+    const pre = (c[0]&0xFF)===0x0D && (c[1]&0xF)===0 && (c[2]&0xFF)===0x05 && (c[3]&0xFF)===0xB1;
+    out.push(pre?'<span class="okc">✓ Preamble valid</span>':'<span class="warn">✕ Preamble invalid: expect 0x0D, 0x?0, 0x05, 0xB1</span>');
+    const cls=(c[1]>>4)&0xF;
+    out.push('CLASS        '+h(cls,1)+'  '+(CLASS[cls]||'<span class="warn">reserved</span>'));
+    const part=(p[0]&0xFF)|((p[1]&0xF)<<8);
+    const jid=((p[1]>>4)&0xF)|((p[2]&0x7)<<4), cont=p[4]&0xF, jedec=(p[2]>>3)&1;
+    out.push('PART         '+h(part,3));
+    out.push('DESIGNER     JEP106 cont '+h(cont,1)+' id '+h(jid,2)+((cont===4&&jid===0x3B)?'  (ARM)':'')+(jedec?'':'  <span class="warn">PIDR2.JEDEC must be 1</span>'));
+    out.push('REVISION     '+((p[2]>>4)&0xF)+'   REVAND '+((p[3]>>4)&0xF)+'   CMOD '+(p[3]&0xF)+((p[3]&0xF)?'  (customer modified)':''));
+    const size=(p[4]>>4)&0xF; out.push('PIDR4.SIZE   '+size+(size?'  <span class="warn">deprecated; v3.0 recommends 0</span>':'  (deprecated field, ignore)'));
+    const da=g('da');
+    if(!isNaN(da)){
+      const present=(da>>>20)&1;
+      if(!present) out.push('DEVARCH      not present'+(da?' <span class="warn">but non-zero: must be RAZ</span>':''));
+      else { const arc=(da>>>21)&0x7FF, aid=da&0xFFFF, rev=(da>>>16)&0xF;
+        out.push('DEVARCH      architect '+h(arc,3)+(arc===0x23B?' (ARM)':'')+'  rev '+rev+'  ARCHID '+h(aid,4)+'  '+(ARCH[aid]||'not in Table B2-8')); }
+    }
+    const dt=g('dt');
+    if(!isNaN(dt)){ const mj=dt&0xF, sb=(dt>>4)&0xF; const m=MAJ[mj];
+      out.push('DEVTYPE      '+(m?m[0]+' / '+(m[1][sb]||'reserved sub'):'reserved major')); }
+    if(cls!==0x9) out.push('<span class="eq">DEVARCH/DEVTYPE only contribute to the Unique Component ID for CLASS 0x9.</span>');
+    document.getElementById('iddecOut').innerHTML=out.join('<br>').replace(/ {2,}/g,m=>'&nbsp;'.repeat(m.length));
+  }
+  document.getElementById('iddecBtn').addEventListener('click',decId); decId();
+
+  /* ---------- ROMENTRY decoder ---------- */
+  function decRom(){
+    const cls=document.getElementById('rclass').value;
+    const base=document.getElementById('rbase').value.trim(), ent=hx(document.getElementById('rent').value);
+    const o=document.getElementById('romOut');
+    let b; try{ b=BigInt(base.toLowerCase().startsWith('0x')?base:'0x'+base);}catch(e){ o.innerHTML='<span class="warn">Base must be hex.</span>'; return; }
+    if(isNaN(ent)||ent>0xFFFFFFFF){ o.innerHTML='<span class="warn">Entry must be a 32-bit hex value.</span>'; return; }
+    const e=ent>>>0, lines=[];
+    let present, isEnd=false;
+    if(cls==='1'){
+      const pr=e&1, fmt=(e>>>1)&1;
+      if(e===0){ isEnd=true; lines.push('<span class="okc">End-of-table marker (0x00000000). Stop scanning.</span>'); }
+      present=pr===1;
+      lines.push('PRESENT      '+pr+(pr?'  entry present':'  not present'+(e?' (skip, keep scanning)':'')));
+      if(!isEnd) lines.push('FORMAT       '+fmt+(fmt?'  32-bit format':'  <span class="warn">should read as 1</span>'));
+    } else {
+      const pr=e&3;
+      present=pr===3;
+      const txt={0:'not present, final entry',1:'<span class="warn">reserved</span>',2:'not present, keep scanning',3:'present'}[pr];
+      lines.push('PRESENT      0b'+pr.toString(2).padStart(2,'0')+'  '+txt);
+      if(pr===0){ isEnd=true; if(e) lines.push('<span class="warn">PRESENT=0b00 requires all other fields zero</span>'); }
+    }
+    if(!isEnd){
+      const pv=(e>>>2)&1, pid=(e>>>4)&0x1F;
+      lines.push('POWERIDVALID '+pv+(pv?'  → request power for domain '+pid+' before access':''));
+      if(!pv && pid) lines.push('<span class="warn">POWERID non-zero while POWERIDVALID=0 (must be RAZ/RES0)</span>');
+      let off=(e>>>12)&0xFFFFF; const neg=off&0x80000; const soff=neg?off-0x100000:off;
+      lines.push('OFFSET       '+h(off,5)+'  = '+soff+' × 4KB'+(neg?'  (negative, two\'s complement)':''));
+      if(present && off===0) lines.push('<span class="warn">OFFSET=0 points back to this ROM table: illegal</span>');
+      if(present){ let addr=b+BigInt(soff)*4096n; if(addr<0n) addr+= (1n<<64n);
+        lines.push('ADDRESS      0x'+addr.toString(16).toUpperCase()+'  (ID regs at +0xFD0)'); }
+    }
+    o.innerHTML=lines.join('<br>').replace(/ {2,}/g,m=>'&nbsp;'.repeat(m.length));
+  }
+  document.getElementById('romBtn').addEventListener('click',decRom);
+  document.getElementById('rclass').addEventListener('change',decRom);
+  document.getElementById('romNeg').addEventListener('click',()=>{ document.getElementById('rclass').value='9'; document.getElementById('rent').value='0xFFFF0003'; decRom(); });
+  decRom();
+
+  /* ---------- Auth simulator ---------- */
+  const SIG=['DBGEN','NIDEN','SPIDEN','SPNIDEN','HIDEN','HNIDEN'];
+  const st={DBGEN:1,NIDEN:1,SPIDEN:0,SPNIDEN:1,HIDEN:0,HNIDEN:0};
+  const swWrap=document.getElementById('sws');
+  SIG.forEach(s=>{ const b=document.createElement('button'); b.type='button'; b.className='sw'; b.id='sw_'+s; b.innerHTML='<span class="pin"></span>'+s; b.addEventListener('click',()=>{st[s]^=1; renderAuth();}); swWrap.appendChild(b); });
+  function renderAuth(){
+    SIG.forEach(s=>document.getElementById('sw_'+s).setAttribute('aria-pressed',st[s]?'true':'false'));
+    const D=st.DBGEN,N=st.NIDEN,SP=st.SPIDEN,SPN=st.SPNIDEN,H=st.HIDEN,HN=st.HNIDEN;
+    const r=[
+      ['Non-secure invasive','DBGEN',D, 'NSID',0],
+      ['Non-secure non-invasive','DBGEN | NIDEN',D|N,'NSNID',2],
+      ['Secure invasive','DBGEN & SPIDEN',D&SP,'SID',4],
+      ['Secure non-invasive','(SPIDEN|SPNIDEN) & (DBGEN|NIDEN)',(SP|SPN)&(D|N),'SNID',6],
+      ['Hyp invasive','DBGEN & HIDEN',D&H,'HID',8],
+      ['Hyp non-invasive','(HIDEN|HNIDEN) & (DBGEN|NIDEN)',(H|HN)&(D|N),'HNID',10]];
+    let auth=0;
+    document.getElementById('perms').innerHTML=r.map(x=>{ auth|=((x[2]?3:2)<<x[4]); return '<div class="'+(x[2]?'on':'off')+'"><span class="st">'+(x[2]?'ALLOWED':'BLOCKED')+'</span>'+x[0]+'<div class="eq">'+x[1]+'</div></div>'; }).join('');
+    const w=[];
+    if(D&&!N) w.push('Rule 4: NIDEN low with DBGEN high. Permitted but not recommended; non-invasive parts must OR DBGEN|NIDEN.');
+    if(SP&&!SPN) w.push('Rule 7: SPNIDEN low with SPIDEN high. Not recommended; OR them internally.');
+    if(SP&&!D) w.push('Rule 8: SPIDEN high with DBGEN low. Secure invasive still blocked; AND them internally.');
+    if(SPN&&!N) w.push('Rule 9: SPNIDEN high with NIDEN low. Not recommended; AND them internally.');
+    if(H&&!HN) w.push('Rule 12: HNIDEN low with HIDEN high. Not recommended; OR them internally.');
+    if(H&&!D) w.push('Rule 15: HIDEN high with DBGEN low. Hyp invasive blocked.');
+    if(HN&&!N) w.push('Rule 16: HNIDEN high with NIDEN low. Not recommended.');
+    const dep=(!D&&SPN&&!N&&!SP)||(SP&&!D&&SPN);
+    if(dep) w.push('This SPIDEN/SPNIDEN combination is deprecated since CoreSight v2.0 (Table C5-5 note a).');
+    document.getElementById('authOut').innerHTML='AUTHSTATUS = '+h(auth,3)+'  <span class="eq">(component supporting Secure + hypervisor: 0b10 = supported/disabled, 0b11 = supported/enabled per field)</span><br>'+
+      (w.length?w.map(x=>'<span class="warn">⚠ '+x+'</span>').join('<br>'):'<span class="okc">✓ Valid, recommended signal combination</span>');
+  }
+  renderAuth();
+
+  /* ---------- Formatter decoder ---------- */
+  function special(id){ if(id===0) return 'null'; if(id===0x7B) return 'flush resp'; if(id===0x7D) return 'trigger'; if(id===0x7F) return 'ILLEGAL'; if(id>=0x70) return 'reserved'; return ''; }
+  const PAL=['var(--atb)','var(--apb)','var(--evt)','var(--ts)','var(--auth)','var(--accent)'];
+  function decFrame(){
+    const raw=document.getElementById('fbytes').value.trim().split(/[\s,]+/).filter(Boolean).map(x=>hx(x));
+    const chips=document.getElementById('fchips'), out=document.getElementById('fOut');
+    if(raw.length!==16||raw.some(x=>isNaN(x)||x>255)){ chips.innerHTML=''; out.innerHTML='<span class="warn">Enter exactly 16 hex bytes.</span>'; return; }
+    const pv=document.getElementById('fprev').value.trim(); let id=/^none$/i.test(pv)||!pv?null:hx(pv);
+    const aux=raw[15], rows=[], col={}; let pending=null, nextFrame=null, ci=0;
+    const colour=i=>{ if(i==null) return 'var(--muted)'; if(!(i in col)) col[i]=PAL[ci++%PAL.length]; return col[i]; };
+    for(let i=0;i<15;i++){
+      const b=raw[i];
+      if(i%2===0){
+        const k=i/2, ab=(aux>>k)&1;
+        if(b&1){ const nid=b>>1;
+          if(i===14){ nextFrame=nid; rows.push({i,t:'id',nid,note:'takes effect from next frame'}); }
+          else if(ab===0){ id=nid; rows.push({i,t:'id',nid,note:'aux=0 → next byte uses new ID'}); }
+          else { pending=nid; rows.push({i,t:'id',nid,note:'aux=1 → next byte stays on old ID'}); }
+        } else { rows.push({i,t:'d',v:(b&0xFE)|ab,id,note:'bit0 from aux['+k+']='+ab}); }
+      } else {
+        rows.push({i,t:'d',v:b,id});
+        if(pending!==null){ id=pending; pending=null; }
+      }
+    }
+    chips.innerHTML=rows.map(r=> r.t==='id'
+      ? '<span class="chip id" style="border-color:'+colour(r.nid)+'">b'+r.i+' → ID '+h(r.nid)+'</span>'
+      : '<span class="chip" style="border-color:'+colour(r.id)+';box-shadow:inset 3px 0 0 '+colour(r.id)+'">'+h(r.v)+' <small style="color:var(--muted)">@'+(r.id==null?'?':h(r.id))+'</small></span>').join('')+
+      '<span class="chip" style="background:var(--sunk)">b15 aux '+aux.toString(2).padStart(8,'0')+'</span>';
+    const lines=rows.map(r=> r.t==='id'
+      ? 'byte '+String(r.i).padStart(2)+'  NEW ID '+h(r.nid)+(special(r.nid)?' ['+special(r.nid)+']':'')+'  '+r.note
+      : 'byte '+String(r.i).padStart(2)+'  data '+h(r.v)+'  → source '+(r.id==null?'unknown (lost start)':h(r.id))+(r.note?'  ('+r.note+')':''));
+    const per={}; rows.forEach(r=>{ if(r.t==='d'){ const k=r.id==null?'?':h(r.id); (per[k]=per[k]||[]).push(h(r.v)); }});
+    lines.push(''); Object.keys(per).forEach(k=>lines.push('stream '+k+': '+per[k].join(' ')));
+    if(nextFrame!==null) lines.push('next frame starts with ID '+h(nextFrame));
+    else if(pending!==null) lines.push('pending ID '+h(pending));
+    lines.push('ID at end of frame: '+(id==null?'unknown':h(id)));
+    out.innerHTML=lines.map(esc).join('<br>').replace(/ {2,}/g,m=>'&nbsp;'.repeat(m.length));
+  }
+  document.getElementById('fBtn').addEventListener('click',decFrame); decFrame();
+
+  /* ---------- Q&A ---------- */
+  const QA=[
+   ['f','What problem does CoreSight solve, and how is the architecture structured?','<p>System-wide, multi-vendor debug and trace with few pins, shared trace storage, field access control and auto-discovery by tools, all while parts of the SoC change clock and power independently. Three layers: <b>visible</b> component architecture (programmers\' model and ID registers, mandatory), <b>reusable</b> component architecture (APB, ATB, event, channel, auth, timestamp wires, optional but needed for interoperability), and <b>system</b> architecture (domains, ROM tables, formatter, connectors, compliance).</p>'],
+   ['f','Define invasive versus non-invasive debug. Is measuring a Secure routine\'s duration Secure debug?','<p>Invasive changes defined behaviour: memory writes, inserting instructions into the pipeline, halting. Cycle-count changes are not invasive unless the cycles are architecturally defined, though an implementation may treat them as invasive. Measuring how long a Secure routine takes is <b>Non-secure</b> debug, because Non-secure software could measure the same thing with off-chip timing. Changing how long it takes is Secure debug.</p>'],
+   ['f','Walk through what a debugger does on a cold connect.','<p>Connect JTAG/SWD → talk to the DP → request debug and system power-up → read BASE/BASEPTR → read the top-level ROM PIDR and look for a saved description. If none: walk all ROM tables, identify each component by CIDR/PIDR (and DEVARCH/DEVTYPE), run topology detection using ITCTRL integration mode, reset the system, save the description keyed by the ROM PIDR. Force re-detection if two targets share an ID.</p>'],
+   ['f','Why does CoreSight disable functionality instead of blocking register access for authentication?','<p>Tools must always be able to discover and identify components, and AUTHSTATUS must be readable to explain why something is not working. Gating the function rather than the bus also keeps the memory map stable across production and development parts. The spec states this directly in §D2.2.</p>'],
+   ['d','Software lock, authentication, claim tags, OS lock: what does each protect against?','<p><b>Authentication</b>: unauthorized people (pin-level enables). <b>Software lock</b> (LAR key 0xC5ACCE55): accidental writes by rogue on-chip code; external debugger accesses should bypass it; deprecated in v3.0. <b>Claim tags</b>: cooperation between multiple debug agents, purely a software protocol. <b>OS lock</b>: consistency while the OS saves and restores debug state across power-down. Claim tags cannot guard the software lock because claim access is itself subject to the lock.</p>'],
+   ['d','Why is ATVALID the controllable signal for ATB topology detection?','<p>An intermediate non-programmable bridge passes no control through when ATVALID is low, so the master must be able to drive ATVALID high for the probe to reach the slave. Slaves need ATVALID observable and ATREADY drivable so the handshake can complete and be released.</p>'],
+   ['d','Why is the channel interface unsuitable for counting instructions?','<p>An event is a rising edge with no back-pressure, so at most one per two clocks, and events close together merge, especially across a clock-domain crossing into a slower clock. Use it for one-shot triggers, slow levels, handshaked signals (including IRQs with software ack), or sparse countable events.</p>'],
+   ['d','Explain the formatter frame and its overhead.','<p>16 bytes: 7 pure data bytes (odd positions), 8 mixed bytes (even positions) whose bit 0 flags ID vs data, and byte 15 holding the 8 auxiliary bits. For data, aux restores bit 0. For an ID, aux says whether the following byte still belongs to the old ID. Overhead is about 6% plus one byte per ID change. IDs repeat roughly every 10 frames so decode survives a lost start; sync 0x7FFFFFFF finds frame boundaries.</p>'],
+   ['d','When can you bypass the formatter, and what do you lose?','<p>Only with a single trace source ID, and if going to a port, a TRACECTL pin that the TPA supports. You lose the in-stream trigger ID 0x7D and the ability to signal alignment points by ID switching. End-of-trace is marked with a single 1 bit then zeros, which must be stripped.</p>'],
+   ['d','A sink must stop cleanly. How does flush work end-to-end?','<p>The sink or a trigger requests a flush on ATB (AFVALID); every upstream link and source drains everything generated before the request and acknowledges (AFREADY). In formatted streams, ID 0x7B carries flush responses per source (0x00 = all). The formatter then pads: null ID 0x00 to complete the frame in normal or continuous mode; a 1 then zeros in bypass. Hazards: a starved funnel port, a replicator branch that never accepts, a source that keeps producing.</p>'],
+   ['v','How would you verify the authentication interface completely?','<p>Spec intent: six equations plus AUTHSTATUS truthfulness. Hazard: wrong AND/OR import, unsynchronised signals, gating applied to registers instead of function, Secure data leaking through shared trace. Stimulus: all 64 static combinations per component, then toggling each signal mid-trace, mid-halt, at world switch. Checkers: equation model to predict permissions and AUTHSTATUS, scoreboard asserting no Secure packets when Secure non-invasive is blocked, SVA on gating, formal on the enable cone. Coverage: combos × components, transitions per signal, deprecated combos flagged.</p>'],
+   ['v','How do you prove trace is non-invasive?','<p>Run the same tests twice: trace disabled versus all sources enabled with maximum ATB back-pressure and full FIFOs. Compare retire logs, memory and register end state; only cycle counts may differ, and only where the micro-architecture allows trace stalls. Add assertions that trace logic never drives architectural state, and include low-power entry so retention paths are exercised.</p>'],
+   ['v','Build a scoreboard for a multi-source trace path ending in an ETR.','<p>Tap each source ATB with a monitor that builds expected per-ATID byte streams. Model funnel arbitration loosely (order only within a source), run a formatter reference model to predict frames, read the ETR buffer through the DAP or backdoor, de-format with a golden decoder and compare per source. Handle wrap (oldest data overwritten), overflow markers, flush padding and lost start. Assert unique ATIDs and legal ID ranges.</p>'],
+   ['v','What ROM-table properties would you check?','<p>Preamble and CLASS correct; DEVARCH 0x0AF7 for class 0x9; entries contiguous from 0x000; end marker or last slot; not-present entries skipped without terminating; OFFSET non-zero when present; every component appears exactly once per visible hierarchy; no cycles; POWERID matches the UPF; top-level PIDR changes whenever the component set or connections change. Generate the expected table from the integration database rather than hand-writing it.</p>'],
+   ['v','How do you verify cross-triggering across 8 cores?','<p>Random channel maps per CTI, simultaneous and back-to-back triggers, cores at random clock ratios, some in WFI or powered down. Checkers: channel-level model predicting which TRIGOUTs fire; latency bound; skid measurement; assertion that no CTI reflects an input channel to its own output; 4-phase handshake SVA on async links. Coverage: trigger × channel × target, gate states, acknowledge before and after restart.</p>'],
+   ['s','The debugger hangs when reading a component after the cluster enters a low-power state. Debug it.','<p>Check whether the access targets a domain marked by POWERID and whether the debugger requested power first. Then check the APB path: an off slave must answer via clamps (PREADY=1, PSLVERR=1). If the transaction never completes, look for missing isolation clamps or an APB-AP/bridge that waits on a powered-down clock. Add a bus-timeout monitor and a UPF-aware test that accesses every component in every power state.</p>'],
+   ['s','The decoded trace from the ETR is garbage after a few KB. Where do you look?','<p>Did the buffer wrap so the start is lost? Then the decoder must hunt for frame sync and the next ID repeat. Check frame alignment (sync may start on a 16-bit boundary), ID repeat cadence, the aux-bit handling at ID changes, ETR write pointer and wrap flag, and whether two sources share an ATID. Finally check the source protocol\'s own alignment syncs (e.g. ETM A-sync).</p>'],
+   ['s','Two cores in the same subsystem got a new ETM revision. What ID registers must change?','<p>The ETM\'s own PIDR2.REVISION or PIDR3.REVAND must change. The subsystem ROM table revision may or may not change, so tools must check each component. If the set of components or connections described by the top-level ROM changes, the top-level PIDR must change too, since debuggers key saved descriptions on it.</p>'],
+   ['s','Topology detection ran, and now functional trace looks broken. Why?','<p>Detection uses integration mode (ITCTRL.IME=1), which hands outputs to registers and is invasive. The component postamble clears IME, but the spec still requires a system reset afterwards, because components may behave differently after integration mode. Save the description so future connections avoid detection entirely.</p>'],
+   ['s','How would you explain DEVAFF to a designer, and how would you test it?','<p>DEVAFF0/1 hold matching unique values (for example MPIDR) in components that belong together, such as a PE, its CTI and its ETM, so tools can associate them without invasive detection. Test: read DEVAFF from every component in the ROM walk and check the pairs against the integration database; check uniqueness across clusters.</p>']
+  ];
+  const lvlName={f:'fundamentals',d:'design',v:'verification',s:'scenario'};
+  const list=document.getElementById('qalist');
+  list.innerHTML=QA.map((q,i)=>'<details class="qa" data-l="'+q[0]+'" id="q'+(i+1)+'"><summary><span class="lvl '+q[0]+'">'+lvlName[q[0]]+'</span><span>'+q[1]+'</span></summary><div class="a">'+q[2]+'</div></details>').join('');
+  document.querySelectorAll('.filters button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.filters button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+    const f=b.dataset.f; list.querySelectorAll('details').forEach(d=>{ d.hidden=!(f==='all'||d.dataset.l===f); });
+  }));
+})();
+</script>
+
+</html>

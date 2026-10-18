@@ -1,0 +1,24 @@
+Q1  addr=cbc3ab68 len=227 size=2 -> last byte cbc3aef7 (same 4K page)
+Q2  R1=[00032880:000328bf] R2=[00030480:000304ff]
+Q3  addr=d2000018 align=8   alignment histogram '{'h2:'h35, 'h4:'h3f, 'h8:'h54}
+Q4  1221122112211221
+Q5  asc  '{'h98, 'h101, 'h110, 'h202, 'h205, 'h206, 'h252}
+Q5  desc '{'h323, 'h204, 'h10c, 'h106, 'h12, 'h2, 'h0}
+Q6  '{'h64, 'h40, 'h3e, 'h50, 'h4e, 'h56, 'h3a, 'h62}
+Q7  dist: 740 writes / 260 reads in 1000 ; exact: '{'h0, 'h1, 'h1, 'h1, 'h1, 'h1, 'h1, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1, 'h0, 'h1, 'h1, 'h1, 'h0, 'h1, 'h1}
+Q8  '{'h1d, 'h25, 'h29, 'h35, 'h8b, 'h2f, 'h71, 'h3, 'hbf, 'h61}
+Q9  x=63 y=8 z=42 (z held)
+Q10 '{'h1, 'h0, 'h1, 'h0, 'h1, 'h2, 'h1, 'h0, 'h11, 'h0}
+Q11 num=1001101000101101000010000100010101001111010001001101101000011101
+    101 at bits [24:22], bits[25:20] = 110100
+Q12 EMERGENCY 911
+Q12 LOCAL     1124088902
+Q12 STD       022-34603136  (MAHARASHTRA)
+Q12 EMERGENCY 101
+Q12 LOCAL     5942288773
+Q12 STD       080-83903239  (KARNATAKA)
+Q12 EMERGENCY 911
+Q12 LOCAL     1040450640
+Q12 STD       044-29233216  (TAMIL_NADU)
+
+==== 0 check failures ====

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>UVM Core + Project Deep-Dive Q&A</title>
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:500;src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:700;src:url(fonts/ibm-plex-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/ibm-plex-mono-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(fonts/ibm-plex-sans-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:700;src:url(fonts/ibm-plex-sans-condensed-latin-700-normal.woff2) format('woff2')}
+
+body{margin:0;background:#EEF0EC}
+a{color:#0F5F59}a:hover{color:#0A3F3B}
+.card{background:#FFFFFF;border:1px solid #D3D8D2;border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.h2{margin:0;font-family:'IBM Plex Sans Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;color:#16202B;display:flex;align-items:center;gap:10px}
+.num{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;box-sizing:border-box;border-radius:6px;background:#16202B;color:#FFFFFF;font-size:14px;font-family:'IBM Plex Mono',monospace}
+.p{margin:0;font-size:14.5px;line-height:1.45;color:#2B3540}
+.ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.5;color:#2B3540}
+.ul li{margin-bottom:3px}
+.m{font-family:'IBM Plex Mono',monospace;font-size:13px;background:#EEF2EE;padding:1px 5px;border-radius:4px;color:#0F3F3B}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12.2px;line-height:1.55;background:#16202B;color:#D9E4E8;border-radius:8px;padding:11px 13px;white-space:pre;margin:0;overflow:hidden}
+.t{width:100%;border-collapse:collapse;font-size:14px;color:#2B3540}
+.t th{background:#16202B;color:#FFFFFF;text-align:left;padding:7px 9px;font-weight:600;font-size:13px}
+.t td{border-bottom:1px solid #E1E5E0;padding:6px 9px;vertical-align:top;line-height:1.35}
+.tip{background:#FFF4EA;border:1px solid #F0C7A3;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#5A2A0C}
+.key{background:#E6F2F0;border:1px solid #A9D2CC;border-radius:8px;padding:9px 12px;font-size:14px;line-height:1.45;color:#0B3B37}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6670}
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:6px;padding:8px 6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;text-align:center;min-height:54px;box-sizing:border-box}
+.fn{background:#E6F2F0;color:#0B3B37;border:1px solid #A9D2CC}
+.tk{background:#C2410C;color:#FFFFFF}
+.sm{font-size:10.5px;font-weight:400}
+
+.sheetnav{width:1600px;box-sizing:border-box;display:flex;justify-content:space-between;gap:16px;padding:14px 48px 0;font-family:'IBM Plex Mono',monospace;font-size:14px;background:#EEF0EC}
+@media print{.sheetnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="sheetnav"><a href="14-top-tier-upgrade-roadmap.html">← Upgrade Roadmap for Top-Tier DV Interviews</a><a href="../../README.md">Index</a><span></span></nav>
+<div style="width: 1600px; height: 2900px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 20px; font-family: 'IBM Plex Sans', sans-serif; color: #16202B; background: #EEF0EC">
+
+<!-- HEADER -->
+<div style="background: #16202B; border-radius: 12px; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: .14em; color: #7FD1C7; text-transform: uppercase">Project sheet 4 · tied to your repo's code</div>
+    <h1 style="margin: 0; font-family: 'IBM Plex Sans Condensed', sans-serif; font-weight: 700; font-size: 54px; line-height: 1; color: #FFFFFF">UVM Core + Project Deep-Dive Q&amp;A</h1>
+    <div style="font-size: 17px; color: #C9D2D8">The UVM mechanics your repo uses, explained at the level a senior interviewer pushes to — then the questions they'll ask about your code.</div>
+  </div>
+</div>
+
+<!-- PHASES -->
+<div class="card">
+  <h2 class="h2"><span class="num">1</span>Phases</h2>
+  <div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px">
+    <div class="ph fn">build<span class="sm">top-down</span></div>
+    <div class="ph fn">connect<span class="sm">bottom-up</span></div>
+    <div class="ph fn">end_of_elab<span class="sm">print topology</span></div>
+    <div class="ph fn">start_of_sim<span class="sm">banners</span></div>
+    <div class="ph tk">run<span class="sm">task · all in parallel</span></div>
+    <div class="ph fn">extract</div>
+    <div class="ph fn">check<span class="sm">SB final checks</span></div>
+    <div class="ph fn">report<span class="sm">summary</span></div>
+    <div class="ph fn">final</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+    <div class="key"><b>Why build is top-down:</b> a parent must exist and set config before children are created. <b>Connect is bottom-up:</b> children's ports must exist first.</div>
+    <div class="key"><b>Only run (and its 12 sub-phases: reset, configure, main, shutdown + pre/post) consumes time.</b> All others are functions.</div>
+    <div class="tip"><b>Your repo:</b> SB checks in <span class="m">check_phase</span>, coverage prints in <span class="m">report_phase</span>, base test prints topology in <span class="m">end_of_elaboration_phase</span> — all correct placements.</div>
+  </div>
+</div>
+
+<!-- FACTORY + CONFIG + OBJECTIONS -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">2</span>Factory</h2>
+    <pre class="code">`uvm_component_utils(axi4_driver)   // register
+drv = axi4_driver::type_id::create("drv", this);
+
+// in a test — swap without editing env code
+axi4_driver::type_id::set_type_override(
+    axi4_err_driver::get_type());
+// or only one instance
+axi4_driver::type_id::set_inst_override(
+    axi4_err_driver::get_type(),
+    "env_h.agent_h.driver_h", this);</pre>
+    <ul class="ul">
+      <li>Calling <span class="m">new()</span> directly bypasses overrides — the #1 factory mistake.</li>
+      <li>Override must be set <b>before</b> the target is created (test's build_phase, before <span class="m">super</span> builds env).</li>
+      <li>Debug: <span class="m">factory.print()</span>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">3</span>config_db</h2>
+    <pre class="code">// tb_top (missing in your repo!)
+uvm_config_db#(virtual axi4_if)::set(
+    null, "uvm_test_top.*", "AXI4_VIF", bus);
+run_test();
+
+// driver / monitor build_phase
+if (!uvm_config_db#(virtual axi4_if)::get(
+        this, "", "AXI4_VIF", vif))
+  `uvm_fatal("NOVIF", "vif not set")</pre>
+    <ul class="ul">
+      <li>Key = context + instance path + field name + <b>type</b>. A type mismatch silently fails the get.</li>
+      <li>During build, a set from <b>higher in the hierarchy wins</b>; at the same level, last set wins.</li>
+      <li>Debug: <span class="m">+UVM_CONFIG_DB_TRACE</span>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">4</span>Objections &amp; end of test</h2>
+    <pre class="code">task run_phase(uvm_phase phase);
+  phase.raise_objection(this);
+  seq.start(env_h.agent_h.sequencer_h);
+  phase.drop_objection(this);
+endtask
+
+// instead of the repo's fixed #100ns:
+function void end_of_elaboration_phase(uvm_phase p);
+  uvm_phase run = uvm_run_phase::get();
+  run.get_objection().set_drain_time(this, 200ns);
+endfunction</pre>
+    <ul class="ul">
+      <li>run ends when every objection is dropped (plus drain time).</li>
+      <li>Drain time lets the last responses reach the scoreboard.</li>
+      <li>Better still: SB raises an objection while it has pending expected items.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- TLM + SEQ/DRIVER -->
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">5</span>TLM — the paths in your env</h2>
+    <table class="t">
+      <tr><th>Piece</th><th>Semantics</th><th>In your repo</th></tr>
+      <tr><td>analysis port</td><td>1 → many, <span class="m">write()</span> is a non-blocking <b>function</b></td><td><span class="m">monitor.ap_write / ap_read</span></td></tr>
+      <tr><td>uvm_tlm_analysis_fifo</td><td>Unbounded buffer; subscriber does blocking <span class="m">get()</span> in its own thread</td><td>Scoreboard <span class="m">wr_fifo / rd_fifo</span></td></tr>
+      <tr><td>analysis imp</td><td>Calls the owner's <span class="m">write()</span> immediately</td><td>Coverage <span class="m">wr_export / rd_export</span></td></tr>
+      <tr><td><span class="m">`uvm_analysis_imp_decl(_x)</span></td><td>Creates <span class="m">uvm_analysis_imp_x</span> → method <span class="m">write_x()</span>; needed for &gt;1 imp in one class</td><td><b>Missing</b> — add <span class="m">(_write)</span> and <span class="m">(_read)</span></td></tr>
+      <tr><td>seq_item_port / export</td><td>Pull interface driver ↔ sequencer</td><td>agent connect_phase</td></tr>
+    </table>
+    <div class="key"><b>FIFO vs imp:</b> the scoreboard needs to <i>wait</i> and match (thread + blocking get → FIFO). Coverage just samples on arrival (function → imp).</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">6</span>Sequence ↔ driver handshake</h2>
+    <pre class="code">// sequence body()                  // driver run_phase
+start_item(txn);       // wait grant   seq_item_port.get_next_item(txn);
+txn.randomize() with {...};          drive(txn);
+finish_item(txn);      // wait done   seq_item_port.item_done();
+// optional response path
+get_response(rsp);                    rsp.set_id_info(txn);
+                                      seq_item_port.put_response(rsp);</pre>
+    <ul class="ul">
+      <li><b>Randomize between start_item and finish_item</b> — late randomization can react to sequencer state.</li>
+      <li><span class="m">get_next_item</span>+<span class="m">item_done</span> vs <span class="m">get</span> (implicit item_done) vs <span class="m">try_next_item</span> (non-blocking, for idle cycles).</li>
+      <li>Multiple sequences on one sequencer → <b>arbitration</b> (FIFO, weighted, random, strict…); <span class="m">lock</span> / <span class="m">grab</span> for exclusive access.</li>
+      <li><b>Virtual sequence</b> on a virtual sequencer coordinates several agents; <span class="m">`uvm_declare_p_sequencer</span> gives typed access.</li>
+      <li>Your repo's driver writes <span class="m">bresp / rdata</span> back into the same item — works because the sequence holds that handle after finish_item.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- OBJECT/INTERFACE -->
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+  <div class="card">
+    <h2 class="h2"><span class="num">7</span>object vs component</h2>
+    <table class="t">
+      <tr><th></th><th>uvm_object</th><th>uvm_component</th></tr>
+      <tr><td>Examples</td><td>seq_item, sequence, config</td><td>driver, monitor, env</td></tr>
+      <tr><td>Lifetime</td><td>Created &amp; dropped any time</td><td>Built once, lives all sim</td></tr>
+      <tr><td>Phases / hierarchy</td><td>No</td><td>Yes (parent, path)</td></tr>
+      <tr><td>Macro</td><td>uvm_object_utils</td><td>uvm_component_utils</td></tr>
+    </table>
+    <div class="p">Your item uses hand-written <span class="m">do_copy / do_compare / do_print</span> instead of field macros — faster and easier to debug; say that's deliberate.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">8</span>Interface, clocking block, modport</h2>
+    <pre class="code">clocking driver_cb @(posedge aclk);
+  default input #1step output #1;
+  output awaddr, awvalid, wdata, wstrb,
+         wvalid, bready, araddr, arvalid, rready;
+  input  awready, wready, bvalid, bresp,
+         arready, rvalid, rdata, rresp;
+endclocking
+clocking monitor_cb @(posedge aclk);
+  default input #1step;
+  input awaddr, awvalid, awready, /* … all */;
+endclocking
+modport DRV (clocking driver_cb, input aresetn);
+modport MON (clocking monitor_cb, input aresetn);</pre>
+    <div class="p">Your driver/monitor reference these, but the interface doesn't define them yet — this is the block to add.</div>
+  </div>
+
+  <div class="card">
+    <h2 class="h2"><span class="num">9</span>Other must-knows</h2>
+    <ul class="ul">
+      <li><b>Callbacks:</b> hook into a driver (inject errors) without subclassing.</li>
+      <li><b>Report catcher:</b> demote an expected UVM_ERROR in a negative test (e.g. SLVERR test).</li>
+      <li><b>Verbosity per component:</b> <span class="m">+uvm_set_verbosity=…</span> to debug one block.</li>
+      <li><b>Transaction recording</b> to see items on the waveform.</li>
+      <li><b>uvm_event / uvm_barrier</b> for cross-component sync.</li>
+      <li><b>Agent active/passive:</b> <span class="m">is_active</span> via config_db; passive agents reuse your monitor at SoC level.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PROJECT Q&A -->
+<div class="card" style="flex: 1">
+  <h2 class="h2"><span class="num">?</span>Questions an interviewer will ask about <i>your</i> repo</h2>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px">
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Strong answer</th></tr>
+      <tr><td>Why does the monitor <span class="m">create()</span> a new item every loop?</td><td>Analysis ports pass handles; reusing one object would overwrite items the SB hasn't processed yet.</td></tr>
+      <tr><td>Why separate write and read analysis ports?</td><td>Independent checker threads per direction; could merge with txn_type, but separate keeps each checker simple.</td></tr>
+      <tr><td>Why tlm_analysis_fifo in the SB but imps in coverage?</td><td>SB waits/blocks per thread; coverage just samples in a function.</td></tr>
+      <tr><td>When would you make the agent passive?</td><td>When another master drives the bus (SoC level) — reuse the monitor, SB and coverage.</td></tr>
+      <tr><td>Why does <span class="m">do_compare</span> skip rdata/resp?</td><td>Those are outputs; correctness of outputs is the scoreboard's job against the model.</td></tr>
+      <tr><td>Why use a clocking block?</td><td>Removes TB/DUT races: inputs sampled just before the edge, outputs driven just after.</td></tr>
+      <tr><td>The SB skips never-written words. Risk?</td><td>Reads after reset go unchecked; the RAM resets to 0, so model that and check.</td></tr>
+    </table>
+    <table class="t">
+      <tr><th style="width: 46%">Question</th><th>Strong answer</th></tr>
+      <tr><td>What did your coverage miss?</td><td>Handshake order and stalls — exactly where the W-before-AW deadlock hid. Then show the new protocol covergroup.</td></tr>
+      <tr><td>How would you verify 4 outstanding transactions?</td><td>AXI-Lite slave here allows 1; for AXI4 use per-ID queues in the SB (sheet 7) and an outstanding-depth coverpoint.</td></tr>
+      <tr><td>A test fails on seed 1234 only. Steps?</td><td>Rerun that seed, raise verbosity on the agent, dump waves around the first error, check whether DUT or model is wrong, add a directed test.</td></tr>
+      <tr><td>How do you make sure the checker works?</td><td>Inject a known bug (e.g. ignore WSTRB) and confirm the SB fails — mutation testing.</td></tr>
+      <tr><td>How would you add RAL?</td><td>Reg block + adapter (reg2bus/bus2reg) + predictor on the monitor; then built-in reset/bit-bash/mem-walk sequences.</td></tr>
+      <tr><td>Why iverilog — and its limits?</td><td>Free and fast to share; no full UVM, covergroups or constraints, so the runnable TB mirrors UVM with tasks. The UVM layer targets commercial simulators.</td></tr>
+      <tr><td>What would you do with one more week?</td><td>SVA bind + formal proof of the handshake properties, then extend to full AXI4 with bursts and IDs.</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

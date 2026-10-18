@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HPCA Flash Sheets</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: flashcard deck. Sticky bar (lesson strip + flip controls) over one full sheet.
+   Sheet = gist banner, then two columns: concept side (figure, points, table) | interview side (numbers, worked, DV, bugs, Q&A). */
+:root{
+  --bg:#f3f4f2; --panel:#ffffff; --ink:#18201f; --muted:#5b6765; --line:#d5dbd8;
+  --copper:#b05a22; --copper-soft:#f6e6da; --trace:#2f6f62; --trace-soft:#dcece7;
+  --warn:#a33a2a; --warn-soft:#f5e0dc; --grid:#e6eae8;
+  --display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111615; --panel:#181f1e; --ink:#e4eae8; --muted:#97a3a0; --line:#2b3533;
+  --copper:#e08a4f; --copper-soft:#3a2618; --trace:#6cc2ad; --trace-soft:#183530;
+  --warn:#ef8a78; --warn-soft:#3b1f1a; --grid:#222b29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111615; --panel:#181f1e; --ink:#e4eae8; --muted:#97a3a0; --line:#2b3533;
+  --copper:#e08a4f; --copper-soft:#3a2618; --trace:#6cc2ad; --trace-soft:#183530;
+  --warn:#ef8a78; --warn-soft:#3b1f1a; --grid:#222b29; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.in{max-width:1240px;margin:0 auto}
+code{font-family:var(--mono);font-size:.84em;background:var(--grid);padding:1px 5px;border-radius:3px;word-break:break-word}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar .in{display:grid;gap:8px;padding-block:10px}
+.row1{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;justify-content:space-between}
+.brand{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.01em}
+.brand span{color:var(--copper)}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--copper)}
+.btn:focus-visible,select:focus-visible,.chip:focus-visible,summary:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+.btn[aria-pressed="true"]{background:var(--trace-soft);border-color:var(--trace);color:var(--trace)}
+select{font-family:var(--mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);max-width:min(340px,70vw)}
+.count{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:7ch;text-align:center}
+.strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.chip{flex:none;font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);background:none;color:var(--ink);padding:4px 9px;cursor:pointer;white-space:nowrap}
+.chip b{color:var(--copper);font-weight:600;margin-right:4px}
+.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chip.on b{color:var(--copper-soft)}
+.chip:disabled{opacity:.45;cursor:default;border-style:dashed}
+
+/* sheet */
+main .in{padding-block:18px 48px}
+.sheet{background:var(--panel);border:1px solid var(--line)}
+.sh-top{padding:16px 22px 14px;border-bottom:1px solid var(--line);display:grid;gap:6px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.meta .les{color:var(--copper)}
+.sh-top h1{font-family:var(--display);font-weight:600;font-size:clamp(24px,3.4vw,34px);line-height:1.12;margin:0;text-wrap:balance}
+.gist{margin:4px 0 0;font-size:17px;line-height:1.45;max-width:80ch;border-left:3px solid var(--copper);padding-left:12px;text-wrap:pretty}
+.cols{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr)}
+.col{padding:16px 22px 20px;display:grid;gap:16px;align-content:start;min-width:0}
+.col+.col{border-left:1px solid var(--line);background:color-mix(in srgb,var(--bg) 45%,var(--panel))}
+@media (max-width:880px){.cols{grid-template-columns:minmax(0,1fr)}.col+.col{border-left:0;border-top:1px solid var(--line)}}
+h2.lbl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;margin:0 0 7px;color:var(--muted);display:flex;align-items:center;gap:7px}
+h2.lbl::before{content:"";width:8px;height:8px;background:currentColor}
+.lbl.cu{color:var(--copper)} .lbl.tr{color:var(--trace)} .lbl.wa{color:var(--warn)}
+ul.pts{margin:0;padding-left:18px;display:grid;gap:6px}
+ul.pts li::marker{color:var(--copper)}
+.fig{border:1px dashed var(--line);background:var(--bg);padding:10px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:460px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td{font-variant-numeric:tabular-nums}
+.nums{display:flex;flex-wrap:wrap;gap:7px}
+.num{font-family:var(--mono);font-size:12.5px;border:1px solid var(--copper);color:var(--ink);background:var(--copper-soft);padding:4px 9px}
+.wk{display:grid;gap:5px}
+.wk div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;border-bottom:1px dotted var(--line);padding-bottom:5px;font-size:14px}
+.wk .a{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right}
+@media (max-width:520px){.wk div{grid-template-columns:minmax(0,1fr)}.wk .a{text-align:left}}
+.fix{border:1px dashed var(--warn);padding:9px 12px;font-size:14px}
+.bugs{border-left:3px solid var(--warn);background:var(--warn-soft);padding:9px 12px}
+.bugs ul,.dv ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:14.2px}
+details{border-top:1px solid var(--line)}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;padding:8px 2px;font-weight:500;display:flex;gap:9px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"Q";font-family:var(--mono);font-weight:600;color:var(--copper)}
+details[open] summary::before{content:"A"}
+.ans{padding:0 2px 10px 22px;font-size:14.2px}
+.foot{display:flex;justify-content:space-between;gap:10px;margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.empty{padding:40px 22px;text-align:center;color:var(--muted)}
+
+/* svg tokens */
+svg text{font-family:var(--mono);font-size:12px}
+.s-ink{fill:var(--ink)} .s-mut{fill:var(--muted)} .s-cu{fill:var(--copper)} .s-tr{fill:var(--trace)} .s-wa{fill:var(--warn)}
+.s-box{fill:var(--panel);stroke:var(--ink);stroke-width:1.2}
+.s-cubox{fill:var(--copper-soft);stroke:var(--copper);stroke-width:1.2}
+.s-trbox{fill:var(--trace-soft);stroke:var(--trace);stroke-width:1.2}
+.s-wbox{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.2}
+.s-line{stroke:var(--ink);stroke-width:1.2;fill:none}
+.s-grid{stroke:var(--grid);stroke-width:1;fill:none}
+.s-cul{stroke:var(--copper);stroke-width:2;fill:none}
+.s-trl{stroke:var(--trace);stroke-width:2;fill:none}
+.s-wal{stroke:var(--warn);stroke-width:2;fill:none}
+.tb{font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="bar gut">
+ <div class="in">
+  <div class="row1">
+   <div class="brand">HPCA <span>Flash Sheets</span></div>
+   <div class="ctl">
+    <button class="btn" id="prev" type="button" aria-label="Previous sheet">← Prev</button>
+    <span class="count" id="count">–</span>
+    <button class="btn" id="next" type="button" aria-label="Next sheet">Next →</button>
+    <label for="jump" class="count" style="min-width:0">Go to</label>
+    <select id="jump"></select>
+    <button class="btn" id="reveal" type="button" aria-pressed="false">Show answers</button>
+   </div>
+  </div>
+  <nav class="strip" id="strip" aria-label="Lessons"></nav>
+ </div>
+</header>
+
+<main class="gut"><div class="in">
+ <article class="sheet" id="sheet" aria-live="polite"></article>
+ <div class="foot"><span>← → keys flip sheets · lessons 1–12 follow your notes · 13–22 follow the course content (no notes yet)</span><span id="built"></span></div>
+</div></main>
+
+<script>
+window.LESSONS=[
+ [1,"Introduction"],[2,"Metrics & evaluation"],[3,"Pipelining"],[4,"Branch prediction"],[5,"Predication"],
+ [6,"ILP"],[7,"Tomasulo"],[8,"Reorder buffer"],[9,"Memory ordering"],[10,"Compiler ILP"],[11,"VLIW"],
+ [12,"Cache review"],[13,"Virtual memory"],[14,"Advanced caches"],[15,"Memory (DRAM)"],[16,"Storage"],
+ [17,"Fault tolerance"],[18,"Multiprocessing"],[19,"Cache coherence"],[20,"Synchronization"],
+ [21,"Memory consistency"],[22,"Many-cores"]];
+</script>
+<script src="b01.js"></script>
+<script src="b02.js"></script>
+<script src="b03.js"></script>
+<script src="b04.js"></script>
+<script src="b05.js"></script>
+<script>
+(function(){
+const NS="http://www.w3.org/2000/svg";
+/* ---------- figures (drawn to scale where they plot numbers) ---------- */
+const F={
+layers:()=>`<svg viewBox="0 0 560 190" role="img" aria-label="Layers from application down to transistors with ISA as the contract">
+ ${[["Application · OS · compiler","s-box"],["ISA — the contract (architectural)","s-cubox"],["Microarchitecture — pipeline, caches, predictors","s-trbox"],["Circuits · fabrication technology","s-box"]].map((r,i)=>`<rect class="${r[1]}" x="20" y="${12+i*42}" width="380" height="34"/><text class="s-ink ${i==1?'tb':''}" x="34" y="${34+i*42}">${r[0]}</text>`).join("")}
+ <path class="s-cul" d="M412 63 H440 V135 H412"/><text class="s-cu" x="448" y="96">DV checks</text><text class="s-cu" x="448" y="112">µarch vs ISA</text>
+</svg>`,
+memwall:()=>{const xs=[60,188,316,444,572,700].map(x=>x*0.78);const yv=v=>190-Math.log2(v)/5*160;
+ const cpu=[1,2,4,8,16,32],mem=[1,1.1,1.21,1.331,1.4641,1.6105];
+ const pl=a=>a.map((v,i)=>`${i?'L':'M'}${xs[i].toFixed(1)} ${yv(v).toFixed(1)}`).join(" ");
+ return `<svg viewBox="0 0 590 220" role="img" aria-label="Processor speed doubles every 2 years to 32x over 10 years while memory latency improves 1.1x per 2 years to 1.6x">
+ ${[1,2,4,8,16,32].map(v=>`<line class="s-grid" x1="40" x2="560" y1="${yv(v)}" y2="${yv(v)}"/><text class="s-mut" x="6" y="${yv(v)+4}">${v}×</text>`).join("")}
+ ${xs.map((x,i)=>`<text class="s-mut" x="${x-8}" y="210">${i*2}y</text>`).join("")}
+ <path class="s-cul" d="${pl(cpu)}"/><path class="s-trl" d="${pl(mem)}"/>
+ <text class="s-cu tb" x="${xs[5]-150}" y="${yv(32)+4}">CPU 32×</text><text class="s-tr tb" x="${xs[5]-150}" y="${yv(1.61)-8}">memory latency 1.6×</text>
+ </svg>`},
+ucurve:()=>{let d1="",d2="",d3="";for(let i=0;i<=40;i++){const v=0.6+i*0.02,x=60+i*12;const dyn=v*v*v*40,st=6/Math.pow(v,4)*0.9;const tot=dyn+st;
+ const y=a=>200-a*1.6;d1+=(i?"L":"M")+x+" "+y(dyn).toFixed(1)+" ";d2+=(i?"L":"M")+x+" "+y(st).toFixed(1)+" ";d3+=(i?"L":"M")+x+" "+y(tot).toFixed(1)+" ";}
+ return `<svg viewBox="0 0 590 220" role="img" aria-label="Schematic: dynamic power rises with voltage, leakage falls, total is U-shaped with a minimum">
+ <line class="s-line" x1="60" y1="200" x2="560" y2="200"/><line class="s-line" x1="60" y1="20" x2="60" y2="200"/>
+ <path class="s-cul" d="${d1}"/><path class="s-wal" d="${d2}"/><path class="s-trl" d="${d3}" stroke-width="3"/>
+ <text class="s-cu" x="430" y="60">dynamic</text><text class="s-wa" x="70" y="40">leakage</text><text class="s-tr tb" x="250" y="118">total</text>
+ <text class="s-mut" x="470" y="214">voltage →</text><text class="s-mut" x="66" y="16">power (schematic)</text></svg>`},
+ironlaw:()=>`<svg viewBox="0 0 590 130" role="img" aria-label="Iron law: CPU time equals instructions times CPI times clock period">
+ <text class="s-ink tb" x="6" y="38" style="font-size:16px">Time =</text>
+ <rect class="s-box" x="76" y="14" width="140" height="38"/><text class="s-ink tb" x="90" y="38">Instructions</text>
+ <text class="s-ink" x="224" y="38">×</text><rect class="s-cubox" x="240" y="14" width="120" height="38"/><text class="s-ink tb" x="268" y="38">CPI</text>
+ <text class="s-ink" x="368" y="38">×</text><rect class="s-trbox" x="384" y="14" width="150" height="38"/><text class="s-ink tb" x="398" y="38">Clock period</text>
+ <text class="s-mut" x="76" y="74">algorithm</text><text class="s-mut" x="76" y="90">compiler, ISA</text>
+ <text class="s-mut" x="240" y="74">ISA</text><text class="s-mut" x="240" y="90">µarch design</text>
+ <text class="s-mut" x="384" y="74">µarch, circuits</text><text class="s-mut" x="384" y="90">transistors</text>
+ <text class="s-cu" x="6" y="120">3 B × 2 / 3 GHz = 2 s</text></svg>`,
+amdahl:()=>{const X=f=>60+f/0.9*480,Y=s=>196-(s-1)/9*170;const cur=s=>{let d="";for(let i=0;i<=90;i++){const f=i/100,v=1/((1-f)+f/s);d+=(i?"L":"M")+X(f).toFixed(1)+" "+Y(Math.min(v,10)).toFixed(1)+" ";}return d};
+ return `<svg viewBox="0 0 590 226" role="img" aria-label="Amdahl curves: overall speedup versus fraction enhanced, for part speedups of 2, 10 and infinity">
+ ${[1,4,7,10].map(v=>`<line class="s-grid" x1="60" x2="540" y1="${Y(v)}" y2="${Y(v)}"/><text class="s-mut" x="24" y="${Y(v)+4}">${v}×</text>`).join("")}
+ ${[0,0.3,0.6,0.9].map(f=>`<text class="s-mut" x="${X(f)-10}" y="216">${f}</text>`).join("")}
+ <path class="s-trl" d="${cur(2)}"/><path class="s-cul" d="${cur(10)}"/><path class="s-wal" d="${cur(1e9)}"/>
+ <text class="s-tr" x="470" y="${Y(1.82)-6}">s=2</text><text class="s-cu" x="470" y="${Y(5.26)-6}">s=10</text><text class="s-wa" x="470" y="${Y(10)+16}">s=∞</text>
+ <text class="s-mut" x="380" y="216">fraction f →</text></svg>`},
+pipe5:()=>{const st=["IF","ID","EX","MEM","WB"];let g="";for(let r=0;r<4;r++)for(let k=0;k<5;k++){const c=r+k;g+=`<rect class="${k==2?'s-cubox':'s-box'}" x="${80+c*58}" y="${20+r*34}" width="54" height="28"/><text class="s-ink" x="${86+c*58}" y="${39+r*34}">${st[k]}</text>`;}
+ return `<svg viewBox="0 0 590 200" role="img" aria-label="Five-stage pipeline: four instructions overlapping one stage apart">
+ ${[0,1,2,3].map(r=>`<text class="s-mut" x="6" y="${39+r*34}">instr ${r+1}</text>`).join("")}${g}
+ <text class="s-cu" x="80" y="180">latency 5 cycles each · after fill, 1 completes per cycle → 10 instr = 5 + 9 = 14</text></svg>`},
+flush:()=>{const row=(r,lab,cells,cls)=>`<text class="s-mut" x="6" y="${39+r*34}">${lab}</text>`+cells.map((s,k)=>s?`<rect class="${cls[k]||'s-box'}" x="${90+(r+k)*58}" y="${20+r*34}" width="54" height="28"/><text class="s-ink" x="${96+(r+k)*58}" y="${39+r*34}">${s}</text>`:"").join("");
+ return `<svg viewBox="0 0 590 190" role="img" aria-label="Branch resolves in EX; the two younger wrong-path instructions are flushed into bubbles">
+ ${row(0,"BEQ",["IF","ID","EX","MEM","WB"],["","","s-cubox"])}
+ ${row(1,"wrong 1",["IF","ID","—","—"],["s-wbox","s-wbox","s-wbox","s-wbox"])}
+ ${row(2,"wrong 2",["IF","—","—"],["s-wbox","s-wbox","s-wbox"])}
+ ${row(3,"target",["IF","ID","EX","MEM"],["s-trbox","s-trbox","s-trbox","s-trbox"])}
+ <text class="s-cu" x="90" y="176">branch known at end of EX → 2 bubbles = penalty 2</text></svg>`},
+deps:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="Three-instruction example showing RAW, WAR and WAW arrows">
+ <text class="s-ink" x="20" y="34">I1: ADD R1, R2, R3</text><text class="s-ink" x="20" y="84">I2: SUB R4, R1, R5</text><text class="s-ink" x="20" y="134">I3: MUL R1, R4, R4</text>
+ <path class="s-cul" d="M200 30 C 240 40, 240 70, 200 80"/><text class="s-cu" x="250" y="58">RAW on R1 (true)</text>
+ <path class="s-trl" d="M200 86 C 240 96, 240 120, 200 130"/><text class="s-tr" x="250" y="112">RAW on R4 · WAR on R1</text>
+ <path class="s-wal" d="M180 26 C 330 40, 330 120, 180 136"/><text class="s-wa" x="340" y="80">WAW on R1 (output)</text>
+ <text class="s-mut" x="20" y="162">renaming removes WAR and WAW, never RAW</text></svg>`,
+fwd:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="ALU to ALU forwarding with no stall and load to use with one stall then forwarding">
+ ${["IF","ID","EX","MEM","WB"].map((s,k)=>`<rect class="${k==3?'s-cubox':'s-box'}" x="${110+k*58}" y="16" width="54" height="26"/><text class="s-ink" x="${116+k*58}" y="34">${s}</text>`).join("")}<text class="s-mut" x="6" y="34">LW R1</text>
+ ${["IF","ID","stall","EX","MEM"].map((s,k)=>`<rect class="${s=='stall'?'s-wbox':(k==3?'s-trbox':'s-box')}" x="${168+k*58}" y="56" width="54" height="26"/><text class="s-ink" x="${172+k*58}" y="74">${s}</text>`).join("")}<text class="s-mut" x="6" y="74">ADD ..R1</text>
+ <path class="s-cul" d="M330 42 L 352 56"/><text class="s-cu" x="110" y="112">MEM→EX forward after 1 bubble (value exists only after MEM)</text>
+ <text class="s-tr" x="110" y="132">ALU→ALU: EX→EX forward, 0 stalls</text>
+ <text class="s-mut" x="110" y="152">control hazard: flush · data hazard: forward, else stall</text></svg>`,
+depth:()=>{let a="",b="";for(let n=5;n<=50;n++){const x=60+(n-5)*10.4;const perf=Math.exp(-Math.pow((n-35)/18,2)),pw=Math.exp(-Math.pow((n-13)/9,2));a+=(n>5?"L":"M")+x.toFixed(1)+" "+(190-perf*150).toFixed(1)+" ";b+=(n>5?"L":"M")+x.toFixed(1)+" "+(190-pw*150).toFixed(1)+" ";}
+ return `<svg viewBox="0 0 590 220" role="img" aria-label="Schematic: performance alone peaks near 35 stages; performance per watt peaks near 13 stages">
+ <line class="s-line" x1="60" y1="190" x2="540" y2="190"/>${[5,15,25,35,45].map(n=>`<text class="s-mut" x="${60+(n-5)*10.4-6}" y="206">${n}</text>`).join("")}
+ <path class="s-cul" d="${a}"/><path class="s-trl" d="${b}"/>
+ <text class="s-cu" x="${60+30*10.4-30}" y="32">performance only</text><text class="s-tr" x="${60+8*10.4-20}" y="32">perf + power</text>
+ <text class="s-mut" x="440" y="218">stages (schematic)</text></svg>`},
+bpneed:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="Fetch needs the next PC one cycle after the branch is fetched, but the branch is decoded one stage later and resolved in EX">
+ ${["IF","ID","EX","MEM","WB"].map((s,k)=>`<rect class="${k==2?'s-cubox':'s-box'}" x="${90+k*58}" y="20" width="54" height="28"/><text class="s-ink" x="${96+k*58}" y="39">${s}</text>`).join("")}<text class="s-mut" x="6" y="39">BEQ</text>
+ <rect class="s-wbox" x="148" y="60" width="54" height="28"/><text class="s-ink" x="154" y="79">IF ?</text><text class="s-mut" x="6" y="79">next</text>
+ <path class="s-wal" d="M175 60 V52"/><text class="s-wa" x="214" y="79">needs next PC now: not even decoded yet</text>
+ <text class="s-cu" x="214" y="112">known to be a branch: end of ID · outcome: end of EX</text>
+ <text class="s-tr" x="90" y="150">predict from the PC alone: branch? taken? target?</text></svg>`,
+btb:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="PC bits 11 to 2 index a 1024-entry BTB whose output is the predicted next PC">
+ <rect class="s-box" x="10" y="20" width="250" height="30"/><text class="s-mut" x="20" y="40">PC [31:12]</text>
+ <rect class="s-cubox" x="110" y="20" width="110" height="30"/><text class="s-ink tb" x="118" y="40">[11:2] idx</text>
+ <rect class="s-box" x="220" y="20" width="40" height="30"/><text class="s-mut" x="226" y="40">00</text>
+ <path class="s-line" d="M165 50 V80 H320"/>
+ <rect class="s-trbox" x="320" y="62" width="150" height="90"/><text class="s-ink tb" x="334" y="84">BTB</text><text class="s-mut" x="334" y="104">1024 entries</text><text class="s-mut" x="334" y="122">→ next PC</text><text class="s-mut" x="334" y="140">1 cycle</text>
+ <path class="s-trl" d="M470 106 H560"/><text class="s-tr" x="480" y="98">fetch</text>
+ <text class="s-mut" x="10" y="120">bits [1:0] always 0 for</text><text class="s-mut" x="10" y="136">4-byte instructions</text></svg>`,
+twobc:()=>{const st=[["00","strong NT","s-box"],["01","weak NT","s-box"],["10","weak T","s-trbox"],["11","strong T","s-trbox"]];
+ return `<svg viewBox="0 0 590 170" role="img" aria-label="Two-bit saturating counter: four states, taken moves right, not taken moves left, saturating at both ends">
+ ${st.map((s,k)=>`<rect class="${s[2]}" x="${20+k*142}" y="50" width="110" height="50"/><text class="s-ink tb" x="${62+k*142}" y="72">${s[0]}</text><text class="s-mut" x="${34+k*142}" y="90">${s[1]}</text>`).join("")}
+ ${[0,1,2].map(k=>`<path class="s-cul" d="M${130+k*142} 62 H${162+k*142}"/><path class="s-wal" d="M${162+k*142} 90 H${130+k*142}"/>`).join("")}
+ <text class="s-cu" x="150" y="36">T → count up</text><text class="s-wa" x="300" y="126">NT → count down</text>
+ <text class="s-mut" x="20" y="152">saturate at 00 and 11 · MSB = prediction · LSB = confidence</text></svg>`},
+pshare:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="PShare: PC indexes a per-branch history table; history XOR PC indexes a shared table of 2-bit counters">
+ <rect class="s-box" x="10" y="60" width="70" height="34"/><text class="s-ink tb" x="30" y="82">PC</text>
+ <rect class="s-cubox" x="130" y="16" width="150" height="50"/><text class="s-ink tb" x="142" y="38">PHT</text><text class="s-mut" x="142" y="56">local history/branch</text>
+ <circle class="s-box" cx="330" cy="98" r="16"/><text class="s-ink" x="324" y="103">⊕</text>
+ <rect class="s-trbox" x="390" y="74" width="170" height="50"/><text class="s-ink tb" x="402" y="96">shared 2BCs</text><text class="s-mut" x="402" y="114">→ T / NT</text>
+ <path class="s-line" d="M80 77 H105 V41 H130 M105 77 V98 H314 M280 41 H330 V82 M346 98 H390"/>
+ <text class="s-mut" x="10" y="156">update: same index trains the 2BC, then shift outcome into that branch’s history</text></svg>`,
+gshare:()=>`<svg viewBox="0 0 590 160" role="img" aria-label="GShare: global history register XOR PC indexes shared 2-bit counters">
+ <rect class="s-box" x="10" y="30" width="80" height="34"/><text class="s-ink tb" x="34" y="52">PC</text>
+ <rect class="s-cubox" x="10" y="90" width="200" height="34"/><text class="s-ink tb" x="20" y="112">GHR: last N outcomes</text>
+ <circle class="s-box" cx="270" cy="78" r="16"/><text class="s-ink" x="264" y="83">⊕</text>
+ <rect class="s-trbox" x="340" y="54" width="180" height="48"/><text class="s-ink tb" x="352" y="76">shared 2BCs</text><text class="s-mut" x="352" y="94">→ T / NT</text>
+ <path class="s-line" d="M90 47 H270 V62 M210 107 H270 V94 M286 78 H340"/>
+ <text class="s-mut" x="10" y="150">GHR updated speculatively at fetch, repaired on mispredict</text></svg>`,
+tourn:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="Hierarchical predictor: tagged global predictor overrides tagged local predictor which overrides a plain 2-bit counter array">
+ <rect class="s-trbox" x="20" y="14" width="250" height="40"/><text class="s-ink tb" x="32" y="38">global (tagged)</text>
+ <rect class="s-cubox" x="20" y="66" width="250" height="40"/><text class="s-ink tb" x="32" y="90">local (tagged)</text>
+ <rect class="s-box" x="20" y="118" width="250" height="40"/><text class="s-ink tb" x="32" y="142">2BC array</text>
+ <path class="s-line" d="M270 34 H330 M270 86 H330 M270 138 H330 M330 34 V138"/>
+ <rect class="s-box" x="350" y="62" width="200" height="48"/><text class="s-ink tb" x="362" y="84">first tag hit wins</text><text class="s-mut" x="362" y="100">global › local › 2BC</text>
+ <path class="s-line" d="M330 86 H350"/>
+ <text class="s-mut" x="20" y="176">mispredicted at a level → allocate at the next level up</text></svg>`,
+ras:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="Return address stack: calls push return addresses, returns pop them, pointer wraps when full">
+ ${[0,1,2,3].map(k=>`<rect class="${k<2?'s-cubox':'s-box'}" x="40" y="${130-k*32}" width="150" height="30"/><text class="s-ink" x="52" y="${150-k*32}">${["main+4","doit+8","—","—"][k]}</text>`).join("")}
+ <path class="s-cul" d="M240 114 H196"/><text class="s-cu" x="246" y="118">ptr (next free)</text>
+ <text class="s-tr" x="320" y="50">CALL → push PC+size, ptr++</text>
+ <text class="s-tr" x="320" y="76">RET → ptr−−, predict that entry</text>
+ <text class="s-wa" x="320" y="112">full → wrap, overwrite oldest</text>
+ <text class="s-mut" x="320" y="138">wrong path: restore ptr</text></svg>`,
+ifconv:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="If-conversion: branchy code with two paths becomes straight-line code computing both values and selecting with conditional moves">
+ <text class="s-mut" x="10" y="20">before</text>
+ <text class="s-ink" x="10" y="44">BEQ R1, zero, else</text><text class="s-ink" x="10" y="64">ADD R2, R2, 1</text><text class="s-ink" x="10" y="84">B   done</text><text class="s-ink" x="10" y="104">else: ADD R3, R3, 1</text>
+ <text class="s-wa" x="10" y="132">hard branch: 20% × 40 penalty</text>
+ <path class="s-cul" d="M250 70 H300"/>
+ <text class="s-mut" x="320" y="20">after</text>
+ <text class="s-ink" x="320" y="44">ADDI R4, R2, 1</text><text class="s-ink" x="320" y="64">ADDI R5, R3, 1</text><text class="s-ink" x="320" y="84">MOVN R2, R4, R1</text><text class="s-ink" x="320" y="104">MOVZ R3, R5, R1</text>
+ <text class="s-tr" x="320" y="132">no branch: 4 instructions always</text></svg>`,
+rename:()=>`<svg viewBox="0 0 590 150" role="img" aria-label="RAT maps architectural registers to physical registers; each write gets a new physical register">
+ <rect class="s-box" x="20" y="20" width="160" height="110"/><text class="s-mut" x="30" y="38">RAT</text>
+ ${[["R1","P8"],["R2","P11"],["R3","P10"],["R4","P4"]].map((r,k)=>`<text class="s-ink" x="34" y="${60+k*18}">${r[0]} → </text><text class="s-cu tb" x="94" y="${60+k*18}">${r[1]}</text>`).join("")}
+ <text class="s-ink" x="220" y="44">MUL R2 ← …   gets P7</text><text class="s-ink" x="220" y="68">MUL R2 ← …   gets P9</text><text class="s-ink" x="220" y="92">MUL R2 ← …   gets P11</text>
+ <text class="s-tr" x="220" y="122">3 names → 3 independent chains</text></svg>`,
+tomasulo:()=>`<svg viewBox="0 0 590 200" role="img" aria-label="Tomasulo: instruction queue issues to reservation stations, which dispatch to adder and multiplier; results broadcast on the common data bus to register file and stations">
+ <rect class="s-box" x="10" y="20" width="90" height="40"/><text class="s-ink tb" x="22" y="44">IQ</text>
+ <rect class="s-box" x="130" y="20" width="110" height="40"/><text class="s-ink tb" x="142" y="38">RAT + RF</text><text class="s-mut" x="142" y="54">values / tags</text>
+ <rect class="s-cubox" x="130" y="90" width="110" height="40"/><text class="s-ink tb" x="142" y="114">ADD RS</text>
+ <rect class="s-cubox" x="270" y="90" width="110" height="40"/><text class="s-ink tb" x="282" y="114">MUL RS</text>
+ <rect class="s-cubox" x="410" y="90" width="150" height="40"/><text class="s-ink tb" x="420" y="108">LD / ST buffers</text><text class="s-mut" x="420" y="124">in order</text>
+ <rect class="s-box" x="130" y="146" width="110" height="26"/><text class="s-ink" x="152" y="164">adder</text>
+ <rect class="s-box" x="270" y="146" width="110" height="26"/><text class="s-ink" x="282" y="164">mul / div</text>
+ <path class="s-line" d="M100 40 H130 M100 40 H115 V110 H130 M115 80 H325 V90 M115 80 H485 V90 M185 130 V146 M325 130 V146"/>
+ <path class="s-trl" d="M185 172 V188 H570 V75 H240 M325 172 V188"/><text class="s-tr tb" x="430" y="184">CDB: tag + value</text></svg>`,
+rob:()=>`<svg viewBox="0 0 590 190" role="img" aria-label="Reorder buffer as a table with value, done and destination fields, commit pointer at the oldest entry and issue pointer at the next free entry">
+ <text class="s-mut" x="60" y="18">#</text><text class="s-mut" x="100" y="18">dest</text><text class="s-mut" x="170" y="18">value</text><text class="s-mut" x="250" y="18">done</text>
+ ${[["1","R2","—","0","s-cubox"],["2","R1","8","1","s-box"],["3","R3","4","1","s-box"],["4","R1","—","0","s-box"],["5","","","","s-grid"]].map((r,k)=>`<rect class="${r[4]=='s-grid'?'s-box':r[4]}" x="50" y="${26+k*30}" width="250" height="26"/><text class="s-ink" x="60" y="${44+k*30}">${r[0]}</text><text class="s-ink" x="100" y="${44+k*30}">${r[1]}</text><text class="s-ink" x="170" y="${44+k*30}">${r[2]}</text><text class="s-ink" x="254" y="${44+k*30}">${r[3]}</text>`).join("")}
+ <path class="s-cul" d="M320 39 H304"/><text class="s-cu tb" x="326" y="44">commit ptr (oldest)</text>
+ <path class="s-trl" d="M320 159 H304"/><text class="s-tr tb" x="326" y="164">issue ptr (next)</text>
+ <text class="s-mut" x="326" y="86">#2, #3 done but wait for #1</text><text class="s-mut" x="326" y="106">commit: in order, one by one</text></svg>`,
+lsq:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="Load-store queue in program order; a load searches older stores and takes the youngest match">
+ ${[["S","A=104","25"],["S","A=204","-17"],["L","A=204","?"]].map((r,k)=>`<rect class="${k==2?'s-trbox':(k==1?'s-cubox':'s-box')}" x="${20+k*170}" y="40" width="150" height="50"/><text class="s-ink tb" x="${30+k*170}" y="62">${r[0]} ${r[1]}</text><text class="s-mut" x="${30+k*170}" y="80">value ${r[2]}</text>`).join("")}
+ <text class="s-mut" x="20" y="26">older ────────────────→ younger</text>
+ <path class="s-cul" d="M360 65 H340"/><text class="s-cu" x="190" y="118">youngest older match → forward −17</text>
+ <text class="s-mut" x="20" y="150">no match → read cache · stores write the cache only at commit</text></svg>`,
+tree:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="Tree height reduction: three-level tree of adds instead of a six-deep chain">
+ ${[["r1+r2",30],["r4+r6",170],["r3+r5",330]].map(a=>`<rect class="s-cubox" x="${a[1]}" y="20" width="110" height="28"/><text class="s-ink" x="${a[1]+20}" y="39">${a[0]}</text>`).join("")}
+ <rect class="s-trbox" x="100" y="78" width="110" height="28"/><text class="s-ink" x="124" y="97">+</text>
+ <rect class="s-trbox" x="380" y="78" width="110" height="28"/><text class="s-ink" x="404" y="97">+ r7</text>
+ <rect class="s-box" x="240" y="136" width="110" height="28"/><text class="s-ink" x="264" y="155">−</text>
+ <path class="s-line" d="M85 48 L155 78 M225 48 L155 78 M385 48 L435 78 M155 106 L295 136 M435 106 L295 136"/>
+ <text class="s-mut" x="470" y="160">3 levels · ILP 2</text></svg>`,
+unroll:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="Loop unrolled once: two copies of the body with offsets 0 and 4, one counter update and branch">
+ <text class="s-mut" x="10" y="18">original (5 instr / element)</text>
+ ${["LW R2,0(R1)","ADD R2,R2,R0","SW R2,0(R1)","ADDI R1,R1,4","BNE R1,R3,L"].map((s,k)=>`<text class="${k>2?'s-wa':'s-ink'}" x="10" y="${40+k*20}">${s}</text>`).join("")}
+ <text class="s-mut" x="300" y="18">unrolled ×2 (8 instr / 2 elements)</text>
+ ${["LW R2,0(R1)","LW R4,4(R1)","ADD R2,R2,R0","ADD R4,R4,R0","SW R2,0(R1)","SW R4,4(R1)","ADDI R1,R1,8","BNE R1,R3,L"].map((s,k)=>`<text class="${k>5?'s-wa':(k%2?'s-cu':'s-ink')}" x="300" y="${36+k*16}">${s}</text>`).join("")}
+ <text class="s-wa" x="10" y="160">red = loop overhead</text></svg>`,
+vliw:()=>`<svg viewBox="0 0 590 150" role="img" aria-label="A 128-bit VLIW bundle with four operation slots; dependent code fills slots with NOPs">
+ <text class="s-mut" x="10" y="20">one 128-bit instruction = 4 independent ops</text>
+ ${["ADD","LW","MUL","SUB"].map((s,k)=>`<rect class="s-trbox" x="${10+k*120}" y="30" width="116" height="32"/><text class="s-ink" x="${20+k*120}" y="51">${s}</text>`).join("")}
+ ${["ADD","NOP","NOP","NOP"].map((s,k)=>`<rect class="${k?'s-wbox':'s-trbox'}" x="${10+k*120}" y="84" width="116" height="32"/><text class="s-ink" x="${20+k*120}" y="105">${s}</text>`).join("")}
+ <text class="s-wa" x="10" y="140">dependent code → NOP bloat (up to 4× size)</text></svg>`,
+addrsplit:()=>`<svg viewBox="0 0 590 150" role="img" aria-label="Address split into tag, index and offset for a 32 KB 8-way cache with 64-byte lines">
+ <text class="s-mut" x="10" y="18">48-bit PA · 32 KB · 8-way · 64 B → 64 sets</text>
+ <rect class="s-box" x="10" y="28" width="330" height="36"/><text class="s-ink tb" x="120" y="51">tag [47:12]</text>
+ <rect class="s-cubox" x="340" y="28" width="120" height="36"/><text class="s-ink tb" x="350" y="51">index [11:6]</text>
+ <rect class="s-trbox" x="460" y="28" width="120" height="36"/><text class="s-ink tb" x="470" y="51">offset [5:0]</text>
+ <text class="s-mut" x="10" y="92">per line: V · D · tag · LRU · data</text>
+ <text class="s-cu" x="340" y="92">index picks the set</text><text class="s-tr" x="460" y="112">byte in line</text>
+ <text class="s-mut" x="10" y="136">hit = V &amp;&amp; tag match in exactly one way</text></svg>`,
+lru:()=>{const rows=[["fill A B C D","0","1","2","3"],["E replaces A","3","0","1","2"],["access B","2","3","0","1"],["access D","1","2","0","3"],["access B","1","3","0","2"]];
+ return `<svg viewBox="0 0 590 200" role="img" aria-label="LRU counters for a 4-way set through a sequence of accesses; the line with counter 0 is the victim">
+ <text class="s-mut" x="190" y="18">way 0</text><text class="s-mut" x="260" y="18">way 1</text><text class="s-mut" x="330" y="18">way 2</text><text class="s-mut" x="400" y="18">way 3</text>
+ ${rows.map((r,k)=>`<text class="s-ink" x="10" y="${46+k*32}">${r[0]}</text>`+[1,2,3,4].map(j=>`<rect class="${r[j]=='0'?'s-wbox':(r[j]=='3'?'s-trbox':'s-box')}" x="${180+(j-1)*70}" y="${28+k*32}" width="60" height="26"/><text class="s-ink" x="${206+(j-1)*70}" y="${46+k*32}">${r[j]}</text>`).join("")).join("")}
+ <text class="s-wa" x="470" y="80">0 = victim</text><text class="s-tr" x="470" y="100">3 = MRU</text></svg>`},
+vmxlate:()=>`<svg viewBox="0 0 590 160" role="img" aria-label="Virtual address split into virtual page number and offset; page table maps VPN to physical frame number; offset is copied">
+ <rect class="s-cubox" x="10" y="20" width="260" height="34"/><text class="s-ink tb" x="90" y="42">VPN [31:12]</text>
+ <rect class="s-trbox" x="270" y="20" width="120" height="34"/><text class="s-ink tb" x="284" y="42">offset [11:0]</text>
+ <rect class="s-box" x="60" y="76" width="160" height="40"/><text class="s-ink tb" x="72" y="96">page table</text><text class="s-mut" x="72" y="110">base = CR3 / satp</text>
+ <rect class="s-cubox" x="10" y="128" width="260" height="28"/><text class="s-ink tb" x="90" y="147">PFN</text>
+ <rect class="s-trbox" x="270" y="128" width="120" height="28"/><text class="s-ink" x="284" y="147">same offset</text>
+ <path class="s-line" d="M140 54 V76 M140 116 V128 M330 54 V128"/>
+ <text class="s-mut" x="410" y="42">virtual address</text><text class="s-mut" x="410" y="147">physical address</text></svg>`,
+vipt:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="VIPT: index comes from page-offset bits, TLB translation runs in parallel, physical tag compared after">
+ <rect class="s-cubox" x="10" y="20" width="250" height="32"/><text class="s-ink tb" x="80" y="41">VPN (needs TLB)</text>
+ <rect class="s-trbox" x="260" y="20" width="200" height="32"/><text class="s-ink tb" x="276" y="41">page offset [11:0]</text>
+ <text class="s-tr" x="276" y="70">index + line offset fit here</text>
+ <rect class="s-box" x="40" y="86" width="150" height="34"/><text class="s-ink" x="76" y="108">TLB → PFN</text>
+ <rect class="s-box" x="290" y="86" width="150" height="34"/><text class="s-ink" x="300" y="108">read set (tags)</text>
+ <path class="s-line" d="M115 52 V86 M360 52 V86 M115 120 V146 H240 M365 120 V146 H260"/>
+ <rect class="s-trbox" x="230" y="134" width="60" height="26"/><text class="s-ink" x="240" y="152">=?</text>
+ <text class="s-mut" x="460" y="108">in parallel</text><text class="s-cu" x="300" y="152">valid if size/ways ≤ page</text></svg>`,
+mshr:()=>`<svg viewBox="0 0 590 170" role="img" aria-label="MSHRs track outstanding misses; a second miss to the same line merges into the existing MSHR">
+ <rect class="s-box" x="10" y="20" width="140" height="34"/><text class="s-ink" x="20" y="42">LD A (miss)</text>
+ <rect class="s-box" x="10" y="64" width="140" height="34"/><text class="s-ink" x="20" y="86">LD A+8 (miss)</text>
+ <rect class="s-box" x="10" y="108" width="140" height="34"/><text class="s-ink" x="20" y="130">LD B (miss)</text>
+ <rect class="s-cubox" x="230" y="30" width="190" height="56"/><text class="s-ink tb" x="242" y="50">MSHR 0: line A</text><text class="s-mut" x="242" y="70">waiters: LD A, LD A+8</text>
+ <rect class="s-cubox" x="230" y="100" width="190" height="40"/><text class="s-ink tb" x="242" y="124">MSHR 1: line B</text>
+ <path class="s-line" d="M150 37 H230 M150 81 H190 V60 H230 M150 125 H230"/><text class="s-tr" x="160" y="100">merge</text>
+ <rect class="s-trbox" x="470" y="60" width="100" height="40"/><text class="s-ink" x="486" y="84">memory</text>
+ <path class="s-trl" d="M420 58 H470 M420 120 H450 V90 H470"/>
+ <text class="s-mut" x="10" y="164">hits continue meanwhile · all MSHRs busy → new misses stall</text></svg>`,
+coh:()=>`<svg viewBox="0 0 590 180" role="img" aria-label="Two cores with private caches hold different values of A after core 0 writes, the coherence problem">
+ <rect class="s-box" x="20" y="14" width="150" height="34"/><text class="s-ink tb" x="34" y="36">core 0: A = 7</text>
+ <rect class="s-box" x="300" y="14" width="150" height="34"/><text class="s-ink tb" x="314" y="36">core 1: read A</text>
+ <rect class="s-cubox" x="20" y="66" width="150" height="34"/><text class="s-ink" x="34" y="88">L1: A = 7 (M)</text>
+ <rect class="s-wbox" x="300" y="66" width="150" height="34"/><text class="s-ink" x="314" y="88">L1: A = 3 (stale)</text>
+ <rect class="s-box" x="120" y="126" width="230" height="34"/><text class="s-ink" x="134" y="148">memory: A = 3</text>
+ <path class="s-line" d="M95 48 V66 M375 48 V66 M95 100 V126 M375 100 V126"/>
+ <text class="s-tr" x="470" y="40">coherence:</text><text class="s-tr" x="470" y="58">invalidate core 1</text><text class="s-tr" x="470" y="76">before A=7 lands</text></svg>`,
+msi:()=>`<svg viewBox="0 0 590 210" role="img" aria-label="MSI state diagram: I to S on read, I or S to M on write, M to S on remote read, any to I on remote write">
+ <circle class="s-box" cx="90" cy="150" r="34"/><text class="s-ink tb" x="86" y="155">I</text>
+ <circle class="s-cubox" cx="290" cy="150" r="34"/><text class="s-ink tb" x="284" y="155">S</text>
+ <circle class="s-trbox" cx="490" cy="60" r="34"/><text class="s-ink tb" x="482" y="65">M</text>
+ <path class="s-line" d="M124 150 H256"/><text class="s-ink" x="140" y="142">PrRd / GetS</text>
+ <path class="s-line" d="M316 128 L460 78"/><text class="s-ink" x="330" y="96">PrWr / Upgrade</text>
+ <path class="s-line" d="M110 122 C 200 40, 380 30, 456 54"/><text class="s-ink" x="170" y="56">PrWr / GetM</text>
+ <path class="s-cul" d="M480 94 C 450 160, 360 176, 324 160"/><text class="s-cu" x="420" y="172">snoop GetS → S (data)</text>
+ <path class="s-cul" d="M256 164 C 200 196, 140 196, 112 176"/><text class="s-cu" x="120" y="205">snoop GetM/Inv → I</text></svg>`,
+dir:()=>`<svg viewBox="0 0 590 190" role="img" aria-label="Directory write miss: requester asks home, home invalidates sharers, sharers ack, requester gets data and becomes M">
+ <rect class="s-trbox" x="20" y="70" width="120" height="44"/><text class="s-ink tb" x="34" y="96">requester</text>
+ <rect class="s-cubox" x="235" y="10" width="140" height="56"/><text class="s-ink tb" x="248" y="32">home + dir</text><text class="s-mut" x="248" y="52">S: {B, C}</text>
+ <rect class="s-box" x="440" y="70" width="120" height="34"/><text class="s-ink" x="470" y="92">sharer B</text>
+ <rect class="s-box" x="440" y="130" width="120" height="34"/><text class="s-ink" x="470" y="152">sharer C</text>
+ <path class="s-line" d="M140 80 L235 40"/><text class="s-ink" x="150" y="50">1 GetM</text>
+ <path class="s-cul" d="M375 40 L440 84 M375 50 L440 140"/><text class="s-cu" x="390" y="56">2 Inv</text>
+ <path class="s-trl" d="M440 100 L140 100 M440 150 L140 108"/><text class="s-tr" x="250" y="128">3 Acks → requester</text>
+ <path class="s-line" d="M260 66 L140 92"/><text class="s-ink" x="150" y="76">data + ack count</text>
+ <text class="s-mut" x="20" y="184">requester becomes M after data and all acks arrive</text></svg>`
+};
+/* ---------- deck ---------- */
+const S=(window.SHEETS||[]).slice().sort((a,b)=>a.id<b.id?-1:1);
+const have=new Set(S.map(s=>s.L));
+const strip=document.getElementById("strip"),jump=document.getElementById("jump"),sheet=document.getElementById("sheet");
+let i=0, reveal=true;
+try{const v=localStorage.getItem("hpca-reveal");if(v!==null)reveal=v==="1"}catch(e){}
+LESSONS.forEach(([n,name])=>{const b=document.createElement("button");b.className="chip";b.type="button";b.dataset.l=n;
+ b.innerHTML="<b>"+String(n).padStart(2,"0")+"</b>"+name;b.disabled=!have.has(n);if(!have.has(n))b.title="Coming in a later batch";
+ b.addEventListener("click",()=>{const k=S.findIndex(s=>s.L===n);if(k>=0)go(k)});strip.appendChild(b)});
+S.forEach((s,k)=>{const o=document.createElement("option");o.value=k;o.textContent=s.id+" · "+s.t;jump.appendChild(o)});
+jump.addEventListener("change",()=>go(+jump.value));
+document.getElementById("prev").onclick=()=>go(i-1);
+document.getElementById("next").onclick=()=>go(i+1);
+const rv=document.getElementById("reveal");
+function setRv(){rv.setAttribute("aria-pressed",reveal?"true":"false");rv.textContent=reveal?"Hide answers":"Show answers";sheet.querySelectorAll("details").forEach(d=>d.open=reveal)}
+rv.onclick=()=>{reveal=!reveal;try{localStorage.setItem("hpca-reveal",reveal?"1":"0")}catch(e){}setRv()};
+document.addEventListener("keydown",e=>{if(e.target.tagName==="SELECT")return;if(e.key==="ArrowRight")go(i+1);if(e.key==="ArrowLeft")go(i-1)});
+const L=n=>(LESSONS.find(x=>x[0]===n)||[0,""])[1];
+const sec=(lbl,cls,html)=>html?`<section><h2 class="lbl ${cls}">${lbl}</h2>${html}</section>`:"";
+const ul=a=>a&&a.length?`<ul class="pts">${a.map(x=>`<li>${x}</li>`).join("")}</ul>`:"";
+const tb=t=>t?`<div class="tbl"><table><tr>${t[0].map(h=>`<th>${h}</th>`).join("")}</tr>${t.slice(1).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</table></div>`:"";
+function render(){
+ const s=S[i];if(!s){sheet.innerHTML='<div class="empty">No sheets loaded.</div>';return}
+ const sameL=S.filter(x=>x.L===s.L),pos=sameL.indexOf(s)+1;
+ sheet.innerHTML=`<div class="sh-top"><div class="meta"><span class="les">Lesson ${String(s.L).padStart(2,"0")} · ${L(s.L)}</span><span>${s.vids}</span><span>Sheet ${pos} / ${sameL.length}</span><span>${s.id}</span></div>
+ <h1>${s.t}</h1><p class="gist">${s.gist}</p></div>
+ <div class="cols"><div class="col">
+  ${s.fig&&F[s.fig]?`<figure class="fig" style="margin:0">${F[s.fig]()}</figure>`:""}
+  ${sec("Concepts","cu",ul(s.pts))}
+  ${s.tbl?sec("At a glance","",tb(s.tbl)):""}
+  ${s.fix?`<div class="fix"><h2 class="lbl wa">Check your notes</h2>${ul(s.fix)}</div>`:""}
+ </div><div class="col">
+  ${s.nums?sec("Numbers & formulas","cu",`<div class="nums">${s.nums.map(n=>`<span class="num">${n}</span>`).join("")}</div>`):""}
+  ${s.wk?sec("Worked","cu",`<div class="wk">${s.wk.map(w=>`<div><span>${w[0]}</span><span class="a">${w[1]}</span></div>`).join("")}</div>`):""}
+  ${sec("Verification lens","tr",`<div class="dv">${ul(s.dv)}</div>`)}
+  ${s.bugs?`<div class="bugs"><h2 class="lbl wa">Bugs that ship</h2>${ul(s.bugs)}</div>`:""}
+  ${s.qa?sec("Interview","",s.qa.map(q=>`<details><summary>${q[0]}</summary><div class="ans">${q[1]}</div></details>`).join("")):""}
+ </div></div>`;
+ document.getElementById("count").textContent=(i+1)+" / "+S.length;
+ jump.value=i;
+ strip.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",+c.dataset.l===s.L));
+ const on=strip.querySelector(".chip.on");if(on&&on.scrollIntoView)on.scrollIntoView({block:"nearest",inline:"nearest"});
+ document.getElementById("prev").disabled=i===0;document.getElementById("next").disabled=i===S.length-1;
+ setRv();
+}
+function go(k){if(k<0||k>=S.length)return;i=k;try{history.replaceState(null,"","#"+S[i].id.replace(/[^A-Za-z0-9_-]/g,""))}catch(e){}render();window.scrollTo({top:0})}
+const h=(location.hash||"").slice(1);const start=S.findIndex(s=>s.id===h);
+document.getElementById("built").textContent=S.length+" sheets · "+have.size+" of "+LESSONS.length+" lessons built";
+i=start>=0?start:0;render();
+})();
+</script>
+</body>
+</html>

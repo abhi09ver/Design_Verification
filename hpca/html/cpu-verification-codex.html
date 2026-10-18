@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CPU Verification Codex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a silicon datasheet. Left rail = module index, right = stacked module sheets.
+   Each sheet: concept diagram → numbers → spec/design/verify lenses → interview drill. */
+:root{
+  --bg:#f3f4f2; --panel:#ffffff; --ink:#18201f; --muted:#5b6765; --line:#d5dbd8;
+  --copper:#b05a22; --copper-soft:#f6e6da; --trace:#2f6f62; --trace-soft:#dcece7;
+  --warn:#a33a2a; --warn-soft:#f5e0dc; --grid:#e6eae8;
+  --display:"Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111615; --panel:#181f1e; --ink:#e4eae8; --muted:#97a3a0; --line:#2b3533;
+  --copper:#e08a4f; --copper-soft:#3a2618; --trace:#6cc2ad; --trace-soft:#183530;
+  --warn:#ef8a78; --warn-soft:#3b1f1a; --grid:#222b29; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111615; --panel:#181f1e; --ink:#e4eae8; --muted:#97a3a0; --line:#2b3533;
+  --copper:#e08a4f; --copper-soft:#3a2618; --trace:#6cc2ad; --trace-soft:#183530;
+  --warn:#ef8a78; --warn-soft:#3b1f1a; --grid:#222b29; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
+a{color:var(--trace)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+.mono,code{font-family:var(--mono);font-size:.86em}
+code{background:var(--grid);padding:1px 5px;border-radius:3px}
+
+/* header */
+.mast{display:grid;gap:18px;padding-bottom:26px;border-bottom:2px solid var(--ink);margin-bottom:28px}
+.part{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--copper)}
+.mast h1{font-size:clamp(34px,6vw,62px);font-weight:700;letter-spacing:-.01em}
+.mast h1 span{color:var(--copper)}
+.mast p{max-width:68ch;margin:0;color:var(--muted)}
+.loop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--mono);font-size:12.5px}
+.loop b{background:var(--panel);border:1px solid var(--line);padding:5px 10px;font-weight:600}
+.loop i{color:var(--copper);font-style:normal}
+
+/* layout */
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}
+nav.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;font-size:13.5px}
+nav.rail h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);font-weight:400;margin-bottom:10px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+nav.rail a{display:flex;gap:10px;padding:5px 8px;text-decoration:none;color:var(--ink);border-left:2px solid transparent}
+nav.rail a:hover,nav.rail a:focus-visible{border-left-color:var(--copper);background:var(--panel);outline:none}
+nav.rail a .n{font-family:var(--mono);color:var(--muted);width:2ch}
+nav.rail a.done .t::after{content:" ✓";color:var(--trace)}
+.prog{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.bar{height:4px;background:var(--line);margin-top:6px}.bar i{display:block;height:100%;background:var(--trace);width:0}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}nav.rail{position:static}
+  nav.rail ol{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+
+/* module sheet */
+.sheet{background:var(--panel);border:1px solid var(--line);margin-bottom:28px;scroll-margin-top:16px}
+.sh-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:baseline;justify-content:space-between;
+  padding:18px 22px 14px;border-bottom:1px solid var(--line)}
+.sh-head .id{font-family:var(--mono);font-size:12px;color:var(--copper);letter-spacing:.1em}
+.sh-head h2{font-size:clamp(22px,3vw,30px);font-weight:600}
+.sh-head .src{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.mark{font-family:var(--mono);font-size:12px;background:none;border:1px solid var(--line);color:var(--muted);padding:4px 10px;cursor:pointer}
+.mark[aria-pressed="true"]{border-color:var(--trace);color:var(--trace);background:var(--trace-soft)}
+.mark:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+.sh-body{padding:20px 22px 22px;display:grid;gap:22px}
+.lead{font-size:16.5px;max-width:70ch;margin:0}
+.fig{overflow-x:auto;border:1px dashed var(--line);padding:14px;background:var(--bg)}
+.fig svg{display:block;min-width:560px;width:100%;height:auto}
+.fig figcaption{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:8px}
+figure{margin:0}
+
+/* svg tokens */
+.s-ink{fill:var(--ink)} .s-mut{fill:var(--muted)} .s-cu{fill:var(--copper)} .s-tr{fill:var(--trace)}
+.s-box{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.s-cubox{fill:var(--copper-soft);stroke:var(--copper);stroke-width:1.3}
+.s-trbox{fill:var(--trace-soft);stroke:var(--trace);stroke-width:1.3}
+.s-wbox{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.3}
+.s-line{stroke:var(--ink);stroke-width:1.3;fill:none}
+.s-cul{stroke:var(--copper);stroke-width:1.6;fill:none}
+.s-trl{stroke:var(--trace);stroke-width:1.6;fill:none}
+.s-grid{stroke:var(--grid);stroke-width:1}
+svg text{font-family:var(--mono);font-size:12px}
+svg .t-b{font-weight:600}
+
+/* lenses */
+.lenses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line)}
+.lens{padding:14px 16px;min-width:0}
+.lens+.lens{border-left:1px solid var(--line)}
+.lens h3{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.lens h3::before{content:"";width:9px;height:9px}
+.lens.spec h3{color:var(--muted)}.lens.spec h3::before{background:var(--muted)}
+.lens.design h3{color:var(--copper)}.lens.design h3::before{background:var(--copper)}
+.lens.verify h3{color:var(--trace)}.lens.verify h3::before{background:var(--trace)}
+.lens ul{margin:0;padding-left:18px;font-size:14.2px;display:grid;gap:5px}
+@media (max-width:760px){.lenses{grid-template-columns:minmax(0,1fr)}.lens+.lens{border-left:0;border-top:1px solid var(--line)}}
+
+/* numbers strip */
+.nums{display:flex;flex-wrap:wrap;gap:10px}
+.num{font-family:var(--mono);font-size:13px;border:1px solid var(--line);padding:6px 10px;background:var(--bg)}
+.num b{color:var(--copper);font-weight:600}
+
+/* bugs */
+.bugs{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 16px}
+.bugs h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
+.bugs ul{margin:0;padding-left:18px;font-size:14.2px;display:grid;gap:4px}
+
+/* drill */
+.drill h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+details{border-top:1px solid var(--line)}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;padding:9px 4px;font-weight:500;list-style:none;display:flex;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"Q";font-family:var(--mono);color:var(--copper);font-weight:600}
+details[open] summary::before{content:"A"}
+summary:focus-visible{outline:2px solid var(--copper)}
+details .ans{padding:0 4px 12px 26px;font-size:14.5px;color:var(--ink);max-width:76ch}
+details .ans p{margin:0 0 6px}
+
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+.tbl{overflow-x:auto}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td{font-variant-numeric:tabular-nums}
+
+/* your-notes blocks */
+.notes{border:1px solid var(--copper);background:var(--copper-soft);padding:14px 16px}
+.notes h3,.fix h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.notes h3{color:var(--copper)}
+.wk{display:grid;gap:7px;font-size:14.2px}
+.wk div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;border-bottom:1px dotted var(--line);padding-bottom:6px}
+.wk div:last-child{border-bottom:0;padding-bottom:0}
+.wk .a{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);text-align:right}
+@media (max-width:560px){.wk div{grid-template-columns:minmax(0,1fr)}.wk .a{text-align:left}}
+.fix{border:1px dashed var(--warn);padding:12px 16px}
+.fix h3{color:var(--warn)}
+.fix ul{margin:0;padding-left:18px;font-size:14.2px;display:grid;gap:4px}
+.closing{border:2px solid var(--ink);padding:22px;background:var(--panel)}
+.closing h2{font-size:26px;margin-bottom:12px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.cols h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--copper);margin-bottom:6px}
+.cols ul{margin:0;padding-left:18px;font-size:14.2px;display:grid;gap:4px}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .3s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="mast">
+  <div class="part">Interview codex · Senior CPU Design Verification</div>
+  <h1>CPU Verification <span>Codex</span></h1>
+  <p>Fourteen module sheets that follow the Georgia Tech / Udacity <em>High Performance Computer Architecture</em> playlists and your own lecture notes, from the iron law to memory consistency. Each sheet reads the same way: the mechanism, the numbers to quote, worked problems from your notes (copper boxes) with any slips flagged (dashed red), then the three lenses a senior DV engineer holds at once, the bugs that ship, and the questions that get asked.</p>
+  <div class="loop" aria-label="Verification loop">
+    <b>Spec / ISA</b><i>→</i><b>Microarch intent</b><i>→</i><b>Ref model + checkers</b><i>→</i><b>Stimulus</b><i>→</i><b>Coverage</b><i>→</i><b>Sign-off</b><i>↺</i>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="rail" aria-label="Modules">
+  <h3>Modules</h3>
+  <ol id="toc"></ol>
+  <div class="prog"><span id="progtxt">0 / 12 reviewed</span><div class="bar"><i id="progbar"></i></div></div>
+</nav>
+
+<main id="sheets">
+
+<!-- 00 MINDSET -->
+<section class="sheet" id="m00" data-t="Verification mindset" data-src="All parts">
+<div class="sh-body">
+<p class="lead">Interviewers at CPU shops are not checking whether you know what a ROB is. They check whether you can turn an architecture into <strong>invariants</strong>, find where those invariants break under <strong>concurrency and speculation</strong>, and prove you covered it. Answer every design question by walking these four layers.</p>
+<figure class="fig"><svg viewBox="0 0 760 230" role="img" aria-label="CPU verification stack: ISA reference model co-sim at retirement, unit-level scoreboards, assertions, coverage">
+  <rect class="s-trbox" x="10" y="12" width="740" height="44"/><text class="s-ink t-b" x="24" y="32">ARCH LEVEL · ISS / golden model lock-step at retire</text><text class="s-mut" x="24" y="48">compare PC, GPR/FPR, CSR, mem writes, exceptions per retired instr (Spike/Sail/in-house ISS)</text>
+  <rect class="s-cubox" x="10" y="66" width="740" height="44"/><text class="s-ink t-b" x="24" y="86">UNIT LEVEL · transaction scoreboards</text><text class="s-mut" x="24" y="102">fetch/BPU, rename, LSU, L1/L2, MMU, coherence agents — each with a TLM model + predictor</text>
+  <rect class="s-box" x="10" y="120" width="740" height="44"/><text class="s-ink t-b" x="24" y="140">STRUCTURAL · SVA + formal</text><text class="s-mut" x="24" y="156">free-list no-dup, ROB ptr wrap, one-hot grants, no credit leak, FIFO never overflow, deadlock liveness</text>
+  <rect class="s-wbox" x="10" y="174" width="740" height="44"/><text class="s-ink t-b" x="24" y="194">CLOSURE · functional + cross coverage, bug-rate trend</text><text class="s-mut" x="24" y="210">crosses: (flush × LSQ occupancy), (snoop × MSHR state), (TLB miss × branch mispredict)</text>
+</svg><figcaption>Fig 0 · Four layers. Arch-level co-sim catches “wrong answer”; the lower layers catch “right answer, wrong reason” before it hides.</figcaption></figure>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>ISA manual = architectural contract (what is visible)</li><li>Microarch spec = intent (how, when, how many cycles)</li><li>Separate “legal” from “expected” behaviour; list the implementation-defined choices</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Find every place state is <em>speculative</em> and every place it becomes <em>committed</em></li><li>Find every shared resource with arbitration or credits</li><li>Those two lists are your bug map</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Constrained-random + directed + formal, chosen per block</li><li>Stress knobs: tiny queues, aggressive flush, throttled memory, random back-pressure</li><li>Track holes, not just percent; show why each unhit bin is unreachable or waived</li></ul></div>
+</div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>How would you verify a new out-of-order core from scratch?</summary><div class="ans"><p>Start with lock-step co-sim against an ISS at retirement; it is the highest-value checker. Add unit scoreboards where co-sim gives poor debug locality (LSU, MMU, caches). Write SVA for structural invariants and use formal on small control blocks (free list, arbiters, ROB pointers). Build a random instruction generator with hazard-density knobs, exception/interrupt injection, and self-modifying code. Close with coverage on micro-architectural events, not just instructions.</p></div></details>
+<details><summary>Co-sim says “match” on every instruction. Can a bug still exist?</summary><div class="ans"><p>Yes: performance bugs (missed forwarding, stuck predictor), bugs masked by later overwrite, non-determinism in multi-core ordering where the ISS picks one legal order, timing of interrupts, and debug/PMU state the ISS does not model. Also a hang never retires, so you need watchdogs and forward-progress assertions.</p></div></details>
+<details><summary>What makes a scoreboard hard for a speculative block?</summary><div class="ans"><p>The DUT does work that is later thrown away. The scoreboard must either track speculation and flush exactly what the DUT flushes, or only compare at a commit point. Senior answer: compare at commit for correctness, and add a separate checker on the flush mechanism itself (correct age-based kill, no survivors younger than the mispredict).</p></div></details>
+</div>
+</div></section>
+
+<!-- 01 PERFORMANCE & ISA -->
+<section class="sheet" id="m01" data-t="Performance & ISA" data-src="Part 1">
+<div class="sh-body">
+<p class="lead">Every micro-architectural feature exists to cut one term of the iron law. If you can say which term a feature attacks and what it costs, you can reason about any design trade-off on a whiteboard.</p>
+<figure class="fig"><svg viewBox="0 0 760 150" role="img" aria-label="Iron law: time equals instructions times CPI times clock period">
+  <text class="s-ink t-b" x="20" y="40" style="font-size:20px">CPU time =</text>
+  <rect class="s-box" x="150" y="14" width="160" height="40"/><text class="s-ink t-b" x="168" y="39">Instr / Program</text>
+  <text class="s-ink" x="318" y="40" style="font-size:20px">×</text>
+  <rect class="s-cubox" x="340" y="14" width="150" height="40"/><text class="s-ink t-b" x="362" y="39">Cycles / Instr</text>
+  <text class="s-ink" x="498" y="40" style="font-size:20px">×</text>
+  <rect class="s-trbox" x="520" y="14" width="150" height="40"/><text class="s-ink t-b" x="540" y="39">Time / Cycle</text>
+  <text class="s-mut" x="150" y="80">ISA, compiler</text><text class="s-mut" x="150" y="96">(CISC ↓, VLIW ↑)</text>
+  <text class="s-mut" x="340" y="80">pipelining, OoO, BP,</text><text class="s-mut" x="340" y="96">caches, superscalar</text>
+  <text class="s-mut" x="520" y="80">deeper pipe, circuit,</text><text class="s-mut" x="520" y="96">process node</text>
+  <text class="s-cu" x="20" y="132">Trade-off: deeper pipeline ↓ cycle time but ↑ CPI via mispredict penalty and hazard stalls.</text>
+</svg><figcaption>Fig 1 · Iron law. Benchmark with the geometric mean of speedups, never the mean of times across a suite.</figcaption></figure>
+<div class="nums">
+ <span class="num">Amdahl: <b>S = 1 / ((1−f) + f/s)</b></span>
+ <span class="num">CPI = Σ CPI<sub>i</sub> · freq<sub>i</sub></span>
+ <span class="num">Little: <b>N = λ · L</b></span>
+ <span class="num">Power ∝ <b>C·V²·f</b></span>
+ <span class="num">IPC = 1/CPI</span>
+</div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>ISA classes: load/store (RISC-V, Arm) vs register-memory (x86)</li><li>Fixed vs variable length decode; alignment rules</li><li>Privilege levels, CSRs, exception & interrupt priority</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>x86 cracks to µops; Arm/RISC-V may fuse (cmp+br, lui+addi)</li><li>Little's law sizes queues: to sustain 2 misses/ns at 80 ns latency you need ≥160 outstanding</li><li>Dark silicon → specialisation and clock gating</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Instruction-class coverage × operand corner values (0, −1, MIN, MAX, NaN, denorm)</li><li>Performance verification: IPC regressions on micro-kernels vs perf model</li><li>µop-fusion legality: a fused pair must trap/interrupt as if separate</li></ul></div>
+</div>
+<div class="notes"><h3>From your notes · worked problems (Ch 2)</h3><div class="wk">
+ <div><span>50 B instr: 10 B branch (CPI 4), 15 B load (2), 5 B store (3), 20 B int (1), 4 GHz. CPU time?</span><span class="a">105 B cyc / 4 GHz = 26.25 s</span></div>
+ <div><span>Mix 40% int (1), 20% br (4), 30% ld (2), 10% st (3). Branch CPI 4 → 2. Speedup?</span><span class="a">2.1 / 1.7 = 1.24×</span></div>
+ <div><span>Options: branch CPI 4→3, clock 2→2.3 GHz, store CPI 3→2. Pick one.</span><span class="a">clock: 1.15× (hits 100% of time)</span></div>
+ <div><span>20× on 10% of time vs 1.6× on 80% of time</span><span class="a">1.105× vs 1.43×</span></div>
+ <div><span>Lhadma’s law: 2× on 90%, but the other 10% gets 10× slower</span><span class="a">1/(0.45+1.0) = 0.69× (slower!)</span></div>
+ <div><span>Diminishing returns: halve the same half twice</span><span class="a">1.33× then only 1.20×</span></div>
+ <div><span>Summarise: times x = 9, 10, 5 · y = 18, 7, 11 (s)</span><span class="a">GM ratio 11.15 / 7.66 = 1.456×</span></div>
+ <div><span>Benchmark types, most to least representative</span><span class="a">real apps › kernels › synthetic › peak</span></div>
+</div></div>
+<div class="fix"><h3>Check these in your notes</h3><ul>
+ <li>Speedup is <code>time_old / time_new</code>. The Vid 51 line reads new/old; the 1.24 answer is right only the other way round.</li>
+ <li>Vid 54 option 1 should read “<em>reduce</em> branch CPI from 4 to 3”.</li>
+ <li>Averaging the speedups (1.63) is wrong. Use the ratio of mean times (1.5) or the geometric mean of speedups (1.456), which is the only one consistent whatever the reference machine.</li>
+</ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>A feature speeds up 30% of runtime by 4×. Overall speedup?</summary><div class="ans"><p>1 / (0.7 + 0.3/4) = 1 / 0.775 ≈ 1.29×. Point out that the remaining 70% now dominates.</p></div></details>
+<details><summary>How would you verify instruction fusion?</summary><div class="ans"><p>Cover every fusible pair, pairs split across fetch-block or cache-line boundaries, a fault or interrupt between them, the second instruction being a branch target, and single-step debug. Co-sim must see two retirements or a defined combined retirement that the ISS mirrors.</p></div></details>
+</div>
+</div></section>
+
+<!-- 01b POWER COST -->
+<section class="sheet" id="m01b" data-t="Power, cost & trends" data-src="Ch 1 notes">
+<div class="sh-body">
+<p class="lead">Moore’s law doubles transistors every 18–24 months, but memory latency improves only about 1.1× per two years (the memory wall), and power caps frequency. These three trends explain why chips went multicore and why caches dominate the die.</p>
+<figure class="fig"><svg viewBox="0 0 760 220" role="img" aria-label="Dynamic power at each voltage and frequency step, scaled from 30 W at 1 V and 2 GHz; 0.9 V 1.8 GHz is 21.9 W and 1.5 V 3 GHz is 101.3 W">
+  <text class="s-mut" x="10" y="16">P = ½·C·V²·f·α, scaled from 30 W @ 1.0 V, 2.0 GHz</text>
+  <g id="pwr"></g>
+  <text class="s-cu" x="10" y="212">+50% frequency costs ~4.6× power over the most efficient point → many slower cores beat one fast core</text>
+</svg><figcaption>Fig 1b · Your Vid 17–18 quiz, drawn to scale. Voltage must rise with frequency, so power grows roughly with f³.</figcaption></figure>
+<div class="nums">
+ <span class="num">Dynamic: <b>½CV²fα</b></span>
+ <span class="num">Static = leakage; rises as V<sub>th</sub> drops</span>
+ <span class="num">Best V minimises static + dynamic</span>
+ <span class="num">Yield = good dies / total dies</span>
+</div>
+<div class="notes"><h3>From your notes · worked problems (Ch 1)</h3><div class="wk">
+ <div><span>Shrink gives 2× cores in same area (same C). V × 0.9, f × 1.1. New power?</span><span class="a">0.81 × 1.1 = 0.89× for 2.2× compute</span></div>
+ <div><span>$5000 wafer, 10 defects. 400 small dies</span><span class="a">$5000 / 390 = $12.8</span></div>
+ <div><span>96 medium dies (4× area)</span><span class="a">$5000 / 86 = $58.1</span></div>
+ <div><span>20 large dies (16× area)</span><span class="a">$5000 / 10 = $500</span></div>
+ <div><span>Laptop CPU 100 mm² vs watch CPU 1 mm²: cost ratio?</span><span class="a">&gt; 100× (yield falls with area)</span></div>
+</div></div>
+<div class="fix"><h3>Check these in your notes</h3><ul><li>Vid 21 large die: 5000 / (20 − 10) = <b>$500</b>, not $454.5 (that is 5000 / 11).</li></ul></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>DVFS operating points (P-states), sleep states (C-states), thermal limits</li><li>Power-intent spec (UPF): domains, isolation, retention, level shifters</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Clock gating cuts α; power gating cuts leakage</li><li>Big dies are expensive, hence chiplets and binning</li><li>Caches as “stairs” over the memory wall</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Power-aware sim (UPF): X on gated domains, retention restore, isolation clamps</li><li>Cover: interrupt during power-down entry, snoop to a core in deep sleep</li><li>Clock-gating checks: gated logic must not lose a valid in-flight transaction</li></ul></div>
+</div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Snoop arrives while a core is entering a power-gated state. What must the design guarantee?</summary><div class="ans"><p>Either the core flushes its dirty lines and the snoop filter drops it before power-off, or the power controller blocks entry until outstanding snoops drain. Verification: race directed tests on the handshake, assertions that no snoop is sent to a powered-off agent, and coverage on each step of the entry sequence.</p></div></details>
+</div>
+</div></section>
+
+<!-- 02 PIPELINING -->
+<section class="sheet" id="m02" data-t="Pipelining & hazards" data-src="Part 1">
+<div class="sh-body">
+<p class="lead">A pipeline overlaps instructions so throughput approaches one per cycle. Hazards are any reason the next instruction cannot proceed: data, control, or structural. The design question is always “stall, forward, or speculate?”</p>
+<figure class="fig"><svg viewBox="0 0 760 210" role="img" aria-label="Five-stage pipeline timing with a load-use hazard stall and a forwarding path">
+  <g class="s-mut"><text x="10" y="22">cycle</text></g>
+  <g id="cyc"></g>
+  <text class="s-ink" x="10" y="56">ld x1,0(x2)</text>
+  <text class="s-ink" x="10" y="96">add x3,x1,x4</text>
+  <text class="s-ink" x="10" y="136">sub x5,x3,x6</text>
+  <g id="pipe"></g>
+  <path class="s-cul" d="M 280 66 L 310 80" marker-end="url(#ah)"/>
+  <path class="s-trl" d="M 324 106 L 354 120" marker-end="url(#ah2)"/>
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="s-cu"/></marker>
+  <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="s-tr"/></marker></defs>
+  <text class="s-cu" x="120" y="178">copper: MEM→EX forward after 1 bubble (load-use)</text>
+  <text class="s-tr" x="120" y="196">green: EX→EX forward, no stall</text>
+</svg><figcaption>Fig 2 · IF ID EX MEM WB. A load's data exists only after MEM, so the dependent ALU op waits one cycle even with forwarding.</figcaption></figure>
+<div class="tbl"><table>
+<tr><th>Hazard</th><th>Cause</th><th>Fix</th><th>In OoO cores</th></tr>
+<tr><td>RAW (true)</td><td>read before producer writes</td><td>forward / stall</td><td>wakeup–select on tags</td></tr>
+<tr><td>WAR (anti)</td><td>write before older read</td><td>in-order read stage</td><td>removed by renaming</td></tr>
+<tr><td>WAW (output)</td><td>writes complete out of order</td><td>in-order WB</td><td>removed by renaming</td></tr>
+<tr><td>Control</td><td>next PC unknown</td><td>predict + flush</td><td>BPU + ROB recovery</td></tr>
+<tr><td>Structural</td><td>shared port / unit</td><td>replicate / arbitrate</td><td>issue-port conflicts</td></tr>
+</table></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Results must equal sequential execution (architectural equivalence)</li><li>Exceptions must be precise: older done, younger no effect</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Forwarding mux priority: youngest older producer wins</li><li>Stall = hold pipe regs + inject bubble; flush = valid=0</li><li>Ideal speedup ≈ stage count, limited by latch overhead and imbalance</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Cover distance-1/2/3 dependencies for every producer/consumer class</li><li>Cross stall × flush in the same cycle</li><li>SVA: valid bubble carries no side effects; x0 never forwarded as non-zero</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Forwarding picks the older of two in-flight writers to the same register</li><li>Stall and flush asserted together: the stalled younger op survives the flush</li><li>Forward from a bubble whose stale destination field still matches</li></ul></div>
+<div class="notes"><h3>From your notes · worked problems (Ch 3)</h3><div class="wk">
+ <div><span>10 instructions, 5-stage pipe: cycles without / with pipelining</span><span class="a">50 / 5 + 9 = 14</span></div>
+ <div><span>20% branches, just over half taken, 2-stage flush on taken</span><span class="a">CPI ≈ 1 + 0.1 × 2 = 1.2</span></div>
+ <div><span>25% taken br/jmp, 10-stage pipe, target known in stage 6</span><span class="a">CPI = 1 + 0.25 × 5 = 2.25</span></div>
+ <div><span>Write-first-half / read-second-half register file: when is RAW a hazard?</span><span class="a">only if distance &lt; 3</span></div>
+ <div><span>Load-use with forwarding</span><span class="a">stall 1, then forward (not 2 stalls)</span></div>
+ <div><span>Control hazard handling vs data hazard handling</span><span class="a">flush · vs · stall or forward</span></div>
+ <div><span>Best depth for performance alone vs with power</span><span class="a">~30–40 stages vs ~10–15</span></div>
+</div></div>
+<div class="fix"><h3>Check these in your notes</h3><ul>
+ <li>Vid 66: pipeline CPI is ≥ 1 and usually <em>greater</em> than 1 because of stalls and flushes (the note says “less than”).</li>
+ <li>Dependence is a property of the program; a hazard is a property of the program <em>and</em> the pipeline. RAR is not a dependence.</li>
+</ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Write the SVA that the forwarding mux selects the youngest producer.</summary><div class="ans"><p>Express it as a data check: when ID reads rs1 and EX and MEM both have valid writes to rs1, the operand delivered equals the EX result. <code>assert property (@(posedge clk) ex_v &amp;&amp; mem_v &amp;&amp; ex_rd==rs1 &amp;&amp; mem_rd==rs1 &amp;&amp; rs1!=0 |-&gt; op1==ex_result);</code></p></div></details>
+<details><summary>Why do deep pipelines hurt?</summary><div class="ans"><p>Branch penalty scales with the number of stages before resolution; more forwarding paths; latch overhead stops cycle-time gains; more power. Best depth balances CPI growth against frequency.</p></div></details>
+</div>
+</div></section>
+
+<!-- 03 BRANCH PREDICTION -->
+<section class="sheet" id="m03" data-t="Branch prediction" data-src="Part 1">
+<div class="sh-body">
+<p class="lead">At 20% branches and a 15-cycle penalty, a 95% accurate predictor still costs 0.15 CPI. A modern front end predicts <em>whether</em>, <em>where</em>, and <em>which return</em> before the instruction is decoded.</p>
+<figure class="fig"><svg viewBox="0 0 760 200" role="img" aria-label="Front-end prediction structures: BTB, direction predictor with global history, return address stack, feeding next PC">
+  <rect class="s-box" x="20" y="80" width="90" height="40"/><text class="s-ink t-b" x="44" y="105">PC</text>
+  <rect class="s-cubox" x="170" y="20" width="170" height="44"/><text class="s-ink t-b" x="184" y="40">BTB</text><text class="s-mut" x="184" y="56">tag → target, type</text>
+  <rect class="s-cubox" x="170" y="80" width="170" height="44"/><text class="s-ink t-b" x="184" y="100">Direction (TAGE)</text><text class="s-mut" x="184" y="116">PC ⊕ GHR → T/NT</text>
+  <rect class="s-cubox" x="170" y="140" width="170" height="44"/><text class="s-ink t-b" x="184" y="160">RAS</text><text class="s-mut" x="184" y="176">call push / ret pop</text>
+  <rect class="s-trbox" x="420" y="80" width="130" height="44"/><text class="s-ink t-b" x="436" y="106">next-PC mux</text>
+  <rect class="s-box" x="610" y="80" width="130" height="44"/><text class="s-ink t-b" x="626" y="100">fetch</text><text class="s-mut" x="626" y="116">+ update GHR</text>
+  <path class="s-line" d="M110 100 H140 V42 H170 M140 100 H170 M140 100 V162 H170"/>
+  <path class="s-line" d="M340 42 H380 V100 H420 M340 102 H420 M340 162 H380 V104"/>
+  <path class="s-line" d="M550 102 H610"/>
+  <path class="s-trl" d="M675 124 V192 H65 V120" stroke-dasharray="4 3"/>
+  <text class="s-tr" x="300" y="196">resolve in EX → mispredict: flush younger, restore GHR + RAS, redirect</text>
+</svg><figcaption>Fig 3 · Speculative history is updated at fetch and repaired on mispredict; tables train at retire (or at resolve, with care).</figcaption></figure>
+<div class="nums">
+ <span class="num">2-bit counter: <b>SN↔WN↔WT↔ST</b></span>
+ <span class="num">gshare idx = <b>PC ⊕ GHR</b></span>
+ <span class="num">penalty CPI = br% × miss% × flush</span>
+ <span class="num">TAGE: geometric history lengths</span>
+</div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Prediction is invisible architecturally; only the retired path matters</li><li>Security spec: no cross-domain training leakage (Spectre v2, BHI)</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Hysteresis stops loop exits flipping strong states</li><li>Predication / cmov removes hard-to-predict short branches</li><li>Checkpoints of RAT + GHR per branch speed recovery</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Functional: wrong prediction must never change results → co-sim</li><li>Inject random mispredicts (“predictor chaos mode”) to stress recovery</li><li>Perf: accuracy per pattern (loop, alternating, correlated) vs model</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>RAS corrupted by a speculative call on a wrong path and not restored</li><li>GHR restore uses the history of the wrong branch in a multi-branch fetch block</li><li>BTB alias jumps into the middle of an instruction (variable-length ISA)</li><li>Nested mispredict: older branch resolves after younger already redirected</li></ul></div>
+<div class="tbl"><table>
+<tr><th>Predictor (your notes’ order)</th><th>Predicts well</th><th>Fails on</th><th>Cost</th></tr>
+<tr><td>Predict not-taken (PC + 4)</td><td>~88% of branches in typical code</td><td>every taken branch</td><td>none</td></tr>
+<tr><td>1-bit BHT + BTB</td><td>long loops</td><td>2 mispredicts per anomaly; short inner loops</td><td>1 bit/entry + small BTB</td></tr>
+<tr><td>2-bit counter (2BC)</td><td>one anomaly costs 1, a change costs 2</td><td>alternating T/NT</td><td>2 bits; 3 bits rarely helps</td></tr>
+<tr><td>History + 2BCs per entry</td><td>repeating patterns of length ≤ N+1</td><td>cost 2<sup>N</sup> 2BCs/entry, mostly unused</td><td>expensive</td></tr>
+<tr><td>PShare (local history ⊕ PC)</td><td>self-similar branches, short loops</td><td>branches correlated with others</td><td>shared PHT</td></tr>
+<tr><td>GShare (global history ⊕ PC)</td><td>correlated branches</td><td>aliasing in shared 2BCs</td><td>one GHR</td></tr>
+<tr><td>Tournament / hierarchical (tagged)</td><td>picks the right one per branch</td><td>warm-up</td><td>tags + chooser</td></tr>
+<tr><td>RAS</td><td>function returns</td><td>overflow (wrap around beats “don’t push”)</td><td>small stack</td></tr>
+</table></div>
+<div class="notes"><h3>From your notes · worked problems</h3><div class="wk">
+ <div><span>1024-entry BTB indexed in one cycle: which PC bits?</span><span class="a">PC[11:2] (drop byte offset)</span></div>
+ <div><span>BHT says taken? Then (and only then) read BTB for target</span><span class="a">BHT big, BTB small</span></div>
+ <div><span>Same predictor gain: branch resolves in stage 3 vs stage 10</span><span class="a">15% vs 61% CPI gain</span></div>
+ <div><span>Any counter predictor has a 100% mispredict sequence; for 2BC from SNT</span><span class="a">T,T,NT,T,NT,T…</span></div>
+ <div><span>Loop of 8 iterations (NNNNNNNNT): history bits needed</span><span class="a">8 bits, uses only 9 of 256 2BCs</span></div>
+ <div><span>RAS full: don’t push or wrap around?</span><span class="a">wrap (keeps small leaf calls correct)</span></div>
+</div></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Two branches resolve mispredicted in the same cycle. What must happen?</summary><div class="ans"><p>Only the older one's recovery counts: flush everything younger than it, including the younger branch. Coverage: same-cycle, back-to-back, and younger-resolves-first cases. Assertion: after recovery, no ROB entry younger than the redirecting branch remains valid.</p></div></details>
+<details><summary>The RAS wraps on overflow. What do you cover?</summary><div class="ans"><p>Call depth exactly at, one above, and far above capacity; return storms after deep recursion; a call or return on a wrong path followed by recovery (pointer and the overwritten entry must both be restored, or the design must document that only the pointer is); mismatched call/return pairs such as longjmp. Correctness never depends on the RAS, so co-sim stays clean; the check is on the RAS pointer after recovery plus a perf counter for return mispredicts.</p></div></details>
+<details><summary>How do you verify the predictor without a reference model of it?</summary><div class="ans"><p>Correctness does not need one: any prediction is legal, so check only that recovery is exact. Checking quality needs a C++ perf model fed the same trace; compare MPKI per benchmark and flag drift beyond a tolerance.</p></div></details>
+</div>
+</div></section>
+
+<!-- 04 OOO -->
+<section class="sheet" id="m04" data-t="Out-of-order core" data-src="Part 2">
+<div class="sh-body">
+<p class="lead">Execute in data-flow order, commit in program order. Renaming removes false dependencies, the scheduler issues ready µops, and the reorder buffer makes it all look sequential again. This is the most-asked topic for CPU DV roles.</p>
+<figure class="fig"><svg viewBox="0 0 760 250" role="img" aria-label="Out-of-order pipeline: fetch, decode, rename with RAT and free list, dispatch to ROB and issue queues, execute, writeback broadcast, commit">
+  <rect class="s-box" x="10" y="90" width="70" height="44"/><text class="s-ink" x="22" y="116">Fetch</text>
+  <rect class="s-box" x="96" y="90" width="76" height="44"/><text class="s-ink" x="106" y="116">Decode</text>
+  <rect class="s-cubox" x="188" y="70" width="110" height="84"/><text class="s-ink t-b" x="200" y="92">Rename</text><text class="s-mut" x="200" y="112">RAT: arch→phys</text><text class="s-mut" x="200" y="130">free list</text><text class="s-mut" x="200" y="146">checkpoints</text>
+  <rect class="s-cubox" x="330" y="20" width="150" height="56"/><text class="s-ink t-b" x="342" y="42">ROB (in order)</text><text class="s-mut" x="342" y="62">head=oldest tail=new</text>
+  <rect class="s-cubox" x="330" y="104" width="150" height="56"/><text class="s-ink t-b" x="342" y="126">Issue queues</text><text class="s-mut" x="342" y="146">wakeup + select</text>
+  <rect class="s-cubox" x="330" y="182" width="150" height="56"/><text class="s-ink t-b" x="342" y="204">LSQ</text><text class="s-mut" x="342" y="224">see LSQ sheet</text>
+  <rect class="s-box" x="512" y="104" width="110" height="56"/><text class="s-ink t-b" x="524" y="126">Execute</text><text class="s-mut" x="524" y="146">ALU/FP/AGU</text>
+  <rect class="s-trbox" x="650" y="20" width="100" height="56"/><text class="s-ink t-b" x="662" y="42">Commit</text><text class="s-mut" x="662" y="62">free old preg</text>
+  <path class="s-line" d="M80 112 H96 M172 112 H188 M298 100 H314 V48 H330 M314 112 V132 H330 M314 132 V210 H330 M480 132 H512"/>
+  <path class="s-trl" d="M567 104 V90 H405 V76" /><text class="s-tr" x="500" y="86">CDB broadcast: tag+value</text>
+  <path class="s-trl" d="M622 132 H636 V170 H405 V160"/>
+  <path class="s-line" d="M480 48 H650"/>
+</svg><figcaption>Fig 4 · Physical-register-file style (most modern cores). Tomasulo’s original keeps values in reservation stations; same principle.</figcaption></figure>
+<div class="nums">
+ <span class="num">Phys regs ≈ <b>arch regs + in-flight writers</b></span>
+ <span class="num">ROB ≈ 200–600 entries in big cores</span>
+ <span class="num">Issue width 4–10, retire width 4–8</span>
+</div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Precise exceptions: on trap at ROB head, all older retired, none younger visible</li><li>Interrupts taken at an instruction boundary at commit</li><li>Memory and CSR side effects happen only at or after commit</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Rename: new preg from free list; old mapping saved in ROB to free at commit</li><li>Recovery: walk ROB back, or restore RAT checkpoint</li><li>Wakeup–select is the critical timing loop; speculative wakeup for loads → replay</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Co-sim at commit + ROB-index-tagged scoreboard for debug</li><li>Invariants: phys reg is either free, mapped, or pending-free, never two at once; no leak after any flush</li><li>Stress: ROB-full, free-list-empty, flush at ROB-full, exception on youngest dispatched</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Free-list leak: preg allocated by a flushed µop never returned → hang after hours</li><li>Double free after flush + commit in the same cycle → two archs share a preg</li><li>Wakeup on a cancelled load replay issues a dependent with stale data</li><li>ROB pointer wrap-around with wrap bit compared wrongly, age order inverted</li></ul></div>
+<div class="notes"><h3>From your notes · ILP and Tomasulo (Part 2)</h3><div class="wk">
+ <div><span>ILP = IPC on an ideal machine: perfect branch prediction, unlimited units, only RAW obeyed</span><span class="a">property of the program</span></div>
+ <div><span>IPC = what a program achieves on a given machine (adds structural limits)</span><span class="a">IPC ≤ ILP</span></div>
+ <div><span>Renaming quiz: 3 × (MUL R2 ← …; ADD … ← R2). After renaming</span><span class="a">all MULs cycle 1, all ADDs cycle 2</span></div>
+ <div><span>Tomasulo stages: issue (in order) → dispatch → broadcast on CDB</span><span class="a">RS# is the rename tag</span></div>
+ <div><span>Several ready in one RS: which dispatches?</span><span class="a">oldest first (any is correct)</span></div>
+ <div><span>Two results, one CDB: who wins?</span><span class="a">slower unit (MUL/DIV), a proxy for age</span></div>
+ <div><span>Issue and dispatch in the same cycle? Capture and dispatch?</span><span class="a">no / no by default (extra HW to allow)</span></div>
+ <div><span>Issue renames Rd while a broadcast targets the same Rd’s RAT entry</span><span class="a">issue wins</span></div>
+ <div><span>Broadcast whose tag no RAT entry holds (stale)</span><span class="a">don’t touch RAT or RF</span></div>
+ <div><span>Tomasulo: loads and stores</span><span class="a">kept in order</span></div>
+</div></div>
+<div class="tbl"><table>
+<tr><th>Step (your notes, ROB-1 to ROB-3)</th><th>Tomasulo only</th><th>Tomasulo + ROB</th><th>Order</th></tr>
+<tr><td>Issue</td><td>grab RS; RAT → RS</td><td>grab RS + ROB entry at issue ptr; RAT → ROB#; mark not done</td><td>in order</td></tr>
+<tr><td>Dispatch</td><td>RS held until broadcast</td><td>RS freed at dispatch (ROB# is now the name)</td><td>out of order</td></tr>
+<tr><td>Execute</td><td colspan="2">same in both</td><td>out of order</td></tr>
+<tr><td>Broadcast</td><td>tag = RS#; write RF; clear RAT</td><td>tag = ROB#; write ROB, mark done; RAT untouched</td><td>out of order</td></tr>
+<tr><td>Commit</td><td>(none)</td><td>head done? write RF always; clear RAT only if it still points here; free entry</td><td>in order</td></tr>
+</table></div>
+<div class="notes"><h3>From your notes · the points that become bugs</h3><div class="wk">
+ <div><span>Without ROB: a DIV-by-0 found in cycle 40 after younger MUL wrote F0 → state cannot be restored</span><span class="a">imprecise exception</span></div>
+ <div><span>Exception on a mispredicted path triggers before the branch resolves</span><span class="a">phantom exception</span></div>
+ <div><span>Fix both: store “exception” as the result; act on it only at commit</span><span class="a">exception = result</span></div>
+ <div><span>Mispredict recovery at commit: issue ptr = commit ptr, clear RAT to RF, drop RS and ALU contents</span><span class="a">then refetch</span></div>
+ <div><span>Issue: read source tags from RAT <em>before</em> renaming the destination</span><span class="a">else waits on itself → deadlock</span></div>
+ <div><span>Can a load take its value from the ROB or a broadcast?</span><span class="a">no; only from an older store in the LSQ, or memory</span></div>
+ <div><span>Non-memory op needs RS + ROB; load/store needs ROB + LSQ entry</span><span class="a">structural stall if any is full</span></div>
+ <div><span>Unified RS: better utilisation, harder select (one per unit type)</span><span class="a">used in real cores</span></div>
+ <div><span>Superscalar: fetch, decode, issue, dispatch, broadcast, commit all must be N-wide</span><span class="a">narrowest stage sets IPC</span></div>
+</div></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Which stages are in order and which out of order in a ROB-based core?</summary><div class="ans"><p>Fetch, decode, issue and commit are in order. Dispatch, execute and write-result (broadcast) are out of order. This is the quiz in your notes; in interviews follow it with “so I compare against the ISS at commit, where the order is architectural again”.</p></div></details>
+<details><summary>Commit writes the RF even when a younger instruction has renamed the same register. Why is that correct, and what should you assert?</summary><div class="ans"><p>The RF must always hold the latest <em>committed</em> value; younger writers are still speculative. The RAT entry is cleared only if it still points to the committing ROB entry, otherwise it keeps pointing to the younger producer. Assert: at commit, if <code>rat[rd] == rob_idx</code> it becomes RF-valid; if it points elsewhere it is unchanged and the target ROB entry is younger and valid.</p></div></details>
+<details><summary>In one cycle an instruction issues with Rd = F0 and a broadcast for the old F0 producer arrives. What breaks if the priority is wrong, and how do you catch it?</summary><div class="ans"><p>If the broadcast clears the RAT entry after issue wrote it, later instructions read the RF and get the older value instead of waiting for the new producer. Directed test: force issue and broadcast to the same register in the same cycle, with a dependent right behind. Assertion: if issue writes <code>rat[rd]</code> this cycle, then next cycle <code>rat[rd]</code> holds the new tag regardless of any broadcast. Co-sim catches it too, but only if a reader follows closely enough.</p></div></details>
+<details><summary>How do you check for physical register leaks?</summary><div class="ans"><p>Conservation invariant every cycle: free + mapped-in-RAT + held-in-ROB-as-old-mapping = total pregs. Also at quiescence (pipe empty), free = total − arch regs. Add SVA that free list never holds duplicates, and a formal proof on the free list block.</p></div></details>
+<details><summary>Why does renaming remove WAR/WAW but not RAW?</summary><div class="ans"><p>WAR and WAW are name conflicts: two writes, or a read and a later write, use the same architectural name. Giving each write a new physical name removes the conflict. RAW is a true data flow; the value must exist before use.</p></div></details>
+<details><summary>Exception and branch mispredict in the same cycle, different instructions?</summary><div class="ans"><p>Age decides. If the branch is older, its flush kills the excepting instruction (wrong path, never reported). If the excepting op is older, it handles when it reaches ROB head and the branch is flushed. A common bug is taking the exception from a wrong-path instruction.</p></div></details>
+</div>
+</div></section>
+
+<!-- 05 LSQ -->
+<section class="sheet" id="m05" data-t="Memory ordering in the core" data-src="Part 2">
+<div class="sh-body">
+<p class="lead">Loads want to run early; stores must not write memory until commit. The load-store queue lets loads bypass older stores whose addresses are known, forwards store data to loads, and catches the case where a load guessed wrong.</p>
+<figure class="fig"><svg viewBox="0 0 760 200" role="img" aria-label="Store queue entries ordered by age, a younger load searching older stores, forwarding and memory-ordering violation">
+  <text class="s-mut" x="20" y="24">Store queue (oldest → youngest)</text>
+  <g>
+   <rect class="s-box" x="20" y="34" width="120" height="50"/><text class="s-ink" x="30" y="56">ST A=0x40</text><text class="s-mut" x="30" y="74">data ready</text>
+   <rect class="s-wbox" x="150" y="34" width="120" height="50"/><text class="s-ink" x="160" y="56">ST addr ??</text><text class="s-mut" x="160" y="74">AGU pending</text>
+   <rect class="s-trbox" x="280" y="34" width="120" height="50"/><text class="s-ink" x="290" y="56">ST A=0x80</text><text class="s-mut" x="290" y="74">8B, data rdy</text>
+  </g>
+  <rect class="s-cubox" x="480" y="34" width="150" height="50"/><text class="s-ink t-b" x="490" y="56">LD 0x80 (4B)</text><text class="s-mut" x="490" y="74">younger</text>
+  <path class="s-trl" d="M480 60 H400"/><text class="s-tr" x="360" y="110">youngest older match → forward</text>
+  <path class="s-cul" d="M555 84 V150 H210 V84" stroke-dasharray="5 3"/>
+  <text class="s-cu" x="220" y="146">unknown address: speculate past it (store-set predictor)</text>
+  <text class="s-cu" x="220" y="166">when it resolves to 0x80 → ordering violation: flush load + younger</text>
+  <text class="s-mut" x="20" y="192">Partial overlap (ST 2B, LD 8B) → stall until store drains, or merge</text>
+</svg><figcaption>Fig 5 · Store-to-load forwarding and memory disambiguation. Stores drain from a post-commit store buffer to L1.</figcaption></figure>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Single thread: a load sees the youngest older store to the same bytes</li><li>Multi-core: ordering rules of the memory model (TSO, RVWMO, Arm), see the consistency sheet</li><li>MMIO / device memory: no speculation, no merging</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>CAM search by age-masked address and byte enables</li><li>Store-set / memory dependence predictor reduces repeat violations</li><li>Load queue snooped by invalidations to keep TSO load→load order</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Sweep every size × alignment × overlap pair; page- and line-crossing accesses</li><li>Address-aliasing generators: few addresses, many stores, random AGU delays</li><li>Cover: forward full, partial-stall, violation-flush, store buffer full at commit</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Forwarding from a store that is older in pointer value but younger after wrap</li><li>Partial overlap returns merged bytes from two stores in the wrong order</li><li>Violation detected but load's dependents already woke and committed</li><li>Store to MMIO forwarded to a later load</li></ul></div>
+<div class="tbl"><table>
+<tr><th>When may a load go to memory? (your notes)</th><th>Correct?</th><th>Speed</th><th>Needs</th></tr>
+<tr><td>1. Loads and stores fully in order</td><td>yes</td><td>slow: quiz took 126 cycles vs ~44</td><td>nothing</td></tr>
+<tr><td>2. Wait until every older store address is known</td><td>yes</td><td>medium</td><td>address search</td></tr>
+<tr><td>3. Go anyway; check when an older store resolves</td><td>yes, with replay</td><td>fastest (modern cores)</td><td>violation detect + flush, dependence predictor</td></tr>
+</table></div>
+<div class="notes"><h3>From your notes · LSQ rules</h3><div class="wk">
+ <div><span>When does a store write memory?</span><span class="a">at commit only</span></div>
+ <div><span>LSQ entry fields</span><span class="a">L/S bit, address, value, done</span></div>
+ <div><span>A load matches several older stores to its address</span><span class="a">take the youngest older one</span></div>
+ <div><span>A store resolves its address and finds a younger load already done with it</span><span class="a">redo that load and everything after</span></div>
+ <div><span>Exception at commit: stores below the commit pointer</span><span class="a">flushed; cache keeps committed values only</span></div>
+</div></div>
+<div class="fix"><h3>Check these in your notes</h3><ul><li>LSQ example: the first store wrote 25, so the cache gets <b>25</b>, not 28.</li></ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Design a scoreboard for an LSU.</summary><div class="ans"><p>Keep a byte-granular shadow memory updated at store commit. For each load at commit, expected data = bytes from older committed stores in shadow memory overlaid with older not-yet-drained stores in a model store buffer. Compare at commit, not at execute, so violations that get flushed are not false failures. Separately count violation flushes to check the predictor is not stuck.</p></div></details>
+<details><summary>Single-core test passes; what LSU bug appears only on multicore?</summary><div class="ans"><p>A load executed early whose line is invalidated by another core before it commits. Under TSO it must be replayed, or two loads can appear reordered. Requires a snoop of the load queue on invalidation.</p></div></details>
+</div>
+</div></section>
+
+<!-- 05b PREDICATION / COMPILER / VLIW -->
+<section class="sheet" id="m05b" data-t="Predication, compiler ILP & VLIW" data-src="Part 1–3 notes">
+<div class="sh-body">
+<p class="lead">Hardware is not the only way to find parallelism. The compiler can remove hard branches (if-conversion), shorten dependence chains, and move independent work closer together. VLIW takes this to the limit and lets the compiler do all the scheduling.</p>
+<div class="tbl"><table>
+<tr><th>Branch type</th><th>Predict</th><th>Predicate</th><th>Why</th></tr>
+<tr><td>Loop back-edge</td><td>✓</td><td></td><td>predicating every iteration wastes ever more work</td></tr>
+<tr><td>Call / return</td><td>✓</td><td></td><td>always taken; nothing on the other side</td></tr>
+<tr><td>Large if/else (~100 each side)</td><td>✓</td><td></td><td>predication always pays both sides</td></tr>
+<tr><td>Small, hard-to-predict if/else</td><td></td><td>✓</td><td>both sides cost less than mispredicts</td></tr>
+</table></div>
+<div class="notes"><h3>From your notes · worked problems</h3><div class="wk">
+ <div><span>Branch 80% accurate, 40-instr penalty, 2.5 instr per path on average. Before vs after if-conversion</span><span class="a">2.5 + 0.2 × 40 = 10.5 vs 4</span></div>
+ <div><span>Break-even rule</span><span class="a">predicate if both-path cost &lt; one-path + miss% × penalty</span></div>
+ <div><span>Conditional moves for if-conversion</span><span class="a">MOVZ / MOVN; need extra regs</span></div>
+ <div><span>Full predication (Itanium): predicate-set writes p1, p2 = complementary</span><span class="a">no extra regs or movs</span></div>
+ <div><span>Tree-height reduction: r1+r2−r3+r4−r5+r6−r7</span><span class="a">3 levels, ILP = 2</span></div>
+ <div><span>Unroll once, 1000 iterations of a 5-instr loop</span><span class="a">5000 → 4000 instr</span></div>
+ <div><span>OoO 4000 B program as 128-bit, 4-op VLIW</span><span class="a">4000 B to 16000 B</span></div>
+ <div><span>Best VLIW workload: sum array, maze search, linked-list count</span><span class="a">sum array › list › maze</span></div>
+</div></div>
+<div class="tbl"><table>
+<tr><th></th><th>OoO superscalar</th><th>In-order superscalar</th><th>VLIW</th></tr>
+<tr><td>Work per cycle</td><td>≤ N instr</td><td>≤ N instr</td><td>1 long instr = N ops</td></tr>
+<tr><td>Finds parallelism by</td><td>window ≫ N</td><td>next N in order</td><td>compiler only</td></tr>
+<tr><td>Hardware cost</td><td>highest</td><td>lower</td><td>lowest</td></tr>
+<tr><td>Needs compiler</td><td>helps</td><td>needs it</td><td>depends on it</td></tr>
+<tr><td>Weak on</td><td>power, area</td><td>irregular code</td><td>variable latency (cache misses), pointer code, NOP bloat</td></tr>
+</table></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>A predicated-false instruction has no architectural effect: no write, no exception, no memory access</li><li>Conditional move semantics on faults (does a cmov load fault when false?)</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Predicate registers renamed like data registers</li><li>Itanium: so many ISA features that the hardware grew very complex</li><li>DSPs use VLIW well (regular loops)</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Cover predicate false × every exception type (must be suppressed)</li><li>Predicated store must not forward to a younger load</li><li>Random code generator must emit predicated and cmov forms, not only branches</li></ul></div>
+</div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Why can’t a “better” VLIW run old 2-op bundles two at a time without changes?</summary><div class="ans"><p>The compiler only guaranteed independence inside a bundle. Two bundles side by side may depend on each other, so the hardware must check dependences, which makes it a superscalar, not a VLIW. This is the backward-compatibility weakness from your notes.</p></div></details>
+<details><summary>A conditional-move instruction with a false condition reads a bad address. What should happen, and how do you test it?</summary><div class="ans"><p>It depends on the ISA spec, which is the point to raise first. For a register-only cmov there is no memory access. For a predicated load, a false predicate must suppress the fault. Test with page tables that make the source unmapped, sweep predicate true/false, and check co-sim for no trap when false and a precise trap when true.</p></div></details>
+</div>
+</div></section>
+
+<!-- 06 CACHES -->
+<section class="sheet" id="m06" data-t="Caches" data-src="Part 3">
+<div class="sh-body">
+<p class="lead">Caches exploit locality to cut average memory access time. Everything you size, from associativity to MSHR count, trades hit time against miss rate against miss penalty.</p>
+<figure class="fig"><svg viewBox="0 0 760 210" role="img" aria-label="Address breakdown into tag, index, offset for a 32KB 8-way cache with 64B lines, and the latency ladder">
+  <text class="s-mut" x="20" y="22">48-bit PA · 32 KB · 8-way · 64 B line → 64 sets</text>
+  <rect class="s-box" x="20" y="32" width="430" height="40"/><text class="s-ink t-b" x="200" y="57">TAG [47:12]</text>
+  <rect class="s-cubox" x="450" y="32" width="120" height="40"/><text class="s-ink t-b" x="462" y="57">INDEX [11:6]</text>
+  <rect class="s-trbox" x="570" y="32" width="120" height="40"/><text class="s-ink t-b" x="582" y="57">OFFSET [5:0]</text>
+  <text class="s-cu" x="450" y="90">index + offset = 12 bits = 4 KB page → VIPT with no aliasing</text>
+  <text class="s-mut" x="20" y="124">Typical load-to-use latency (cycles)</text>
+  <g>
+   <rect class="s-trbox" x="20" y="134" width="12" height="20"/><text class="s-ink" x="40" y="149">L1  4–5</text>
+   <rect class="s-trbox" x="140" y="134" width="36" height="20"/><text class="s-ink" x="184" y="149">L2  12–16</text>
+   <rect class="s-cubox" x="300" y="134" width="120" height="20"/><text class="s-ink" x="428" y="149">L3  35–60</text>
+   <rect class="s-wbox" x="20" y="166" width="600" height="20"/><text class="s-ink" x="630" y="181">DRAM 250+</text>
+  </g>
+</svg><figcaption>Fig 6 · Bar lengths are drawn to scale. Numbers are typical ranges, not a specific product.</figcaption></figure>
+<div class="nums">
+ <span class="num">AMAT = <b>hit + miss rate × penalty</b></span>
+ <span class="num">sets = size / (ways × line)</span>
+ <span class="num">3C: compulsory · capacity · conflict (+coherence)</span>
+</div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Caches are architecturally invisible except via CMOs (flush, clean, invalidate, zero)</li><li>Inclusive vs exclusive vs NINE hierarchy policy</li><li>Memory attributes: WB, WT, UC, WC</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Write-back + write-allocate typical for L1D</li><li>MSHRs make it non-blocking: hit-under-miss, miss-under-miss, merge to same line</li><li>Replacement: PLRU, RRIP; prefetchers (stride, stream)</li><li>VIPT: TLB and tag read in parallel</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Shrink cache to 2 sets × 2 ways in sim to force evictions constantly</li><li>Cover: miss to line with pending MSHR, eviction of dirty line with in-flight snoop, fill racing a store</li><li>Data check via shadow memory; state check via line-state model</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Dirty victim written back after a newer fill to the same address</li><li>Two MSHRs allocated for the same line, fills overwrite each other</li><li>Prefetch hits a line being evicted; stale data returned</li><li>Byte-enable merge wrong on partial store to a missing line</li></ul></div>
+<div class="notes"><h3>From your notes · worked problems (cache review)</h3><div class="wk">
+ <div><span>AMAT, two forms</span><span class="a">hit + MR × MP = (1−MR)·hit + MR·(hit+MP)</span></div>
+ <div><span>Typical L1</span><span class="a">16–64 KB, ~90% hit, 1–3 cycles</span></div>
+ <div><span>Line size: 1 B, 32 B, 48 B, 64 B, 1 KB in a 2 KB cache. Good ones?</span><span class="a">32 B, 64 B (power of 2)</span></div>
+ <div><span>32 KB, 64 B lines, scalars with no spatial locality: largest N for high hit rate</span><span class="a">512</span></div>
+ <div><span>16 KB direct-mapped, 256 B lines: which conflict with 0x12345678?</span><span class="a">0x11115678, 0x12341666</span></div>
+ <div><span>8-line DM, 32 B lines: 3F1F, 3F2F, 3F2E, 3E1F</span><span class="a">line 0, 1, 1 (hit), 0 (evict)</span></div>
+ <div><span>Exact LRU in N-way set</span><span class="a">N counters of log₂N bits per set</span></div>
+ <div><span>Approximation in your notes</span><span class="a">NMRU: random among not-MRU</span></div>
+ <div><span>Single DM entry, start V=0: rd A, rd B, wr B, rd C, rd D, wr D</span><span class="a">4 misses, 1 writeback, ends V1 D1 tag D</span></div>
+ <div><span>Write-back goes with</span><span class="a">write-allocate</span></div>
+</div></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Write the reference model for the LRU counter scheme in your notes, and the invariant.</summary><div class="ans"><p>On an access to way w with counter c: every way with counter &gt; c decrements, w becomes N−1. On a miss, the victim is the way with counter 0. Invariant every cycle: the counters in a set are a permutation of 0..N−1. That one SVA catches almost every update bug, including two ways hit in the same cycle.</p></div></details>
+<details><summary>Why do you shrink caches in verification?</summary><div class="ans"><p>Real-size caches rarely evict in short tests, so eviction, writeback and replacement races stay uncovered. A parameterised small config hits them in every test. Keep a few full-size regressions for timing and indexing bugs.</p></div></details>
+<details><summary>What is the VIPT aliasing problem and when is it absent?</summary><div class="ans"><p>If index bits extend beyond the page offset, two virtual addresses mapping to one physical line can sit in different sets. It is absent when size/ways ≤ page size (32 KB / 8 = 4 KB). Otherwise use page colouring or alias detection on fill.</p></div></details>
+</div>
+</div></section>
+
+<!-- 07 VM -->
+<section class="sheet" id="m07" data-t="Virtual memory & TLB" data-src="Part 3">
+<div class="sh-body">
+<p class="lead">Every access translates a virtual address through the TLB. A miss starts a hardware page walk; a fault reaches the OS precisely. Translation is where security, OS interaction and speculation collide.</p>
+<figure class="fig"><svg viewBox="0 0 760 170" role="img" aria-label="Four-level page walk: CR3 or satp points to L4 table, each level indexed by 9 VA bits, ending in PTE plus 12-bit offset">
+  <rect class="s-trbox" x="20" y="20" width="110" height="40"/><text class="s-ink t-b" x="30" y="45">satp / CR3</text>
+  <g class="s-ink">
+   <rect class="s-box" x="160" y="20" width="110" height="40"/><text x="174" y="45">L4 [47:39]</text>
+   <rect class="s-box" x="290" y="20" width="110" height="40"/><text x="304" y="45">L3 [38:30]</text>
+   <rect class="s-box" x="420" y="20" width="110" height="40"/><text x="434" y="45">L2 [29:21]</text>
+   <rect class="s-box" x="550" y="20" width="110" height="40"/><text x="564" y="45">L1 [20:12]</text>
+  </g>
+  <rect class="s-cubox" x="680" y="20" width="70" height="40"/><text class="s-ink t-b" x="690" y="45">PA</text>
+  <path class="s-line" d="M130 40 H160 M270 40 H290 M400 40 H420 M530 40 H550 M660 40 H680"/>
+  <text class="s-cu" x="300" y="84">L3 leaf = 1 GB page · L2 leaf = 2 MB page</text>
+  <text class="s-mut" x="20" y="112">PTE bits: V R W X U G A D + PPN · walker can hit in L1/L2 · page-walk caches skip upper levels</text>
+  <text class="s-mut" x="20" y="134">Worst case 4 memory accesses; nested (VM) up to 24</text>
+  <text class="s-tr" x="20" y="158">TLB tag = VPN + ASID/PCID (+VMID): avoids flush on context switch</text>
+</svg><figcaption>Fig 7 · x86-64 / RISC-V Sv48 shape. Arm has the same idea with different names.</figcaption></figure>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>Fault types and priority: page fault vs access fault vs misaligned</li><li>A/D bit update: hardware vs trap to software</li><li>Ordering of PTE stores vs later walks: needs SFENCE.VMA / TLBI / INVLPG</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>L1 ITLB/DTLB + unified L2 TLB; multiple page sizes</li><li>Walker can be speculative; must not set A/D on a wrong path (ISA-dependent)</li><li>Multi-core: TLB shootdown via IPI or broadcast TLBI</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Generate page tables randomly: mixed sizes, illegal combos, shared frames, aliases</li><li>Cover: fault on line-crossing access, walk hits dirty line in L1, fence racing in-flight walk</li><li>Co-sim must include the ISS’s walker and A/D behaviour</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Stale TLB entry used after SFENCE because a walk in flight refilled it</li><li>Page-crossing load faults on the second page but first half already forwarded</li><li>Wrong-path walk sets the Accessed bit (spec violation on some ISAs)</li><li>Global bit ignored on ASID flush</li></ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>How would you stress TLB shootdown?</summary><div class="ans"><p>Several cores share pages; one core repeatedly rewrites PTEs and issues fences while others access those pages. Check with a checker that no core uses a translation after its fence completes. Cover fence during walk, fence during TLB fill, and fence with ASID filter.</p></div></details>
+</div>
+</div></section>
+
+<!-- 08 DRAM + RELIABILITY -->
+<section class="sheet" id="m08" data-t="DRAM & reliability" data-src="Part 3">
+<div class="sh-body">
+<p class="lead">Main memory is organised in channels, ranks, banks and rows. Latency depends on whether the row is already open. Reliability features (ECC, parity, RAS) add their own verification surface.</p>
+<div class="tbl"><table>
+<tr><th>Case</th><th>Commands</th><th>Cost</th></tr>
+<tr><td>Row hit</td><td>CAS</td><td>tCL</td></tr>
+<tr><td>Row empty</td><td>ACT → CAS</td><td>tRCD + tCL</td></tr>
+<tr><td>Row conflict</td><td>PRE → ACT → CAS</td><td>tRP + tRCD + tCL</td></tr>
+</table></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>JEDEC timing parameters and refresh interval</li><li>ECC: SECDED corrects 1 bit, detects 2; chipkill for whole-device fail</li><li>Error reporting: corrected vs uncorrected, poison propagation</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Scheduler: FR-FCFS favours row hits; must prevent starvation</li><li>Address mapping interleaves banks/channels</li><li>Parity on arrays, ECC on caches and memory</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Timing checker assertions on every JEDEC parameter</li><li>Error injection: single/double/multi-bit, in each array, and check logging and poison</li><li>Starvation coverage: max wait per requester under hostile patterns</li></ul></div>
+</div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>How do you verify poison propagation?</summary><div class="ans"><p>Inject an uncorrectable error in a line, then follow it: the consuming load must raise a precise machine check, a non-consuming eviction must keep the poison marker, a write that fully overwrites the line must clear it. Cover poison in a forwarded store, in a prefetch, and in a page-table walk.</p></div></details>
+</div>
+</div></section>
+
+<!-- 09 COHERENCE -->
+<section class="sheet" id="m09" data-t="Cache coherence" data-src="Part 4">
+<div class="sh-body">
+<p class="lead">Coherence guarantees one writer or many readers per line, and that every core eventually sees the latest write. Stable states are easy; the real bugs live in transient states, where requests cross on the interconnect.</p>
+<figure class="fig"><svg viewBox="0 0 760 250" role="img" aria-label="MESI state diagram with transitions for local reads and writes and remote snoops">
+  <circle class="s-trbox" cx="140" cy="70" r="40"/><text class="s-ink t-b" x="132" y="75">M</text>
+  <circle class="s-trbox" cx="460" cy="70" r="40"/><text class="s-ink t-b" x="454" y="75">E</text>
+  <circle class="s-cubox" cx="140" cy="200" r="40"/><text class="s-ink t-b" x="134" y="205">S</text>
+  <circle class="s-box" cx="460" cy="200" r="40"/><text class="s-ink t-b" x="456" y="205">I</text>
+  <path class="s-line" d="M420 200 H180"/><text class="s-mut" x="210" y="194">PrRd (others have) → S</text>
+  <path class="s-line" d="M460 160 V110"/><text class="s-mut" x="470" y="140">PrRd (no sharer) → E</text>
+  <path class="s-line" d="M420 70 H180"/><text class="s-mut" x="220" y="62">PrWr (silent upgrade)</text>
+  <path class="s-line" d="M140 160 V110"/><text class="s-mut" x="10" y="140">PrWr → BusUpgr</text>
+  <path class="s-cul" d="M170 100 L430 175"/><text class="s-cu" x="280" y="118">snoop RdX: writeback → I</text>
+  <path class="s-cul" d="M180 210 Q300 240 420 210"/><text class="s-cu" x="240" y="244">snoop RdX / Inv → I</text>
+  <text class="s-mut" x="560" y="40">Variants</text>
+  <text class="s-ink" x="560" y="62">MOESI: O = dirty shared</text>
+  <text class="s-ink" x="560" y="82">MESIF: F = forwarder</text>
+  <text class="s-mut" x="560" y="120">Fabrics</text>
+  <text class="s-ink" x="560" y="142">snoop bus: ≤ ~8 cores</text>
+  <text class="s-ink" x="560" y="162">directory: scales; tracks</text>
+  <text class="s-ink" x="560" y="178">sharers per line</text>
+  <text class="s-ink" x="560" y="200">CHI / ACE / CXL.cache</text>
+</svg><figcaption>Fig 9 · MESI stable states. Real controllers have 10–30 transient states such as IS^D, IM^AD, SM^A.</figcaption></figure>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>SWMR invariant: single writer or multiple readers per line per epoch</li><li>Data-value invariant: a read returns the last write of the previous epoch</li><li>Protocol spec (CHI etc.) defines legal request/snoop/response combos</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Directory: full bit-vector, coarse, or limited pointers; inclusive snoop filter</li><li>Virtual channels separate requests/responses to avoid protocol deadlock</li><li>Home node serialises requests to the same line</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Global SWMR checker observing every cache's state at once</li><li>Few lines, many cores, random delays → maximise races</li><li>Model-check the protocol tables (Murphi, TLA+, JasperGold) before RTL</li><li>Cover every (state × incoming message) cell, including “impossible” ones as assertions</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Writeback races with a forwarded snoop: home gets stale data</li><li>Upgrade (S→M) loses to a remote RdX; requester must convert to full miss</li><li>Snoop filter eviction does not back-invalidate</li><li>Deadlock: responses blocked behind requests in a shared queue</li></ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Core A in S sends Upgrade; core B's RdX for the same line reaches A first. What happens?</summary><div class="ans"><p>A invalidates (S→I) while its upgrade is outstanding. When the upgrade reply comes, A no longer has the data, so the controller must treat it as needing data (often the home NACKs or converts to RdX). Verification: directed race test plus coverage on transient state SM^A × snoop Inv.</p></div></details>
+<details><summary>How do you detect a coherence deadlock in sim?</summary><div class="ans"><p>Per-transaction watchdog timers, a global forward-progress check that some core retires within N cycles, and liveness properties in formal for the protocol controller. Debug: dump every queue's head and the dependency it waits on to find the cycle.</p></div></details>
+</div>
+</div></section>
+
+<!-- 10 CONSISTENCY -->
+<section class="sheet" id="m10" data-t="Consistency & sync" data-src="Part 4">
+<div class="sh-body">
+<p class="lead">Coherence covers one address. Consistency defines which orders are allowed across different addresses. This is where many experienced engineers get caught out in interviews, so learn the litmus tests by heart.</p>
+<div class="tbl"><table>
+<tr><th>Litmus</th><th>Core 0</th><th>Core 1</th><th>Outcome</th><th>SC</th><th>TSO (x86)</th><th>Weak (Arm, RVWMO)</th></tr>
+<tr><td>SB (store buffer)</td><td>x=1; r1=y</td><td>y=1; r2=x</td><td>r1=r2=0</td><td>✗</td><td><b>✓</b></td><td>✓</td></tr>
+<tr><td>MP (message pass)</td><td>data=1; flag=1</td><td>r1=flag; r2=data</td><td>r1=1, r2=0</td><td>✗</td><td>✗</td><td><b>✓</b> without fences</td></tr>
+<tr><td>LB (load buffer)</td><td>r1=x; y=1</td><td>r2=y; x=1</td><td>r1=r2=1</td><td>✗</td><td>✗</td><td>✓ (Arm allows)</td></tr>
+<tr><td>IRIW</td><td colspan="2">two writers, two readers see opposite orders</td><td>disagree</td><td>✗</td><td>✗</td><td>✗ on Arm v8 (multi-copy atomic)</td></tr>
+</table></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>TSO relaxes only store→load (store buffer)</li><li>Weak models need fences / acquire-release to order</li><li>Atomics: RMW indivisible; LL/SC reservation rules and forward-progress guarantees</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>Fence = drain store buffer and/or block younger loads</li><li>Speculative loads allowed if invalidation triggers replay</li><li>Atomics executed near cache (lock line in M) or far (at home/L3)</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>Run litmus suites (herd/diy generated) thousands of times with random delays</li><li>Axiomatic checker: build happens-before graph from the trace, detect cycles</li><li>Cover: LR/SC with intervening snoop, interrupt, eviction, same-line store</li></ul></div>
+</div>
+<div class="bugs"><h3>Bugs that ship</h3><ul><li>Fence does not wait for stores still in the post-commit buffer</li><li>SC succeeds after the reservation line was evicted</li><li>Atomic split across two cache lines is not atomic</li></ul></div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>Why is SB allowed on x86 and what fixes it?</summary><div class="ans"><p>Each core's store sits in its store buffer while its younger load reads the old value from cache. MFENCE (or a locked instruction) between the store and load drains the buffer first.</p></div></details>
+<details><summary>How do you check consistency when the ISS picks one order?</summary><div class="ans"><p>Do not lock-step multi-core shared data against one order. Log every load value and store order from RTL, then check that some legal execution under the model explains them (axiomatic check: no cycle in po-loc ∪ rf ∪ co ∪ fr plus the model's preserved-order relations).</p></div></details>
+<details><summary>Spin lock with test-and-test-and-set: why better than test-and-set?</summary><div class="ans"><p>Waiters spin on a shared copy of the line (reads hit in S) instead of each attempt being a write that invalidates every other cache. Coherence traffic drops from O(N) per attempt to bursts only when the lock is released.</p></div></details>
+</div>
+</div></section>
+
+<!-- 11 MULTICORE / GPU -->
+<section class="sheet" id="m11" data-t="Multicore, SMT & GPU tie-in" data-src="Part 4–5">
+<div class="sh-body">
+<p class="lead">Beyond one core, throughput comes from thread-level parallelism: SMT within a core, many cores on chip, and for NVIDIA-style roles, SIMT warps hiding latency with thousands of threads. Know how the CPU ideas map across.</p>
+<div class="tbl"><table>
+<tr><th>Idea</th><th>CPU core</th><th>GPU SM (SIMT)</th><th>DV angle</th></tr>
+<tr><td>Hide latency</td><td>OoO, caches, prefetch</td><td>switch warps every cycle</td><td>scheduler fairness, scoreboard on regs</td></tr>
+<tr><td>Parallelism</td><td>ILP + SMT 2-way</td><td>32-thread warps, many warps</td><td>divergence mask stack correctness</td></tr>
+<tr><td>Memory</td><td>coherent L1/L2</td><td>shared mem + non-coherent L1, coalescing</td><td>bank conflicts, atomics in L2</td></tr>
+<tr><td>Sync</td><td>locks, fences</td><td>barriers (__syncthreads), scoped fences</td><td>scoped memory model (CTA, GPU, system)</td></tr>
+<tr><td>Interconnect</td><td>ring / mesh, CHI</td><td>crossbar, NVLink</td><td>credit flow control, deadlock freedom</td></tr>
+</table></div>
+<div class="lenses">
+ <div class="lens spec"><h3>Spec</h3><ul><li>SMT: per-thread architectural state; shared or partitioned structures</li><li>Heterogeneous coherence (CPU–GPU, CXL)</li></ul></div>
+ <div class="lens design"><h3>Design</h3><ul><li>SMT partitions ROB/LSQ or shares with fairness; flush must be per thread</li><li>NoC: virtual channels, credits, routing (XY) for deadlock freedom</li></ul></div>
+ <div class="lens verify"><h3>Verify</h3><ul><li>SMT: flush of thread 0 must never touch thread 1; cover both threads in exceptions together</li><li>Side channel checks: no cross-thread predictor or cache leakage where spec forbids</li><li>System-level: emulation/FPGA prototyping to run OS boot and real workloads</li></ul></div>
+</div>
+<div class="drill"><h3>Interview drill</h3>
+<details><summary>What new bug classes does SMT add?</summary><div class="ans"><p>Thread-ID mismatch on shared structures (wrong thread's entry flushed or forwarded), starvation of one thread, store-to-load forwarding across threads (must not happen), and shared-predictor security leakage. Coverage must cross every flush source with the other thread's state.</p></div></details>
+</div>
+</div></section>
+
+</main>
+</div>
+
+<section class="closing" aria-label="Final interview checklist">
+  <h2>Before the interview</h2>
+  <div class="cols">
+    <div><h3>Have one story ready for</h3><ul><li>A bug you found that co-sim missed, and the checker you added</li><li>A coverage hole you closed and how you found it</li><li>A hang or deadlock you debugged from waveforms</li><li>A trade-off where you chose formal over sim (or the reverse)</li></ul></div>
+    <div><h3>Whiteboard reflexes</h3><ul><li>State the invariant before the testbench</li><li>Ask: where is speculation, where is commit?</li><li>Name the corner: wrap, full, empty, same-cycle, same-address</li><li>Say how you would know you are done</li></ul></div>
+    <div><h3>Source playlists</h3><ul>
+      <li><a href="https://www.youtube.com/playlist?list=PLAwxTw4SYaPmqpjgrmf4-DGlaeV0om4iP" target="_blank" rel="noopener">HPCA Part 1</a></li>
+      <li><a href="https://www.youtube.com/playlist?list=PLAwxTw4SYaPkNw98-MFodLzKgi6bYGjZs" target="_blank" rel="noopener">Playlist 2</a></li>
+      <li><a href="https://www.youtube.com/playlist?list=PLAwxTw4SYaPnhRXZ6wuHnnclMLfg_yjHs" target="_blank" rel="noopener">Playlist 3</a></li>
+      <li><a href="https://www.youtube.com/playlist?list=PLAwxTw4SYaPn79fsplIuZG34KwbkYSedj" target="_blank" rel="noopener">HPCA Part 4</a></li>
+      <li><a href="https://www.youtube.com/playlist?list=PLAwxTw4SYaPkr-vo9gKBTid_BWpWEfuXe" target="_blank" rel="noopener">Playlist 5</a></li>
+    </ul></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  // Build sheet headers and nav from data attributes
+  const sheets=[...document.querySelectorAll('.sheet')];
+  const toc=document.getElementById('toc');
+  let done={};
+  try{done=JSON.parse(localStorage.getItem('cpudv-done')||'{}')}catch(e){done={}}
+  function save(){try{localStorage.setItem('cpudv-done',JSON.stringify(done))}catch(e){}}
+  function prog(){
+    const n=sheets.filter(s=>done[s.id]).length;
+    document.getElementById('progtxt').textContent=n+' / '+sheets.length+' reviewed';
+    document.getElementById('progbar').style.width=(100*n/sheets.length)+'%';
+  }
+  sheets.forEach((s,i)=>{
+    const num=String(i).padStart(2,'0');
+    const head=document.createElement('div');head.className='sh-head';
+    head.innerHTML='<div><div class="id">MODULE '+num+' · '+s.dataset.src+'</div><h2>'+s.dataset.t+'</h2></div>';
+    const b=document.createElement('button');b.className='mark';b.type='button';b.id='mark-'+s.id;
+    const li=document.createElement('li');const a=document.createElement('a');a.href='#'+s.id;
+    a.innerHTML='<span class="n">'+num+'</span><span class="t">'+s.dataset.t+'</span>';li.appendChild(a);toc.appendChild(li);
+    function sync(){b.setAttribute('aria-pressed',done[s.id]?'true':'false');b.textContent=done[s.id]?'Reviewed':'Mark reviewed';a.classList.toggle('done',!!done[s.id]);prog()}
+    b.addEventListener('click',()=>{done[s.id]=!done[s.id];save();sync()});
+    head.appendChild(b);s.prepend(head);sync();
+  });
+  // Pipeline diagram (Fig 2)
+  const NS='http://www.w3.org/2000/svg';
+  const cyc=document.getElementById('cyc'),pipe=document.getElementById('pipe');
+  const x0=120,w=44;
+  for(let c=0;c<9;c++){const t=document.createElementNS(NS,'text');t.setAttribute('x',x0+c*w+14);t.setAttribute('y',22);t.setAttribute('class','s-mut');t.textContent=c+1;cyc.appendChild(t)}
+  const rows=[[0,['IF','ID','EX','MEM','WB']],[1,['IF','ID','--','EX','MEM','WB']],[2,['IF','--','ID','EX','MEM','WB']]];
+  // Power bars (Fig 1b): P = 30 W * V^2 * (f/2GHz)
+  const pw=document.getElementById('pwr');
+  const pts=[[0.9,1.8],[1.0,2.0],[1.1,2.2],[1.2,2.4],[1.3,2.6],[1.4,2.8],[1.5,3.0]];
+  const pmax=30*1.5*1.5*1.5, bw=500;
+  pts.forEach(([v,f],i)=>{
+    const p=30*v*v*f/2, y=30+i*24, w=bw*p/pmax;
+    const lab=document.createElementNS(NS,'text');lab.setAttribute('x',10);lab.setAttribute('y',y+14);lab.setAttribute('class','s-ink');lab.textContent=v.toFixed(1)+' V · '+f.toFixed(1)+' GHz';pw.appendChild(lab);
+    const r=document.createElementNS(NS,'rect');r.setAttribute('x',150);r.setAttribute('y',y);r.setAttribute('width',w.toFixed(1));r.setAttribute('height',18);
+    r.setAttribute('class',i===0?'s-trbox':(i===pts.length-1?'s-wbox':'s-cubox'));pw.appendChild(r);
+    const t=document.createElementNS(NS,'text');t.setAttribute('x',(158+w).toFixed(1));t.setAttribute('y',y+14);t.setAttribute('class','s-mut');t.textContent=p.toFixed(1)+' W';pw.appendChild(t);
+  });
+  rows.forEach(([r,st])=>{st.forEach((s,k)=>{
+    const c=r+k,y=38+r*40;
+    const rc=document.createElementNS(NS,'rect');rc.setAttribute('x',x0+c*w+2);rc.setAttribute('y',y);rc.setAttribute('width',w-4);rc.setAttribute('height',28);
+    rc.setAttribute('class',s==='--'?'s-wbox':(s==='EX'?'s-cubox':'s-box'));pipe.appendChild(rc);
+    const t=document.createElementNS(NS,'text');t.setAttribute('x',x0+c*w+(s.length>2?6:12));t.setAttribute('y',y+18);t.setAttribute('class','s-ink');t.textContent=s==='--'?'stall':s;
+    if(s==='--'){t.setAttribute('x',x0+c*w+4);t.style.fontSize='10.5px'}
+    pipe.appendChild(t);
+  })});
+})();
+</script>
+</body>
+</html>

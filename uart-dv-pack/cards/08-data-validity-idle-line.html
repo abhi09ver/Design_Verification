@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · Data Validity & Idle Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+pre,code{font-variant-ligatures:none}
+</style>
+<style>
+html{background:#E9E9E3}
+.nav{font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;max-width:1240px;margin:0 auto}
+.card{width:1240px;margin:0 auto 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+@media print{html{background:#fff}.nav{display:none}.card{margin:0;box-shadow:none}@page{size:1240px 1800px;margin:0}}
+</style>
+</head>
+<body>
+<nav class="nav"><a href="index.html">All cards</a> · <a href="07-overrun-error.html">← Prev</a> · <a href="09-error-reporting-integration.html">Next →</a></nav>
+<div class="card"><div style="width: 1240px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #FAFAF7; color: #15171C; font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 18px;">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 14px; border-bottom: 2px solid #15171C;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em; color: #4A4F5A;">UART · DV INTERVIEW CARD · PART 08 / 09</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 44px; line-height: 1.05;">Data Validity &amp; Idle Line</h1>
+<div style="font-size: 15px; color: #4A4F5A;">Right bits, right order, right width — and a line that stays quietly high when nothing is sent.</div>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 96px; font-weight: 700; line-height: .8; color: #1D4ED8;">08</div>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Data validity — what to check</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>Bit order:</b> LSB first on the wire. D0 follows the start bit.</li>
+<li><b>Width:</b> exactly 5, 6, 7 or 8 data bits as configured — no extra, no missing bit.</li>
+<li><b>Unused bits:</b> with 5–7 bit words, upper RBR bits read 0 (check the spec).</li>
+<li><b>No X / Z</b> sampled in data — always an error, never "don't care".</li>
+<li><b>End-to-end:</b> byte written to THR on one side = byte read from RBR on the other, in order.</li>
+</ul>
+</section>
+
+<section style="background: #FFF4E5; border: 1px solid #F3D3A8; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9A3F07;">The symmetric-bug trap</h2>
+<div style="font-size: 13px;">If the TB driver <i>and</i> monitor both send MSB-first, a DUT that also does MSB-first passes every test. Loopback tests have the same blind spot: DUT TX → DUT RX hides any mistake made in both.</div>
+<div style="font-size: 13px;"><b>Break the symmetry:</b></div>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li>One directed test checks the <b>raw waveform</b> of 0x01: line must go high in the bit right after start.</li>
+<li>Asymmetric patterns: 0x01, 0x80, 0x0F, 0xF0, 0xA5, walking 1s and 0s.</li>
+<li>Build driver and monitor from the spec independently, ideally by different people.</li>
+</ul>
+</section>
+
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Idle line — glitches near the start sample point</h2>
+<div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 210px; gap: 10px 16px; align-items: center;">
+<div style="font-weight: 600;">Glitch 1/16 bit</div>
+<div style="display: flex;"><div style="flex: 6; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C;"></div><div style="flex: 1; height: 30px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div><div style="flex: 25; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div></div>
+<div style="font-size: 13px;">Rejected — high at mid-start.</div>
+<div style="font-weight: 600;">Glitch 7/16 bit</div>
+<div style="display: flex;"><div style="flex: 6; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C;"></div><div style="flex: 7; height: 30px; box-sizing: border-box; border-bottom: 3px solid #15171C; border-left: 3px solid #15171C;"></div><div style="flex: 19; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div></div>
+<div style="font-size: 13px;">Rejected — false start.</div>
+<div style="font-weight: 600; color: #9A3F07;">Glitch 9/16 bit</div>
+<div style="display: flex;"><div style="flex: 6; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C;"></div><div style="flex: 9; height: 30px; box-sizing: border-box; border-bottom: 3px solid #9A3F07; border-left: 3px solid #15171C; background: #FFF4E5;"></div><div style="flex: 17; height: 30px; box-sizing: border-box; border-top: 3px solid #15171C; border-left: 3px solid #15171C;"></div></div>
+<div style="font-size: 13px;">Accepted as start → all-1 data, so the frame decodes 0xFF (stop is high, no FE). Noise becomes data.</div>
+</div>
+<div style="font-size: 12.5px; color: #4A4F5A;">The exact accept/reject boundary depends on the sampler (single sample at tick 8, or 3-sample majority) — that boundary is a coverage bin, and the checker should flag any sub-half-bit pulse on a TX line.</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Idle-line rules</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px;">
+<li><b>TX = 1 in and right after reset.</b> A low blip on reset looks like a start bit to the partner.</li>
+<li><b>Never X / Z</b> on TX once out of reset.</li>
+<li><b>Gap between frames ≥ configured stop bits</b> — the next start may not come early.</li>
+<li><b>Reset or disable mid-frame:</b> TX returns to 1 at once; RX throws away the partial frame silently.</li>
+<li><b>Character timeout</b> (16550: about 4 character times of silence with data in FIFO) — RX tells software leftover bytes are waiting.</li>
+</ul>
+</section>
+
+<section style="background: #0F1729; color: #E5E7EB; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">SVA in the interface</h2>
+<pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; white-space: pre;">// TX held at mark while in reset
+a_idle_rst: assert property (
+  @(posedge clk) !rst_n |-> tx === 1'b1);
+
+// no unknowns once running
+a_no_x: assert property (
+  @(posedge clk) disable iff (!rst_n)
+  !$isunknown(tx));
+
+// a low pulse on TX lasts at least one bit
+a_min_low: assert property (
+  @(posedge clk) disable iff (!rst_n)
+  $fell(tx) |-&gt; (!tx)[*(BIT_CLKS-1)]);</pre>
+<div style="font-size: 12px; color: #B9C0CC;"><span style="font-family: 'JetBrains Mono', monospace;">BIT_CLKS</span> = clocks per bit from the divisor. Use a sampled strobe instead of <span style="font-family: 'JetBrains Mono', monospace;">clk</span> if the divisor changes at runtime.</div>
+</section>
+
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 10px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #1D4ED8;">Coverage model</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; font-size: 13px;">
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><b>Data values</b><div>0x00, 0xFF, 0x55, 0xAA, walking-1, walking-0, random — crossed with width 5–8.</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><b>Inter-frame gap</b><div>back-to-back (0 extra), 1 bit, short, long idle, &gt; char-timeout.</div></div>
+<div style="background: #F3F4F1; border-radius: 8px; padding: 10px 12px;"><b>Line disturbances</b><div>glitch width bins around half-bit, reset mid-frame, enable/disable mid-frame.</div></div>
+</div>
+</section>
+
+<section style="background: #15171C; color: #F4F4F0; border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #9DB8FF;">Interview Q&amp;A</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px;">
+<div><div style="font-weight: 600;">Q. All tests pass but the chip talks garbage to a real PC. Why?</div><div style="color: #C9CCD3;">Likely a symmetric bug — bit order, parity sense or polarity wrong in both DUT and TB. Check one frame against the spec by hand.</div></div>
+<div><div style="font-weight: 600;">Q. Why must TX be high during reset?</div><div style="color: #C9CCD3;">The partner is already running; any low pulse is a start bit and produces a junk byte or framing error on its side.</div></div>
+<div><div style="font-weight: 600;">Q. What does a character timeout solve?</div><div style="color: #C9CCD3;">With trigger level 8, the last 3 bytes of a message never reach the trigger. Timeout tells software to collect them.</div></div>
+<div><div style="font-weight: 600;">Q. Why treat X on the line as an error rather than ignore it?</div><div style="color: #C9CCD3;">X usually means uninitialised or multiply-driven logic — a real silicon risk hidden by simulation optimism.</div></div>
+</div>
+</section>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5A;">
+<div>Basis: "Data validity" + "Idle line" checks from the series roadmap · code is an original sketch</div>
+<div>Next → 09 Error reporting &amp; integration</div>
+</footer>
+</div></div>
+</body>
+</html>

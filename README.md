@@ -3,6 +3,24 @@
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
+> **Before an interview:** start at **[`axi-interview-prep/`](axi-interview-prep/)**. It has 15 one-page AXI and DV cheat sheets (PDF, PNG, HTML), runnable AXI slave code with a self-checking testbench, an SVA checker, and the bug-and-fix story for the AXI4-Lite UVM project. The all-in-one PDF is [`AXI_DV_Interview_Cheatsheets_ALL.pdf`](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf).
+
+## SV Course Sessions — solved exercises with runnable code
+
+**[sv-course-sessions/](sv-course-sessions/)**: worked solutions to the exercise slides from five SystemVerilog / UVM course sessions, each compiled and simulated. **Quick revision: [CHEATSHEET.md](sv-course-sessions/CHEATSHEET.md).**
+
+| Session | Topic | Notes |
+|---|---|---|
+| 1 | SV data structures: arrays, queues, assoc arrays, strings (23 Qs) | [notes](sv-course-sessions/01-session1-sv-data-structures.md) |
+| 2 | Layered UVM agent for AXI and AHB | [notes](sv-course-sessions/02-session2-layered-axi-ahb-agent.md) |
+| 3 | Dual-port APB driver / monitor / scoreboard (no UVM) | [notes](sv-course-sessions/03-session3-apb-dual-port-testbench.md) |
+| 4 | 12 constraint questions (4KB, alignment, primes, patterns…) | [notes](sv-course-sessions/04-session4-constraints.md) |
+| 5 | APB functional coverage model | [notes](sv-course-sessions/05-session5-apb-functional-coverage.md) |
+
+## Aligner UVM course: one-stop interview folder
+
+**[aligner-uvm-course/](aligner-uvm-course/README.md)** covers Cristian Slav's UVM course on the Aligner DUT end to end: a [last-30-minutes cheatsheet](aligner-uvm-course/cheatsheets/LAST-30-MINUTES.md), [7 STAR stories](aligner-uvm-course/cheatsheets/STORIES.md), [244 interview Q&A](aligner-uvm-course/INTERVIEW-QA.md), chapter notes, the interactive study pages, and the full RTL + UVM project code.
+
 ## Challenges
 
 | # | Topic | Key concepts |
@@ -38,6 +56,11 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 29 | [Pipelined In-Order CPU (Pequeno-style 5-stage)](29-pipelined-in-order-cpu-hazards.md) | RV32I formats, valid/stall/flush, forwarding distances 1–3, load-use interlock, static prediction, cycles = 4 + N + stalls + 2×flushes |
 | 30 | [CPU From Zero: 11-Level RTL Ladder](30-cpu-from-zero-rtl-ladder.md) | Adder → counter → ALU → regfile → FIFO → single-cycle CPU → scoreboard → rename → RS/CDB → ROB → tiny OOO; RTL rules of thumb |
 | 31 | [CPU Interview Question Bank](31-cpu-interview-question-bank.md) | Every CPU question from 26–30 with model answers, pitches and measured numbers |
+| 32 | [Cache Organization, Coherence & Memory Consistency](32-cache-coherence-and-memory-consistency.md) | Tag/index/offset, write policies, inclusion, SWMR & data-value invariants, MOESI, transient-state races, snoop vs directory, virtual networks, SC/TSO/weak litmus tests, GPU scoped acquire/release, coherence checkers & coverage. Kit with HTML guides, cheat sheet, Python models and SV checkers in [`cache-coherence/`](cache-coherence/) |
+| 33 | [MMU & SMMUv3 One-Stop Kit](33-mmu-smmu/README.md) | VA/PA, pages, multi-level walks, TLB/ASID/VMID, stage 1/2 nesting, StreamID→STE→CD, command/event queues, CMD_SYNC, stall vs terminate, ATS/PRI/PASID, RME/GPC, invalidation-aware scoreboard; Python model, SVA, UVM code, fresher + senior HTML guides |
+| 34 | [CoreSight Debug and Trace](34-coresight-debug-and-trace.md) | DAP (DP/AP), ID registers, ROM tables & discovery, topology detection, APB/ATB/event/channel/timestamp, authentication, trace formatter, CTI/CTM, power & reset, vplan, SVA, bug catalog. **Kit:** [`coresight/`](coresight/README.md) (beginner + senior HTML guides, Python golden models, SVA checkers, [cheat sheet](coresight/CHEATSHEET.md)) |
+| 35 | [Arm GIC Interrupt Controller (GICv3/v4)](35-gic-interrupt-controller.md) · [study kit](35-gic/) | Distributor/Redistributor/CPU IF/ITS, INTID map, state machine, groups → IRQ/FIQ, PMR/BPR/preemption, EOImode, LPIs & ITS commands, list registers & GICv4, WAKER; beginner + senior HTML pages, Python ref model, SVA, UVM scoreboard |
+| 36 | [HPCA: Computer Architecture Flash Sheets](hpca/README.md) | Georgia Tech HPCA course in 127 one-screen sheets across 22 lessons: iron law & Amdahl, pipelining & hazards, branch predictors (2BC, PShare, GShare, tournament, RAS), predication, ILP & renaming, Tomasulo, ROB & precise exceptions, LSQ & memory disambiguation, compiler ILP, VLIW, caches, VM/TLB, VIPT, MSHRs, DRAM, RAID & ECC, coherence (MSI/MESI/MOESI, directories, transient races), atomics & locks, SC/TSO/weak litmus tests, NoC & GPUs. Each sheet: worked numbers, verification lens, bugs that ship, interview Q&A. Flip-through HTML + Markdown per lesson in [`hpca/`](hpca/) |
 | 37 | [YARP Single-Cycle Core Review](37-yarp-single-cycle-core-review.md) | 4 RTL bugs found vs ISS, valid/ready spec mismatch, reviewed interface with driver/monitor clocking blocks + protocol SVA |
 | 38 | [YARP Class-Based Testbench Review](38-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
 | 39 | [RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → single-cycle → pipeline → OOO/LSQ/caches → DV strategy, golden model, TB anatomy, random, SV timing, SVA, coverage, mutation, bug catalog, debug, rapid-fire drills |
@@ -45,6 +68,12 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 ## CPU Lab (code for challenges 26–31 and 37–39)
 
 [`cpu-lab/`](cpu-lab/README.md) holds the runnable code: the uploaded 3-wide OOO core with all fixes and per-file patches, a commit-scoreboard testbench with an ISS, 20 directed bug hunts, a random generator, bind-based SVA, a 5-stage pipelined RV32I CPU (pq5), an 11-level beginner RTL ladder, the YARP single-cycle core with its class-based testbench (C++ ISS over DPI, coverage, protocol SVA, runtime mutation campaign), and four HTML study pages in [`cpu-lab/pages/`](cpu-lab/pages/), including the 27-plate **[RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html)** for a last-minute skim. Runs on free Verilator.
+
+## Protocol Packs
+
+| Pack | Contents |
+|---|---|
+| [UART DV Interview Pack](uart-dv-pack/README.md) | 10 one-page cards (PDF / HTML / PNG), text cheatsheet, UVM reference environment: baud, framing, parity, break, overrun, idle-line checks |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 
