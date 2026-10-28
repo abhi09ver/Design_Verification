@@ -9,6 +9,7 @@ Study kit for the Georgia Tech / Udacity **High Performance Computer Architectur
 | [`sheets/`](sheets/INDEX.md) | **127 flash sheets** as Markdown, one file per lesson (22 lessons) | Reading on GitHub or phone |
 | [`html/flash-sheets/index.html`](html/flash-sheets/index.html) | Same 127 sheets as a flip-through page with a diagram on each sheet, ← / → keys, lesson strip, show/hide answers | Last-minute glancing before an interview |
 | [`html/cpu-verification-codex.html`](html/cpu-verification-codex.html) | 14 longer module pages: mechanism diagram, numbers, spec / design / verify lenses, bugs, interview drill | Deeper revision of one topic |
+| [`notes/`](notes/README.md) | **My lecture notes**: 6 PDFs (128 pages, typed + hand-drawn) with searchable text copies | Seeing the original reasoning and diagrams |
 | [`tools/export_markdown.js`](tools/export_markdown.js) | Regenerates `sheets/*.md` from the flash-sheet data | After editing a sheet |
 
 **Opening the HTML pages:** GitHub shows HTML as source. Clone the repo and open the file in a browser (works offline except web fonts), or enable GitHub Pages for the repo.
@@ -49,7 +50,7 @@ Study kit for the Georgia Tech / Udacity **High Performance Computer Architectur
 | 21 | [Memory consistency](sheets/21-memory-consistency.md) | 4 | course content |
 | 22 | [Many-cores](sheets/22-many-cores.md) | 3 | course content |
 
-Lessons 1–12 follow my own lecture notes, so each sheet names the videos it covers. Lessons 13–22 follow the course's standard content and are organised by concept; they will be redone against my notes when those are written.
+Lessons 1–12 follow my own [lecture notes](notes/README.md), so each sheet names the videos it covers. Lessons 13–22 follow the course's standard content and are organised by concept; they will be redone against my notes when those are written.
 
 ## Corrections to my lecture notes
 

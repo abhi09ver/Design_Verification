@@ -39,7 +39,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | **RV32I ISA, single-cycle** | atlas plates 1–9 | [37 – YARP core review](37-yarp-single-cycle-core-review.md) | `cpu-lab/yarp/` |
 | **5-stage pipeline & hazards** | [40 – Six questions](40-five-stage-pipeline-interview-answers.md) | [29 – Pipelined CPU](29-pipelined-in-order-cpu-hazards.md), [`pequeno_study_guide.html`](cpu-lab/pages/pequeno_study_guide.html) | `cpu-lab/pq5/` |
 | **Out-of-order / Tomasulo** | atlas plates 14–15 | [26 – Tomasulo core](26-ooo-cpu-tomasulo-core.md), [27 – Bug hunt](27-ooo-core-bug-hunt.md), [`tomasulo_core_lab.html`](cpu-lab/pages/tomasulo_core_lab.html) | `cpu-lab/rtl`, `solutions`, `tb` |
-| **Whole HPCA course** | [HPCA flash sheets (127)](hpca/sheets/INDEX.md) | [`hpca/html/flash-sheets/index.html`](hpca/html/flash-sheets/index.html) | — |
+| **Whole HPCA course** | [HPCA flash sheets (127)](hpca/sheets/INDEX.md) | [`hpca/html/flash-sheets/index.html`](hpca/html/flash-sheets/index.html), [my lecture notes](hpca/notes/README.md) | — |
 | **Caches, coherence, consistency** | [cache cheat sheet](cache-coherence/CHEATSHEET.md) | [32](32-cache-coherence-and-memory-consistency.md) | `cache-coherence/sv`, `python` |
 | **MMU / SMMUv3** | [cheat sheet](33-mmu-smmu/05-cheat-sheet.md) | [33 kit](33-mmu-smmu/README.md) | `33-mmu-smmu/code` |
 | **Interrupts (GIC)** | [35](35-gic-interrupt-controller.md) | [GIC study kit](35-gic/README.md) | `35-gic/code` |
