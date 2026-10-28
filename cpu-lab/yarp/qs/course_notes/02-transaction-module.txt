@@ -1,0 +1,36 @@
+YARP Transaction
+In the last module we discussed the YARP RISC-V Processor RTL which is our design under test. We also implemented the SystemVerilog based interface to communicate between the RTL and the Testbench. In this module we would look into the Transaction Class.
+
+Transaction Class
+Like we saw in the APB System Testbench design, the first component in the testbench is the transaction class. The transaction class will be used to create random stimulus for our testbench which would be driven to the YARP CPU via the driver. Since the testbench would be responsible for driving all the inputs to the design, the transaction class should be able to randomize all of the input signals while up-holding all the constraints which may apply to any of the signals.
+
+This would imply that the following input signals should be randomized along with any constraints:
+
+instr_mem_rd_data_i : The read data from the instruction memory
+instr_mem_ready_i : Indicates the ready from the instruction memory along with read data
+data_mem_rd_data_i : The read data from the data memory
+data_mem_ready_i : Indicates the ready from the data memory along with read data
+Transaction Class Constraints
+Now, that we know that the transaction class should be able to randomize the input signals, we also need to understand the constraints which apply to these signals. The constraints are as follows:
+
+instr_mem_rd_data_i should be a valid instruction as per the RV32I instruction set architecture
+instr_mem_ready_i should be asserted whenever the instruction memory is ready
+data_mem_rd_data_i should be a valid data read from the data memory
+data_mem_ready_i should be asserted whenever the data memory is ready
+For the transaction class, we would only be implementing the constraints for the instr_mem_rd_data_i signal. The reason we would not be implementing the constraints for the data_mem_rd_data_i signal is because the data memory would also be written by the YARP core and hence the data memory model would need to be able to read the last data written by the YARP core and can't really be randomized. As we would later see, the data_mem_rd_data_i signal would eventually be driven off by a data memory model which we would implement later.
+
+Coming to the constraints for the instr_mem_rd_data_i signal, we would need to implement the constraints such that the transaction class can randomly generate a valid RV32I instruction. The constraints would need to be structured in a way where every valid type of instruction (R-type, I-type, S-type, B-type, U-type, J-type) can be generated. The transaction class should also be able to randomize the op7 field in the instruction to have a finer control over the instruction generation along with the funct3 and funct7 fields. This would allow us to generate instructions from one of the valid instruction types and also control the specific instruction being generated. The transaction class would also need to randomize the rd, rs1, and rs2 fields to generate valid register names. For the instructions utilising the imm field (i.e. I-type, S-type, B-type, U-type, J-type), the transaction class would also need to randomize the immediate value while ensuring that it is a valid immediate value as per the RV32I instruction set architecture.
+
+Given the above requirements, the transaction class thus needs to be carefully implemented to ensure correct behaviour.
+
+Coding Exercise
+As part of the coding exercise, we would implement the transaction class and utilise it to drive random stimulus. The transaction class would include all the input signals defined by the DUT and would have the ability to randomize those as per the above listed requirements. As usual, the class must includes the copy method which returns a newly created object of the class by copying all the fields from the incoming object.
+
+For this coding exercise, we would have the following goals:
+
+Implement the yarp_transaction class
+Use the riscv_pkg to define any parameters/enums needed for modeling the RV32I instruction set
+Update the yarp_tb_pkg.sv file to include our transaction class
+The started code is provided in the yarp_transaction.sv and riscv_pkg.sv files. You are welcome to modify these files as needed.
+
+The video for this module would be released soon and would cover the implementation of the yarp_transaction.sv file along with the the detailed overview of the constraints and the randomization of the RV32I instruction set.
