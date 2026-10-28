@@ -1,0 +1,9 @@
+read_verilog -sv ../rtl/common/generic.sv ../rtl/common/units.sv ../rtl/pipe/hazard.sv ../rtl/pipe/priv.sv ../rtl/pipe/core_pipe.sv
+synth -top core_pipe
+dfflegalize -cell $_DFF_P_ 01 -cell $_DFFE_PP_ 01
+dfflibmap -liberty hd_tt.lib -dont_use *lpflow*
+abc -liberty hd_tt.lib -dont_use *lpflow* -dont_use *clkbuf* -dont_use *clkinv*
+opt_clean
+tee -q -o stat_hier.txt stat -liberty hd_tt.lib -top core_pipe
+select hazard
+write_verilog -noattr -selected hier_hazard.v

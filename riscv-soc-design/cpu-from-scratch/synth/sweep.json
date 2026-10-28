@@ -1,0 +1,204 @@
+{
+ "bk": [
+  {
+   "target": 2.5,
+   "achieved": 4.618,
+   "met": false,
+   "wns": -2.118,
+   "area": 91485,
+   "cells": 11954,
+   "nviol": 2417,
+   "tns": -2597.6,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 3.0,
+   "achieved": 4.618,
+   "met": false,
+   "wns": -1.618,
+   "area": 91485,
+   "cells": 11954,
+   "nviol": 2400,
+   "tns": -1890.0,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 3.5,
+   "achieved": 4.618,
+   "met": false,
+   "wns": -1.118,
+   "area": 91485,
+   "cells": 11954,
+   "nviol": 2361,
+   "tns": -1193.8,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 4.0,
+   "achieved": 4.618,
+   "met": false,
+   "wns": -0.618,
+   "area": 91485,
+   "cells": 11954,
+   "nviol": 1362,
+   "tns": -583.1,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 4.5,
+   "achieved": 4.913,
+   "met": false,
+   "wns": -0.413,
+   "area": 90922,
+   "cells": 11875,
+   "nviol": 1218,
+   "tns": -288.2,
+   "end": "regf.rf[5][0]"
+  },
+  {
+   "target": 5.0,
+   "achieved": 5.268,
+   "met": false,
+   "wns": -0.268,
+   "area": 90963,
+   "cells": 11869,
+   "nviol": 551,
+   "tns": -56.6,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 6.0,
+   "achieved": 6.246,
+   "met": false,
+   "wns": -0.246,
+   "area": 90689,
+   "cells": 11846,
+   "nviol": 16,
+   "tns": -2.3,
+   "end": "pcreg.q[29]"
+  },
+  {
+   "target": 8.0,
+   "achieved": 8.539,
+   "met": false,
+   "wns": -0.539,
+   "area": 90498,
+   "cells": 11806,
+   "nviol": 5,
+   "tns": -1.4,
+   "end": "fbemux.d2[31]"
+  },
+  {
+   "target": 10.0,
+   "achieved": 10.0,
+   "met": true,
+   "wns": 0.973,
+   "area": 90459,
+   "cells": 11806,
+   "nviol": 0,
+   "tns": 0,
+   "end": "fbemux.d2[31]"
+  }
+ ],
+ "ks": [
+  {
+   "target": 2.5,
+   "achieved": 4.019,
+   "met": false,
+   "wns": -1.519,
+   "area": 92193,
+   "cells": 12219,
+   "nviol": 2416,
+   "tns": -2325.2,
+   "end": "PCNextM[30]"
+  },
+  {
+   "target": 3.0,
+   "achieved": 4.103,
+   "met": false,
+   "wns": -1.103,
+   "area": 92193,
+   "cells": 12219,
+   "nviol": 2373,
+   "tns": -1620.8,
+   "end": "regf.rf[25][0]"
+  },
+  {
+   "target": 3.5,
+   "achieved": 4.412,
+   "met": false,
+   "wns": -0.912,
+   "area": 91924,
+   "cells": 12200,
+   "nviol": 2292,
+   "tns": -1216.8,
+   "end": "regf.rf[25][0]"
+  },
+  {
+   "target": 4.0,
+   "achieved": 4.699,
+   "met": false,
+   "wns": -0.699,
+   "area": 91642,
+   "cells": 12052,
+   "nviol": 2005,
+   "tns": -731.9,
+   "end": "regf.rf[25][0]"
+  },
+  {
+   "target": 4.5,
+   "achieved": 4.99,
+   "met": false,
+   "wns": -0.49,
+   "area": 91642,
+   "cells": 12030,
+   "nviol": 1276,
+   "tns": -328.8,
+   "end": "PCNextM[30]"
+  },
+  {
+   "target": 5.0,
+   "achieved": 5.363,
+   "met": false,
+   "wns": -0.363,
+   "area": 91364,
+   "cells": 12010,
+   "nviol": 545,
+   "tns": -135.4,
+   "end": "pcreg.q[30]"
+  },
+  {
+   "target": 6.0,
+   "achieved": 6.249,
+   "met": false,
+   "wns": -0.249,
+   "area": 91106,
+   "cells": 11992,
+   "nviol": 5,
+   "tns": -0.6,
+   "end": "fbemux.d2[30]"
+  },
+  {
+   "target": 8.0,
+   "achieved": 8.0,
+   "met": true,
+   "wns": 1.245,
+   "area": 91100,
+   "cells": 11992,
+   "nviol": 0,
+   "tns": 0,
+   "end": "regf.rf[25][0]"
+  },
+  {
+   "target": 10.0,
+   "achieved": 10.0,
+   "met": true,
+   "wns": 2.245,
+   "area": 91100,
+   "cells": 11992,
+   "nviol": 0,
+   "tns": 0,
+   "end": "regf.rf[25][0]"
+  }
+ ]
+}

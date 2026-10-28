@@ -1,0 +1,4 @@
+read_verilog -sv ../rtl/common/generic.sv ../rtl/common/units.sv ../rtl/pipe/hazard.sv ../rtl/pipe/priv.sv ../rtl/pipe/core_pipe.sv
+synth -top core_pipe -flatten
+dfflegalize -cell $_DFF_P_ 01 -cell $_DFFE_PP_ 01
+write_rtlil core_generic.il

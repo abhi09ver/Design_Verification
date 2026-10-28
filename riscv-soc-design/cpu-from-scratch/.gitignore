@@ -1,0 +1,11 @@
+build/
+obj_dir/
+*.vcd
+*.fst
+__pycache__/
+synth/net_*
+synth/*.il
+synth/hd_tt.lib
+synth/*.log
+synth/core_netlist.v
+synth/hier_hazard.v
