@@ -1,0 +1,430 @@
+<title>Pipeline Hazard Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–6 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.pgrid { overflow-x: auto; }
+.pgrid table { border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+.pgrid th, .pgrid td { border: 1px solid var(--line); padding: 3px 4px; text-align: center; min-width: 26px; }
+.pgrid th { color: var(--muted); font-weight: 600; }
+.pgrid td.ins { text-align: left; min-width: 150px; white-space: nowrap; color: var(--ink); }
+.pgrid td.F { background: var(--bg); }
+.pgrid td.D { background: var(--ok); }
+.pgrid td.E { background: var(--tint); font-weight: 600; }
+.pgrid td.M { background: var(--bg); }
+.pgrid td.W { background: var(--ok); }
+.pgrid td.st { color: var(--copper); font-weight: 700; }
+.pgrid td.fl { background: var(--bad); color: var(--hot); }
+.pgrid tr.wrong td.ins { color: var(--hot); text-decoration: line-through; }
+.pgrid td.fw { box-shadow: inset 0 -3px 0 var(--signal); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+input.hex { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); width: 12ch; }
+.fields { display: flex; flex-wrap: wrap; gap: 0; font-family: var(--mono); font-size: 12px; }
+.fields div { border: 1px solid var(--line); padding: 4px 6px; text-align: center; background: var(--bg); }
+.fields div b { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.bits { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+.bits .k { color: var(--signal); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 7 companion</div>
+    <h1>Pipeline Hazard Lab</h1>
+    <p class="lede">A cycle-by-cycle model of Wally's five-stage pipeline. Run the book's hazard program, switch forwarding off, move branch resolution to Decode, and watch the CPI change. Then take the ALU and the decoder apart bit by bit, and finish with the self-check.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#pipe">1 · Pipeline diagram</a>
+      <a href="#alu">2 · Shifter and slt flags</a>
+      <a href="#dec">3 · Decoder</a>
+      <a href="#quiz">4 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="pipe" aria-labelledby="h-pipe">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Section 7.2.2</div>
+      <h2 id="h-pipe">Forward if you can, stall if you must, flush if you guessed wrong</h2>
+      <p class="principle">Model rules. With forwarding: an ALU result is usable in the <b>next</b> instruction's Execute; a load result is usable two cycles after the load's Execute (a <b>1-cycle load-use stall</b> when adjacent). Without forwarding: the consumer's Decode must overlap the producer's Writeback (the register file writes in the first half of the cycle, reads in the second). Branches predict not-taken; a taken branch redirects Fetch after it resolves.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="prog">Program</label>
+        <select id="prog">
+          <option value="fig">Book Fig. 7.15 (forward, load-use, taken beq)</option>
+          <option value="loop">Array sum loop, 3 iterations (naive order)</option>
+          <option value="sched">Same loop, compiler-scheduled</option>
+          <option value="chain">Load chain (pointer chase)</option>
+        </select>
+        <span class="caption">Forwarding</span>
+        <span class="tog" role="group" aria-label="Forwarding"><button data-fw="1" aria-pressed="true">on</button><button data-fw="0" aria-pressed="false">off</button></span>
+        <span class="caption">Branch resolves in</span>
+        <span class="tog" role="group" aria-label="Branch resolution stage"><button data-br="E" aria-pressed="true">Execute</button><button data-br="D" aria-pressed="false">Decode</button></span>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+      <div class="legend"><span><b style="background:var(--ok)"></b>D / W</span><span><b style="background:var(--tint)"></b>E</span><span><b style="background:var(--bg)"></b>F / M</span><span style="color:var(--copper)">D D = stalled in Decode</span><span><b style="background:var(--bad)"></b>flushed (wrong path)</span><span><b style="box-shadow: inset 0 -3px 0 var(--signal)"></b>uses a forwarded operand</span></div>
+      <div class="kpis">
+        <div class="kv"><span class="k">Instructions retired</span><span class="v" id="kN"></span></div>
+        <div class="kv"><span class="k">Cycles (first fetch to last W)</span><span class="v" id="kC"></span></div>
+        <div class="kv"><span class="k">Stall cycles</span><span class="v" id="kS"></span></div>
+        <div class="kv"><span class="k">Flushed slots</span><span class="v" id="kF"></span></div>
+        <div class="kv"><span class="k">CPI after fill</span><span class="v" id="kCPI"></span></div>
+      </div>
+      <div class="narr" id="pNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="alu" aria-labelledby="h-alu">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Sections 7.1.3.3 and 7.1.3.4</div>
+      <h2 id="h-alu">Every shift is a right shift; every compare is a subtraction</h2>
+      <p class="principle">32-bit funnel shifter (book Table 7.5): build a 63-bit Z, shift right, keep the low 32 bits. Left shifts use the complemented amount ~k. Flags from A − B = A + ~B + 1: <b>sltu = NOT carry</b>, <b>slt = N XOR V</b>.</p>
+    </div>
+    <div class="bench">
+      <div class="two">
+        <div style="display:grid; gap:12px">
+          <div class="controls">
+            <label class="caption" for="shA">A (hex)</label><input class="hex" id="shA" value="80000024">
+            <label class="caption" for="shK">k</label><input class="hex" id="shK" value="4" style="width:6ch">
+            <select id="shT"><option>srl</option><option>sra</option><option selected>sll</option></select>
+          </div>
+          <div class="bits" id="shOut"></div>
+        </div>
+        <div style="display:grid; gap:12px">
+          <div class="controls">
+            <label class="caption" for="cA">A (hex)</label><input class="hex" id="cA" value="7fffffff">
+            <label class="caption" for="cB">B (hex)</label><input class="hex" id="cB" value="80000000">
+          </div>
+          <div class="kpis">
+            <div class="kv"><span class="k">A − B</span><span class="v" id="cSum" style="font-size:18px"></span></div>
+            <div class="kv"><span class="k">C N V</span><span class="v" id="cFlags"></span></div>
+            <div class="kv"><span class="k">slt</span><span class="v" id="cSlt"></span></div>
+            <div class="kv"><span class="k">sltu</span><span class="v" id="cSltu"></span></div>
+          </div>
+          <div class="narr" id="cNarr"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="dec" aria-labelledby="h-dec">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Sections 7.1.2 and 7.1.4</div>
+      <h2 id="h-dec">Decode a 32-bit instruction like the controller does</h2>
+      <p class="principle">Type any RV32I instruction word. The page splits the fields, builds the immediate the way the extender does (<b>Instr[31] is always the sign</b>), and looks up the main-decoder row from book Table 7.6.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="dIn">Instruction (hex)</label><input class="hex" id="dIn" value="00402083">
+        <span class="caption">Try:</span>
+        <button class="btn chip" data-d="00402083">lw x1,4(x0)</button>
+        <button class="btn chip" data-d="00102423">sw x1,8(x0)</button>
+        <button class="btn chip" data-d="00208463">beq x1,x2,+8</button>
+        <button class="btn chip" data-d="0000006f">jal x0,0</button>
+        <button class="btn chip" data-d="40208133">sub x2,x1,x2</button>
+        <button class="btn chip" data-d="fff00513">addi a0,x0,-1</button>
+        <button class="btn chip" data-d="12345537">lui a0,0x12345</button>
+      </div>
+      <div class="fields" id="dFields"></div>
+      <div class="scroll"><table class="t" id="dCtl"></table></div>
+      <div class="narr" id="dNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 7 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). Experiment 1 is a timing model of the book's pipeline, not the RTL; the notes' lab section has real simulator output.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  // ---------- 1. pipeline model ----------
+  // each entry: text, rd, rs (array), load, branch (taken?), wrong (wrong-path texts if taken)
+  const P = {
+    fig: [
+      { t: 'addi t0, zero, 42', rd: 't0', rs: [] },
+      { t: 'ori  t1, t0, 1', rd: 't1', rs: ['t0'] },
+      { t: 'lb   t2, 0(t0)', rd: 't2', rs: ['t0'], load: 1 },
+      { t: 'and  t3, t2, t0', rd: 't3', rs: ['t2', 't0'] },
+      { t: 'beq  t3, zero, else', rs: ['t3'], br: 1, taken: 1, wrong: ['sb   t3, 0(t0)', 'xori t4, t3, 1'] },
+      { t: 'sub  t5, t1, t4', rd: 't5', rs: ['t1', 't4'] }
+    ],
+    loop: [], sched: [],
+    chain: [
+      { t: 'lw   a0, 0(a0)', rd: 'a0', rs: ['a0'], load: 1 },
+      { t: 'lw   a0, 0(a0)', rd: 'a0', rs: ['a0'], load: 1 },
+      { t: 'lw   a0, 4(a0)', rd: 'a0', rs: ['a0'], load: 1 },
+      { t: 'add  a1, a1, a0', rd: 'a1', rs: ['a1', 'a0'] },
+      { t: 'sw   a1, 0(sp)', rs: ['a1', 'sp'] }
+    ]
+  };
+  for (let it = 0; it < 3; it++) {
+    const last = it === 2;
+    P.loop.push({ t: 'lw   t1, 0(a0)', rd: 't1', rs: ['a0'], load: 1 }, { t: 'add  t2, t2, t1', rd: 't2', rs: ['t2', 't1'] },
+      { t: 'addi a0, a0, 4', rd: 'a0', rs: ['a0'] }, { t: 'addi t0, t0, -1', rd: 't0', rs: ['t0'] },
+      { t: 'bnez t0, loop', rs: ['t0'], br: 1, taken: !last, wrong: ['sw   t2, 0(a1)', '(next)'] });
+    P.sched.push({ t: 'lw   t1, 0(a0)', rd: 't1', rs: ['a0'], load: 1 }, { t: 'addi a0, a0, 4', rd: 'a0', rs: ['a0'] },
+      { t: 'addi t0, t0, -1', rd: 't0', rs: ['t0'] }, { t: 'add  t2, t2, t1', rd: 't2', rs: ['t2', 't1'] },
+      { t: 'bnez t0, loop', rs: ['t0'], br: 1, taken: !last, wrong: ['sw   t2, 0(a1)', '(next)'] });
+  }
+  P.loop.push({ t: 'sw   t2, 0(a1)', rs: ['t2', 'a1'] }); P.sched.push({ t: 'sw   t2, 0(a1)', rs: ['t2', 'a1'] });
+  let FW = 1, BR = 'E';
+  document.querySelectorAll('[data-fw]').forEach(b => b.addEventListener('click', () => { FW = +b.dataset.fw; document.querySelectorAll('[data-fw]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderPipe(); }));
+  document.querySelectorAll('[data-br]').forEach(b => b.addEventListener('click', () => { BR = b.dataset.br; document.querySelectorAll('[data-br]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderPipe(); }));
+  $('prog').addEventListener('change', renderPipe);
+
+  function schedule(prog) {
+    // rows: {text, wrong, cells: Map cycle -> label, fwd}
+    const rows = []; const lastW = {}; // reg -> {e, load}
+    let prevE = 0, prevDin = 0, nextF = 1, stalls = 0, flushed = 0;
+    prog.forEach(ins => {
+      const f = nextF;
+      const din = Math.max(f + 1, prevE); // enter D when the older one has moved on to E
+      let e = Math.max(din + 1, prevE + 1); let need = e, fwd = false;
+      ins.rs.forEach(r => { const p = lastW[r]; if (!p || r === 'zero') return;
+        let ok;
+        if (FW) ok = p.load ? p.e + 2 : p.e + 1; else ok = p.e + 3;
+        if (ok > need) need = ok;
+        if (FW && (e <= p.e + 2)) fwd = true;
+      });
+      const st = need - e; e = need; stalls += st;
+      if (FW) { fwd = ins.rs.some(r => lastW[r] && r !== 'zero' && e <= lastW[r].e + 2); }
+      const cells = {};
+      for (let c = f; c < din; c++) cells[c] = 'F';
+      for (let c = din; c < e; c++) cells[c] = c > din ? 'Ds' : 'D';
+      cells[e] = 'E'; cells[e + 1] = 'M'; cells[e + 2] = 'W';
+      rows.push({ text: ins.t, cells, fwd, e });
+      if (ins.rd) lastW[ins.rd] = { e, load: !!ins.load };
+      prevE = e; prevDin = din;
+      nextF = Math.max(f + 1, din); // fetch of the next one happens while this one is in D
+      if (ins.br && ins.taken) {
+        const resolve = BR === 'E' ? e : e - 1;
+        // wrong-path instructions fetched before redirect
+        const wf = []; let c = nextF;
+        while (c <= resolve && wf.length < 2) { wf.push(c); c++; }
+        wf.forEach((c, i) => { const cl = {}; cl[c] = 'X'; if (c + 1 <= resolve) cl[c + 1] = 'X'; rows.push({ text: ins.wrong[i] || '(wrong path)', cells: cl, wrong: true }); });
+        flushed += wf.length;
+        nextF = resolve + 1; prevE = Math.max(prevE, resolve);
+      }
+    });
+    return { rows, stalls, flushed };
+  }
+  function renderPipe() {
+    const prog = P[$('prog').value];
+    const { rows, stalls, flushed } = schedule(prog);
+    const maxC = Math.max(...rows.flatMap(r => Object.keys(r.cells).map(Number)));
+    let h = '<table><thead><tr><th>instruction</th>';
+    for (let c = 1; c <= maxC; c++) h += `<th>${c}</th>`;
+    h += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      h += `<tr class="${r.wrong ? 'wrong' : ''}"><td class="ins">${r.text}</td>`;
+      for (let c = 1; c <= maxC; c++) {
+        const v = r.cells[c];
+        if (!v) { h += '<td></td>'; continue; }
+        if (v === 'X') { h += '<td class="fl">×</td>'; continue; }
+        if (v === 'Ds') { h += '<td class="D st">D</td>'; continue; }
+        h += `<td class="${v}${v === 'E' && r.fwd ? ' fw' : ''}">${v}</td>`;
+      }
+      h += '</tr>';
+    });
+    $('pgrid').innerHTML = h + '</tbody></table>';
+    const n = prog.length, cyc = maxC, cpi = (cyc - 4) / n;
+    $('kN').textContent = n; $('kC').textContent = cyc; $('kS').textContent = stalls; $('kF').textContent = flushed; $('kCPI').textContent = cpi.toFixed(2);
+    const name = $('prog').value;
+    let msg = '';
+    if (!FW) msg = `Forwarding off: every dependence waits until its producer reaches Writeback, so adjacent dependent instructions cost 2 stall cycles each. ${stalls} stall cycles here. Forwarding exists because this happens on almost every instruction.`;
+    else if (name === 'fig') msg = 'Book Fig. 7.15: ori and lb get t0 forwarded. The and instruction needs t2 from the lb right before it, so it stalls one cycle in Decode. beq resolves taken and the two wrong-path instructions are flushed.';
+    else if (name === 'loop') msg = 'Naive order: add uses t1 right after the load, so every iteration pays a load-use stall, and every taken bnez pays the branch penalty. Switch to the compiler-scheduled version.';
+    else if (name === 'sched') msg = 'Scheduled: two independent addi sit between lw and add, so the load-use stall disappears. Only the branch penalty is left. This is why GCC at -O2 nearly eliminated load-use stalls on my core (33 in 41,119 instructions).';
+    else msg = 'Pointer chasing: each load needs the previous load\'s result as its address, so every link costs a stall. No scheduling can hide it, and caches make it far worse (Chapter 10).';
+    if (BR === 'D' && FW) msg += ' Resolving in Decode halves the taken-branch penalty, but it puts the comparator in Decode and needs forwarding into Decode, which lengthens the critical path.';
+    $('pNarr').textContent = msg;
+  }
+  renderPipe();
+
+  // ---------- 2. shifter + flags ----------
+  const hex = s => { const v = parseInt(String(s).replace(/^0x/i, ''), 16); return Number.isFinite(v) ? v >>> 0 : 0; };
+  const h8 = v => (v >>> 0).toString(16).padStart(8, '0');
+  function renderShift() {
+    const A = hex($('shA').value), k = (parseInt($('shK').value, 10) || 0) & 31, t = $('shT').value;
+    const a = BigInt(A); let Z, amt;
+    if (t === 'srl') { Z = a; amt = k; }
+    else if (t === 'sra') { Z = ((A >>> 31) ? ((1n << 31n) - 1n) << 32n : 0n) | a; amt = k; }
+    else { Z = a << 31n; amt = (~k) & 31; }
+    const Y = Number((Z >> BigInt(amt)) & 0xFFFFFFFFn) >>> 0;
+    const zb = Z.toString(2).padStart(63, '0');
+    const ref = t === 'srl' ? A >>> k : t === 'sra' ? (A | 0) >> k : (A << k) >>> 0;
+    $('shOut').innerHTML = `Z (63 bits) = <span class="k">${zb.slice(0, 31)}</span>${zb.slice(31)}<br>shift right by ${t === 'sll' ? `~${k} = ${amt}` : amt}<br>Y = 0x${h8(Y)} ${Y === (ref >>> 0) ? '✓ matches ' + t : '✗'} (A ${t === 'sll' ? '<<' : t === 'srl' ? '>>>' : '>>'} ${k})<br><span class="caption">Blue = the top 31 bits the source generator fills: zeros for srl, copies of A[31] for sra, A itself for sll.</span>`;
+  }
+  ['shA', 'shK'].forEach(id => $(id).addEventListener('input', renderShift)); $('shT').addEventListener('change', renderShift);
+  renderShift();
+  function renderCmp() {
+    const A = hex($('cA').value), B = hex($('cB').value);
+    const full = A + ((~B) >>> 0) + 1; const sum = full >>> 0; const C = full > 0xFFFFFFFF ? 1 : 0;
+    const N = sum >>> 31, a31 = A >>> 31, b31 = B >>> 31; const V = (a31 ^ b31) & (a31 ^ N);
+    const slt = N ^ V, sltu = 1 - C;
+    $('cSum').textContent = '0x' + h8(sum); $('cFlags').textContent = `${C} ${N} ${V}`;
+    $('cSlt').textContent = slt; $('cSltu').textContent = sltu;
+    const ok = slt === ((A | 0) < (B | 0) ? 1 : 0) && sltu === (A < B ? 1 : 0);
+    $('cNarr').textContent = (V ? 'Overflow: A and B have different signs and the result sign differs from A, so N lies and slt = N XOR V corrects it. ' : '') + (C ? 'Carry out means A ≥ B unsigned, so sltu = 0. ' : 'No carry out means A < B unsigned, so sltu = 1. ') + (ok ? 'Both match a direct comparison.' : 'Mismatch!') + ' Try 7fffffff vs 80000000: signed, A is the largest positive and B the most negative.';
+  }
+  ['cA', 'cB'].forEach(id => $(id).addEventListener('input', renderCmp)); renderCmp();
+
+  // ---------- 3. decoder ----------
+  const ABI = ['zero', 'ra', 'sp', 'gp', 'tp', 't0', 't1', 't2', 's0', 's1', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 't3', 't4', 't5', 't6'];
+  const MAIN = { 0x33: ['R-type ALU', 'R', '0', '0', '00', 'x', '1', '0', '0', '1', '00'], 0x13: ['I-type ALU', 'I', '0', '0', '01', '000', '1', '0', '0', '1', '00'], 0x03: ['Load', 'I', '0', '0', '01', '000', '0', 'x', '1', '1', '10'], 0x23: ['Store', 'S', '0', '0', '01', '001', '0', 'x', 'x', '0', '01'], 0x63: ['Branch', 'B', '1', '0', '11', '010', '0', 'x', 'x', '0', '00'], 0x6f: ['jal', 'J', '0', '1', '11', '011', '0', '1', '0', '1', '00'], 0x67: ['jalr', 'I', '0', '1', '01', '000', '0', '1', '0', '1', '00'], 0x37: ['lui', 'U', '0', '0', 'xx', '100', 'x', '1', '0', '1', '00'], 0x17: ['auipc', 'U', '0', '0', '11', '100', '0', '0', '0', '1', '00'] };
+  const sx = (v, b) => (v << (32 - b)) >> (32 - b);
+  function renderDec() {
+    const w = hex($('dIn').value), op = w & 0x7f, rd = (w >> 7) & 31, f3 = (w >> 12) & 7, rs1 = (w >> 15) & 31, rs2 = (w >> 20) & 31, f7 = w >>> 25;
+    const row = MAIN[op];
+    const fmt = row ? row[1] : '?';
+    let imm = null;
+    if (fmt === 'I') imm = sx(w >>> 20, 12);
+    if (fmt === 'S') imm = sx(((w >>> 25) << 5) | ((w >> 7) & 31), 12);
+    if (fmt === 'B') imm = sx((((w >>> 31) & 1) << 12) | (((w >> 7) & 1) << 11) | (((w >>> 25) & 63) << 5) | (((w >> 8) & 15) << 1), 13);
+    if (fmt === 'J') imm = sx((((w >>> 31) & 1) << 20) | (((w >> 12) & 255) << 12) | (((w >> 20) & 1) << 11) | (((w >> 21) & 1023) << 1), 21);
+    if (fmt === 'U') imm = (w & 0xFFFFF000) | 0;
+    const F = [['funct7', f7.toString(2).padStart(7, '0'), 'R', 'S', 'B'], ['rs2', `${rs2} (${ABI[rs2]})`], ['rs1', `${rs1} (${ABI[rs1]})`], ['funct3', f3.toString(2).padStart(3, '0')], ['rd', `${rd} (${ABI[rd]})`], ['op', '0x' + op.toString(16).padStart(2, '0')]];
+    $('dFields').innerHTML = F.map(([n, v]) => `<div><b>${n}</b>${v}</div>`).join('') + `<div><b>format</b>${fmt}</div><div><b>ImmExt</b>${imm === null ? '—' : `${imm} (0x${h8(imm)})`}</div>`;
+    const hdr = ['Category', 'Branch', 'Jump', 'ALUSrc', 'ImmSrc', 'ALUOp', 'ALUResultSrc', 'ResultSrc', 'RegWrite', 'MemRW'];
+    $('dCtl').innerHTML = row ? `<thead><tr>${hdr.map(x => `<th>${x}</th>`).join('')}</tr></thead><tbody><tr><td>${row[0]}</td>${row.slice(2).map(x => `<td class="m">${x}</td>`).join('')}</tr></tbody>` : '<tbody><tr><td>Not an RV32I opcode in Table 7.6: the controller would flag it as illegal (once Chapter 8 adds traps).</td></tr></tbody>';
+    let note = '';
+    if (op === 0x33 && f3 === 0) note = (f7 >> 5) & 1 ? 'Funct7[5] = 1 and Op[5] = 1, so SubArith = 1: sub.' : 'Funct7[5] = 0: add.';
+    if (op === 0x33 && f7 !== 0 && f7 !== 0x20) note += ' Funct7 is neither 0000000 nor 0100000. The lazy decoder looks only at Funct7[5] and executes it anyway; with Zicsr, Wally decodes strictly and traps.';
+    if (op === 0x63) { const n = ['beq', 'bne', '?', '?', 'blt', 'bge', 'bltu', 'bgeu'][f3]; note = `${n}: the branch logic picks flag ${['eq', 'eq', '-', '-', 'lt', 'lt', 'ltu', 'ltu'][f3]} with Funct3[2:1] and inverts it if Funct3[0] = 1. Target = PC ${imm >= 0 ? '+' : '−'} ${Math.abs(imm)}.`; }
+    if (op === 0x03) note = `Load ${['lb', 'lh', 'lw', '?', 'lbu', 'lhu'][f3] || '?'}: address = ${ABI[rs1]} + ${imm}. Funct3[2] chooses zero-extension for lbu/lhu.`;
+    if (op === 0x23) note = `Store ${['sb', 'sh', 'sw'][f3] || '?'}: the S-format immediate is split, Instr[31:25] and Instr[11:7], so rs2 stays in the same bits for every format.`;
+    if (op === 0x6f) note = 'jal: J-format immediate, scrambled so the sign stays in bit 31. ALUResultSrc = 1 writes PC+4 (link) to rd.';
+    if (op === 0x37) note = 'lui: the U immediate already has 12 zeros at the bottom; ResultSrc = 0 and ALUResultSrc = 1 pass ImmExt straight to rd.';
+    if (op === 0x13 && f3 === 0 && rs1 === 0) note = `addi ${ABI[rd]}, zero, ${imm}: this is the li pseudo-instruction.`;
+    $('dNarr').textContent = note || 'Fields line up across formats: rs1, rs2, rd and the sign bit never move. That keeps the register read in parallel with decoding.';
+  }
+  $('dIn').addEventListener('input', renderDec);
+  document.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => { $('dIn').value = b.dataset.d; renderDec(); }));
+  renderDec();
+
+  // ---------- 4. quiz ----------
+  const Q = [
+    ['An add needs the result of the add right before it. What does the pipeline do?', ['Stall one cycle', 'Forward the result from the Memory stage into Execute', 'Read it from the register file', 'Flush and refetch'], 1, 'The older instruction is in M when the younger is in E. ForwardAE = 10 picks IFResultM. No cycle is lost.'],
+    ['Both RdM and RdW equal Rs1E. Which value is forwarded and why?', ['RdW, it is committed', 'RdM: it belongs to the newer instruction, so it holds the latest value', 'Neither, stall', 'Whichever arrives first'], 1, 'Check M before W. Reversing the priority returns stale data; my Chapter 5 bug hunt injected exactly this.'],
+    ['Why does lw followed by a dependent add cost a stall even with forwarding?', ['The register file is busy', 'The load data exists only at the end of Memory, but the add needs it at the start of Execute', 'Stores block loads', 'The ALU is busy'], 1, 'Detected in Decode: LoadStallD = MemReadE & MatchDE. One stall cycle, then forward from Writeback.'],
+    ['How many instructions are flushed for a taken branch in this pipeline, and why?', ['0', '1', '2: the instructions in Fetch and Decode were fetched on the not-taken guess', '3'], 2, 'The branch resolves in Execute. FlushD and FlushE turn the two wrong-path instructions into bubbles.'],
+    ['Why does Wally write the register file on the falling edge?', ['To save power', 'So an instruction in Decode can read a value written by Writeback in the same cycle, without a W→D bypass', 'For DFT', 'Because SRAM requires it'], 1, 'Write in the first half of W, read in the second half of D. The cost is a half-cycle write path (Chapter 6 lab).'],
+    ['A pipeline register is stalled (en = 0) and flushed (clear = 1) in the same cycle. What does Wally\'s flopenrc do?', ['Clears it', 'Holds it: clear only acts when enable is 1', 'X', 'Resets the core'], 1, 'Priority is reset > enable > clear. The hazard unit must flush the latest unstalled stage instead.'],
+    ['riscv-arch-test passes on your pipeline. What is still largely untested?', ['Nothing', 'Interactions between instructions: forwarding, stalls and flushes', 'The ALU', 'The decoder'], 1, 'The book says it directly: the suite tests instructions in isolation. Add hazard coverage and lock-step random tests.'],
+    ['The load-use check omits RdE != 0. Lock-step against the ISS passes. Is the design correct?', ['Yes, fully', 'Functionally yes, but it stalls for nothing after a load to x0: a performance bug only cycle counts or cover points reveal', 'No, it computes wrong values', 'It deadlocks'], 1, 'My lab: identical results, 1,008 vs 808 cycles on 100 iterations.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

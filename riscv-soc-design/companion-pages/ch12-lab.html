@@ -1,0 +1,444 @@
+<title>LSU Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–11 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
+.chk input { accent-color: var(--copper); }
+.wave { overflow-x: auto; }
+.wave table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.wave th, .wave td { border: 1px solid var(--line); padding: 3px 5px; text-align: center; min-width: 46px; white-space: nowrap; }
+.wave th { color: var(--muted); font-weight: 600; }
+.wave td.nm { text-align: left; color: var(--ink); font-weight: 600; min-width: 112px; background: var(--panel); position: sticky; left: 0; }
+.wave td.hi { background: var(--ok); }
+.wave td.lo { background: var(--bad); color: var(--hot); }
+.wave td.adr { background: color-mix(in srgb, var(--signal) 16%, transparent); }
+.wave td.dat { background: var(--tint); }
+.wave td.hold { background: color-mix(in srgb, var(--signal) 8%, transparent); color: var(--muted); }
+.wave td.wt { color: var(--muted); }
+.wave td.err { background: var(--bad); color: var(--hot); font-weight: 700; }
+.wave td.cl { cursor: pointer; user-select: none; }
+.wave td.cl:hover { outline: 2px solid var(--copper); outline-offset: -2px; }
+.wave td.xfer { box-shadow: inset 0 -3px 0 var(--good); font-weight: 700; }
+.out { font-size: 14px; display: grid; gap: 6px; }
+.out .bad { color: var(--hot); font-weight: 600; }
+.out .good { color: var(--good); font-weight: 600; }
+</style>
+<style>
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.fld { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-family: var(--mono); min-width: 0; max-width: 100%; }
+.fld select { width: 100%; }
+.fld input[type=text] { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); width: 120px; }
+textarea.prog { font: 12.5px var(--mono); width: 100%; min-height: 170px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.grid { overflow-x: auto; }
+.grid table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.grid th, .grid td { border: 1px solid var(--line); padding: 3px 4px; text-align: center; min-width: 26px; white-space: nowrap; }
+.grid th { color: var(--muted); font-weight: 600; }
+.grid td.nm { text-align: left; min-width: 96px; background: var(--panel); position: sticky; left: 0; color: var(--ink); }
+.grid td.F, .grid td.D, .grid td.E, .grid td.W { color: var(--muted); }
+.grid td.M { background: color-mix(in srgb, var(--signal) 14%, transparent); color: var(--ink); font-weight: 600; }
+.grid td.st { background: var(--bad); color: var(--hot); font-weight: 700; }
+.grid td.pw { background: var(--tint); color: var(--copper); font-weight: 600; }
+.grid td.pr { color: var(--muted); }
+.grid td.bad { background: var(--bad); color: var(--hot); font-weight: 700; }
+.ops { display: flex; flex-wrap: wrap; gap: 6px; }
+svg.lsu { width: 100%; height: auto; display: block; }
+svg.lsu text { font-family: var(--body); font-size: 12.5px; fill: var(--ink); }
+svg.lsu text.s { font-size: 11px; fill: var(--muted); font-family: var(--mono); }
+svg.lsu rect.b { fill: var(--panel); stroke: var(--line); stroke-width: 1.4; }
+svg.lsu rect.b.on { stroke: var(--copper); stroke-width: 2.4; fill: var(--tint); }
+svg.lsu path.e { fill: none; stroke: var(--line); stroke-width: 2; marker-end: url(#ah); }
+svg.lsu path.e.on { stroke: var(--copper); stroke-width: 3.2; marker-end: url(#ahOn); }
+.sigs { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--mono); font-size: 12px; }
+.sigs span { border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; background: var(--bg); }
+.sigs span b { color: var(--copper); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 12 companion</div>
+    <h1>LSU Lab</h1>
+    <p class="lede">Run short load/store sequences through a D-cache whose SRAM reads one cycle early, and compare four ways of handling the store-delay hazard, cycle by cycle. Trace each of the LSU's operations through the datapath, and price a cache-line burst. A self-check closes the page.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#port">1 · The read port</a>
+      <a href="#path">2 · Operation paths</a>
+      <a href="#burst">3 · Bursts</a>
+      <a href="#quiz">4 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="port" aria-labelledby="h-port">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 12.2, 12.4 and 12.5.2</div>
+      <h2 id="h-port">One SRAM port, read one cycle early: who pays when a store just wrote it?</h2>
+      <p class="principle"><b>Model:</b> all accesses hit; 16-byte lines, 8 sets (set = address bits 6:4). At the end of every cycle the port either <b>writes</b> (a store in Memory) or <b>reads</b> one set: the next instruction's (from IEUAdrE) or, when SelAdr = 1, Memory's own. A load needs a valid read of its set when it reaches Memory. <b>use</b> = an ALU op that needs the previous load (load-use stall).</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="fld">sequence<select id="sPre">
+          <option value="fig">Book Fig. 12.16</option>
+          <option value="copy">copy: lw, sw pairs</option>
+          <option value="rmw">read-modify-write</option>
+          <option value="seq">sequential loads</option>
+          <option value="stride">strided loads (new set each)</option>
+          <option value="sets">store then load, different sets</option>
+        </select></label>
+        <label class="fld">policy<select id="sPol">
+          <option value="comb">Lab 7: combinational read (no SRAM)</option>
+          <option value="wally">Wally: StoreStallD in Decode</option>
+          <option value="lab9" selected>Lab 9: check the read, re-read in Memory</option>
+          <option value="setaware">Hypothetical: re-read only if same set</option>
+          <option value="bug">Lab 9 + BUG_SELADR_ON_HIT</option>
+          <option value="nocheck">Lab 9 + BUG_NO_REREAD</option>
+        </select></label>
+      </div>
+      <div class="two">
+        <div class="sliders">
+          <div class="grp">Program (one per line: lw/sw/lb/sh… address, alu, use)</div>
+          <textarea class="prog" id="sProg" spellcheck="false" aria-label="Instruction sequence"></textarea>
+        </div>
+        <div class="sliders">
+          <div class="kpis">
+            <div class="kv"><span class="k">instructions</span><span class="v" id="kN">0</span></div>
+            <div class="kv"><span class="k">cycles to retire</span><span class="v" id="kC">0</span></div>
+            <div class="kv"><span class="k">hazard stalls</span><span class="v" id="kS">0</span></div>
+            <div class="kv"><span class="k">wrong loads</span><span class="v" id="kBad">0</span></div>
+          </div>
+          <div class="legend"><span><b style="background:color-mix(in srgb, var(--signal) 14%, transparent)"></b>Memory</span><span><b style="background:var(--bad)"></b>stall / wrong data</span><span><b style="background:var(--tint)"></b>port writes</span></div>
+          <p class="narr" id="sNarr"></p>
+        </div>
+      </div>
+      <div class="grid" id="sGrid"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="path" aria-labelledby="h-path">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Table 12.2 and Figs. 12.14–12.24</div>
+      <h2 id="h-path">Seven operations, one walker: which path lights up, and who owns the address</h2>
+      <p class="principle"><b>Ownership:</b> IEUAdrM in a normal cycle · HPTW (SelHPTW) during a walk · the cache FSM's CacheBusAdr + BeatCount during a fill, writeback or flush. Every change of owner is a seam to verify.</p>
+    </div>
+    <div class="bench">
+      <div class="ops" id="pOps" role="group" aria-label="LSU operation"></div>
+      <svg class="lsu" id="pSvg" viewBox="0 0 900 370" role="img" aria-label="LSU datapath with the selected operation highlighted"></svg>
+      <div class="sigs" id="pSigs"></div>
+      <p class="narr" id="pNarr"></p>
+    </div>
+  </section>
+
+  <section class="exp" id="burst" aria-labelledby="h-burst">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Sections 12.2.1–12.2.3 and Table 12.1</div>
+      <h2 id="h-burst">A line is beats × bus width; a dirty miss is two bursts, back to back</h2>
+      <p class="principle"><b>Beats</b> = line bits / bus bits · HSIZE = bus width · first beat waits w cycles, then one beat per cycle · fetch ≈ 1 + w + beats · writeback then fetch: twice that, minus 1 when the fetch address overlaps the last writeback data beat (Wally's CacheWriteback → CacheFetch).</p>
+    </div>
+    <div class="bench">
+      <div class="two">
+        <div class="sliders">
+          <div class="sl"><label for="bL">line bits</label><input type="range" id="bL" min="0" max="2" value="0"><output id="bLo"></output></div>
+          <div class="sl"><label for="bW">bus bits</label><input type="range" id="bW" min="0" max="1" value="0"><output id="bWo"></output></div>
+          <div class="sl"><label for="bWs">1st-beat waits</label><input type="range" id="bWs" min="0" max="12" value="0"><output id="bWso"></output></div>
+          <label class="chk"><input type="checkbox" id="bOv" checked> writeback → fetch overlap</label>
+        </div>
+        <div class="sliders">
+          <div class="kpis">
+            <div class="kv"><span class="k">beats</span><span class="v" id="bBeats"></span></div>
+            <div class="kv"><span class="k">HBURST</span><span class="v" id="bHb"></span></div>
+            <div class="kv"><span class="k">HSIZE</span><span class="v" id="bHs"></span></div>
+            <div class="kv"><span class="k">clean miss</span><span class="v" id="bClean"></span></div>
+            <div class="kv"><span class="k">dirty miss</span><span class="v" id="bDirty"></span></div>
+          </div>
+          <p class="narr" id="bNarr"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 12 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). The models here are behavioural; the notes' Lab 9 section has the RTL, the bug hunt and a real waveform of the re-read.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  // ---------- 1. read port ----------
+  const PRE = {
+    fig: 'lw 0x10\nsw 0x18\nlw 0x20\nlw 0x08',
+    copy: Array.from({ length: 6 }, (_, i) => `lw 0x${(i * 4).toString(16)}\nsw 0x${(0x80 + i * 4).toString(16)}`).join('\n'),
+    rmw: Array.from({ length: 5 }, (_, i) => `lw 0x${(i * 4).toString(16)}\nuse\nsw 0x${(i * 4).toString(16)}`).join('\n'),
+    seq: Array.from({ length: 12 }, (_, i) => `lw 0x${(i * 4).toString(16)}`).join('\n'),
+    stride: Array.from({ length: 10 }, (_, i) => `lw 0x${((i % 8) * 16).toString(16)}`).join('\n'),
+    sets: 'sw 0x00\nlw 0x40\nsw 0x10\nlw 0x50\nsw 0x20\nlw 0x20',
+  };
+  function parse() {
+    return $('sProg').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const [op, a] = l.split(/\s+/); const o = op.toLowerCase();
+      if (o === 'alu' || o === 'use') return { k: o, txt: l };
+      const adr = parseInt(a || '0', 16) || 0;
+      return { k: o.startsWith('s') ? 'st' : 'ld', set: (adr >> 4) & 7, txt: `${o} 0x${adr.toString(16)}` };
+    });
+  }
+  function simulate(prog, pol) {
+    const n = prog.length, rows = prog.map(() => ({}));
+    let pipe = { F: 0, D: null, E: null, M: null, W: null }, next = 1;   // instruction indices
+    let port = { set: -1, ok: false }, cyc = 0, stalls = 0, bad = 0, done = 0;
+    const firstM = new Set();
+    const isLd = i => i !== null && i < n && prog[i].k === 'ld', isSt = i => i !== null && i < n && prog[i].k === 'st';
+    const isMem = i => isLd(i) || isSt(i);
+    if (n === 0) return { rows, cyc: 0, stalls: 0, bad: 0, port: [] };
+    const portRow = [];
+    while (done < n && cyc < 400) {
+      cyc++;
+      for (const s of ['F', 'D', 'E', 'M', 'W']) { const i = pipe[s]; if (i !== null && i < n) rows[i][cyc] = s; }
+      // hazards decided this cycle
+      let mStall = false, dStall = false, loadUse = false;
+      const m = pipe.M;
+      if (isLd(m) && !firstM.has(m)) {
+        firstM.add(m);
+        const valid = port.ok && port.set === prog[m].set;
+        if (pol === 'comb' || pol === 'wally') { /* no check needed */ }
+        else if (pol === 'nocheck') { if (!valid) { bad++; rows[m].bad = cyc; } }
+        else if (!valid) { mStall = true; }
+      }
+      if (pol === 'wally' && isLd(pipe.D) && isSt(pipe.E)) dStall = true;
+      if (pipe.D !== null && pipe.D < n && prog[pipe.D].k === 'use' && isLd(pipe.E)) loadUse = true;
+      // the port at the end of this cycle
+      let act;
+      const storeWrites = isSt(m) && !mStall;
+      if (storeWrites) { act = 'wr'; port = { set: (pol === 'setaware') ? port.set : port.set, ok: false, wset: prog[m].set }; }
+      const selAdr = mStall || (pol === 'bug' && isMem(m));
+      if (!storeWrites) {
+        let rs = null;
+        if (selAdr && isMem(m)) rs = prog[m].set;
+        else if (isMem(pipe.E)) rs = prog[pipe.E].set;
+        else if (isMem(m)) rs = null;
+        if (rs !== null) { port = { set: rs, ok: true }; act = `r${rs}`; }
+        else act = '';
+      } else if (pol === 'setaware') {
+        // hypothetical: the write only spoils a read of the same set
+        const e = pipe.E; if (isMem(e) && prog[e].set !== prog[m].set) { port = { set: prog[e].set, ok: true }; act = 'wr'; }
+      }
+      portRow[cyc] = act;
+      if (mStall) { stalls++; rows[m][cyc] = 'M*'; }
+      if (dStall || loadUse) { stalls++; rows[pipe.D][cyc] = 'D*'; }
+      // advance
+      if (pipe.W !== null && pipe.W < n) done++;
+      if (mStall) { pipe = { F: pipe.F, D: pipe.D, E: pipe.E, M: pipe.M, W: null }; }
+      else if (dStall || loadUse) { pipe = { F: pipe.F, D: pipe.D, E: null, M: pipe.E, W: pipe.M }; }
+      else { pipe = { F: next < n ? next : null, D: pipe.F, E: pipe.D, M: pipe.E, W: pipe.M }; if (next < n) next++; }
+    }
+    return { rows, cyc, stalls, bad, port: portRow };
+  }
+  function renderPort() {
+    const prog = parse(), pol = $('sPol').value, r = simulate(prog, pol);
+    const C = r.cyc;
+    let h = `<table><thead><tr><th>instr</th>${Array.from({ length: C }, (_, i) => `<th>${i + 1}</th>`).join('')}</tr></thead><tbody>`;
+    prog.forEach((p, i) => {
+      h += `<tr><td class="nm">${p.txt}</td>`;
+      for (let c = 1; c <= C; c++) {
+        const s = r.rows[i][c] || '';
+        const cls = s.endsWith('*') ? 'st' : (r.rows[i].bad === c ? 'bad' : s);
+        h += `<td class="${cls}">${s.replace('*', '')}</td>`;
+      }
+      h += '</tr>';
+    });
+    if (pol !== 'comb') {
+      h += `<tr><td class="nm">port</td>`;
+      for (let c = 1; c <= C; c++) { const a = r.port[c] || ''; h += `<td class="${a === 'wr' ? 'pw' : 'pr'}">${a === 'wr' ? 'wr' : a ? 'rd' + a.slice(1) : ''}</td>`; }
+      h += '</tr>';
+    }
+    $('sGrid').innerHTML = h + '</tbody></table>';
+    $('kN').textContent = prog.length; $('kC').textContent = C; $('kS').textContent = r.stalls; $('kBad').textContent = r.bad;
+    $('kBad').className = 'v ' + (r.bad ? 'fail' : '');
+    const N = {
+      comb: 'Flop arrays read in the same cycle: no hazard at all, but no real SRAM works this way, and the arrays cost a lot of area and power at any useful size.',
+      wally: 'StoreStallD holds a load in Decode whenever a store is in Execute, whatever the sets. Cheap to detect (just opcodes), sometimes stalls for nothing (try "different sets").',
+      lab9: 'The cache checks every read: a load whose set was not read validly (the store wrote that cycle) re-reads in Memory. Same count as Wally here; the stall sits in M instead of D.',
+      setaware: 'Not in Wally or Lab 9: a store write only spoils a read of the same set. Saves the bubble when a store and the next load use different sets, at the cost of a set compare and a dual-use port.',
+      bug: 'SelAdr asserted on every access: the port re-reads Memory\'s set instead of the next instruction\'s. Every load after an access to a different set pays a cycle. Never wrong, just slower.',
+      nocheck: 'No check at all: a load right behind a store uses whatever the port read, a stale or wrong set. Red cells are loads that would return wrong data, which is what lock-step caught in Lab 9.'
+    };
+    $('sNarr').textContent = N[pol];
+  }
+  $('sPre').addEventListener('change', () => { $('sProg').value = PRE[$('sPre').value]; renderPort(); });
+  $('sPol').addEventListener('change', renderPort); $('sProg').addEventListener('input', renderPort);
+  $('sProg').value = PRE.fig; renderPort();
+
+  // ---------- 2. operation paths ----------
+  const B = { ieu: [20, 40, 120, 54, 'IEU', 'IEUAdrE / M'], mmu: [200, 40, 140, 70, 'MMU', 'TLB · PMA · PMP'], cache: [410, 40, 140, 70, 'D-cache SRAM', 'tags + lines'],
+              scr: [600, 40, 110, 54, 'SCR', 'word of line'], swr: [760, 40, 120, 54, 'ES · SWR', 'ReadDataM'],
+              hptw: [20, 180, 120, 54, 'HPTW', 'IHAdrM'], sww: [200, 180, 140, 54, 'SWW · ES', 'store data'], fb: [600, 180, 110, 54, 'FetchBuffer', 'bus words'],
+              ahb: [410, 290, 150, 60, 'ahbcache-', 'interface, BeatCount'], bus: [760, 290, 120, 60, 'AHB / EBU', 'HADDR, HWDATA'] };
+  const E = { ieu_mmu: 'M140 67H198', hptw_mmu: 'M140 207H170V95H198', mmu_cache: 'M340 75H408', cache_scr: 'M550 67H598', scr_swr: 'M710 67H758',
+              swr_hptw: 'M830 94V150H80V178', mmu_ahb: 'M340 100H365V310H408', sww_cache: 'M340 195H385V100H408', sww_ahb: 'M340 220H395V330H408',
+              ahb_bus: 'M560 320H758', bus_fb: 'M800 290V207H712', fb_swr: 'M690 180V125H790V96', fb_cache: 'M600 207H520V112',
+              scr_ahb: 'M600 85H580V265H500V288' };
+  const OPS = [
+    ['Cached load hit', ['ieu', 'mmu', 'cache', 'scr', 'swr'], ['ieu_mmu', 'mmu_cache', 'cache_scr', 'scr_swr'], { CacheRW: '10', BusRW: '00', SelHPTW: 0 }, 'The set was read in Execute from IEUAdrE; in Memory the TLB gives PAdrM, the tags match, SCR picks the word, SWR the bytes. One cycle, no bus.'],
+    ['Cached store hit', ['ieu', 'mmu', 'cache', 'sww'], ['ieu_mmu', 'mmu_cache', 'sww_cache'], { CacheRW: '01', BusRW: '00', SelHPTW: 0 }, 'Only the tags are needed in Memory. The data array is written at the end of Memory, which is what makes the next load\'s early read stale (the store-delay hazard).'],
+    ['Line fetch (miss)', ['mmu', 'cache', 'ahb', 'bus', 'fb'], ['mmu_ahb', 'ahb_bus', 'bus_fb', 'fb_cache'], { CacheBusRW: '10', HTRANS: 'NONSEQ, SEQ…', HBURST: 'INCRn' }, 'CacheBusAdr = PAdrM with the offset zeroed. BeatCount drives the address phase, BeatCountDelayed fills FetchBuffer; CacheBusAck, then WriteLine. A load miss is answered straight from the FetchBuffer.'],
+    ['Line writeback', ['cache', 'scr', 'ahb', 'bus'], ['cache_scr', 'scr_ahb', 'ahb_bus'], { CacheBusRW: '01', SelBusBeat: 1, HWRITE: 1 }, 'The victim line is read out one bus word per beat through SCR (SelBusBeat) into a write burst; the buscachefsm then goes straight to CacheFetch, overlapping the last data beat with the first fetch address.'],
+    ['Flush (fence.i)', ['cache', 'scr', 'ahb', 'bus'], ['cache_scr', 'scr_ahb', 'ahb_bus'], { CacheBusRW: '01', FlushDCacheM: 1, CacheableOrFlushM: 1 }, 'Every valid dirty line is written back, set by set, way by way. CacheableOrFlushM sends the flush to the cache whatever address the fence instruction happens to have.'],
+    ['Uncached load', ['ieu', 'mmu', 'ahb', 'bus', 'fb', 'swr'], ['ieu_mmu', 'mmu_ahb', 'ahb_bus', 'bus_fb', 'fb_swr'], { CacheableM: 0, BusRW: '10', HTRANS: 'NONSEQ' }, 'PMA says not cacheable (a peripheral): one NONSEQ transfer through busfsm Adr, Data, Mem3; HRDATA lands in FetchBuffer[0] and goes to SWR. A trap cancels it before the address phase.'],
+    ['Uncached store', ['ieu', 'mmu', 'sww', 'ahb', 'bus'], ['ieu_mmu', 'mmu_ahb', 'sww_ahb', 'ahb_bus'], { CacheableM: 0, BusRW: '01', HWRITE: 1 }, 'Same single transfer with HWRITE = 1; the store data rides PreHWDATA in the data phase. Interrupts wait (BusCommittedM) once the address phase is accepted.'],
+    ['TLB miss: walker read', ['hptw', 'mmu', 'cache', 'scr', 'swr'], ['hptw_mmu', 'mmu_cache', 'cache_scr', 'scr_swr', 'swr_hptw'], { SelHPTW: 1, GatedStallW: 0, CommittedM: 1 }, 'SelHPTW: the walker\'s IHAdrM replaces IEUAdrM, PMA/PMP still check it, the PTE comes back through the D-cache (coherent with recent stores, writable for A/D). The pipeline stalls, the LSU does not.']
+  ];
+  let opSel = 0;
+  function renderPath() {
+    const [name, bs, es, sigs, txt] = OPS[opSel];
+    let s = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--line)"/></marker><marker id="ahOn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--copper)"/></marker></defs>';
+    Object.entries(E).forEach(([k, d]) => { s += `<path class="e${es.includes(k) ? ' on' : ''}" d="${d}"/>`; });
+    Object.entries(B).forEach(([k, [x, y, w, h, t, sub]]) => { s += `<rect class="b${bs.includes(k) ? ' on' : ''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/><text x="${x + 10}" y="${y + 22}" font-weight="600">${t}</text><text class="s" x="${x + 10}" y="${y + 40}">${sub}</text>`; });
+    $('pSvg').innerHTML = s;
+    $('pSigs').innerHTML = Object.entries(sigs).map(([k, v]) => `<span>${k} = <b>${v}</b></span>`).join('');
+    $('pNarr').textContent = txt;
+    $('pOps').querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', i === opSel ? 'true' : 'false'));
+  }
+  $('pOps').innerHTML = OPS.map((o, i) => `<button class="btn chip" data-i="${i}">${o[0]}</button>`).join('');
+  $('pOps').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { opSel = +b.dataset.i; renderPath(); }));
+  renderPath();
+
+  // ---------- 3. bursts ----------
+  const LINES = [128, 256, 512], BUSES = [32, 64];
+  function renderBurst() {
+    const L = LINES[+$('bL').value], Wd = BUSES[+$('bW').value], w = +$('bWs').value, ov = $('bOv').checked;
+    $('bLo').textContent = L; $('bWo').textContent = Wd; $('bWso').textContent = w;
+    const beats = L / Wd;
+    const hb = { 4: '011 INCR4', 8: '101 INCR8', 16: '111 INCR16' }[beats] || '001 INCR';
+    const fetch = 1 + w + beats, clean = fetch + 2, dirty = 2 * fetch - (ov ? 1 : 0) + 2;
+    $('bBeats').textContent = beats; $('bHb').textContent = hb.split(' ')[1]; $('bHs').textContent = Wd === 32 ? '010' : '011';
+    $('bClean').textContent = clean; $('bDirty').textContent = dirty;
+    const cfg = L === 512 && Wd === 32 ? 'rv32gc (Table 12.1: 16 beats)' : L === 512 && Wd === 64 ? 'rv64gc (Table 12.1: 8 beats)' : L === 128 && Wd === 32 ? 'Lab 7\'s cache (INCR4)' : 'a custom configuration';
+    $('bNarr').textContent = `This is ${cfg}. HBURST ${hb}, HSIZE ${Wd === 32 ? '010 (word)' : '011 (doubleword)'} as the AHB spec encodes it. Stall estimate: 1 cycle to detect the miss, ${fetch} for the burst (${w} wait${w === 1 ? '' : 's'} on the first beat, then one per cycle), 1 to write the line: ${clean} cycles. A dirty victim adds a write burst first${ov ? ', and overlapping the fetch address with the last write data saves one cycle' : ''}: ${dirty}. Lab 7 measured 7 and 12 at 128 / 32 with no waits; its bursts do not overlap.`;
+  }
+  ['bL', 'bW', 'bWs', 'bOv'].forEach(id => $(id).addEventListener('input', renderBurst)); renderBurst();
+
+  // ---------- 4. quiz ----------
+  const Q = [
+    ['Why does Wally present the D-cache set in Execute, from IEUAdrE?', ['Its SRAM has a registered read: starting in Execute hides that cycle, so a hit still completes in Memory', 'To save power', 'Because the TLB is in Execute', 'To avoid the load-use stall'], 0, 'The price is the store-delay hazard and the VIPT rule that the set must come from untranslated bits.'],
+    ['IEUAdrE is a virtual address. Why is indexing the cache with it safe?', ['The set and offset bits lie inside the 4 KiB page offset, which translation never changes, so each way is at most 4 KiB', 'Because the TLB always hits', 'Because the cache is physically indexed', 'It is not safe; Wally flushes on every context switch'], 0, 'Lab 9 refuses to elaborate a configuration where set + offset bits exceed 12.'],
+    ['sw to 0x18 then lw from 0x20, back to back, both hits. Why does the load wait a cycle in Wally?', ['The store writes the SRAM in the same cycle the load would read it: one port. StoreStallD holds the load in Decode', 'The addresses alias', 'The load misses', 'Write-back policy'], 0, 'Book Fig. 12.16. Wally does not compare addresses; any load right after a store waits.'],
+    ['Why does the HPTW read PTEs through the D-cache rather than straight from memory?', ['Coherence with PTEs just written by stores, a writable path for A/D updates, and PTE hits are faster', 'The bus is too slow for PTEs', 'The I-cache cannot hold PTEs', 'PMP does not check the D-cache'], 0, 'The book lists exactly these three reasons.'],
+    ['A cache line fill is in flight when the instruction in Memory would raise an access fault. What happens?', ['Nothing faults mid-burst: the fill\'s address was checked when the access began; faults are raised at the start, before a miss starts', 'The burst is aborted', 'The fault is ignored forever', 'An interrupt is taken'], 0, 'Section 12.4.2 and CommittedM: once started, a memory operation completes.'],
+    ['What is GatedStallW, and what breaks without it?', ['StallW & ~SelHPTW: the LSU keeps serving the walker while the pipeline is stalled. Without it the bus waits for the stall to drop and the stall waits for the PTE: deadlock', 'A clock gate for power', 'The Decode-stage stall for stores', 'The signal that ends a burst'], 0, 'Seen in Lab 8\'s waveform: StallW high, the busfsm still moving through Adr, Data, Mem3.'],
+    ['Wally hung during Linux boot because an LSU burst preempted an I-cache burst. Why could that only happen with virtual memory?', ['A page walk runs while the pipeline is stalled, so an LSU request can arrive after an IFU burst has already started; before that they only collided in the same cycle', 'Linux uses more memory', 'The TLB was too small', 'PMP blocked the IFU'], 0, 'Fix: IFUReq and LSUDisable. An integration bug where each block was correct alone.'],
+    ['Lab 7\'s random generator ran thousands of accesses and never caught a store-to-load read bug. Why?', ['It built every address with li + add, so no two memory instructions were ever adjacent: the hazard was unreachable', 'Too few seeds', 'The cache model hid it', 'The bug was timing-only'], 0, 'Coverage on "distance between memory operations" would have shown an empty bin at 1. genlsu.py fixed it.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

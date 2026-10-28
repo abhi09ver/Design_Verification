@@ -1,0 +1,508 @@
+<title>Peripherals Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–13 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
+.chk input { accent-color: var(--copper); }
+.wave { overflow-x: auto; }
+.wave table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.wave th, .wave td { border: 1px solid var(--line); padding: 3px 5px; text-align: center; min-width: 46px; white-space: nowrap; }
+.wave th { color: var(--muted); font-weight: 600; }
+.wave td.nm { text-align: left; color: var(--ink); font-weight: 600; min-width: 112px; background: var(--panel); position: sticky; left: 0; }
+.wave td.hi { background: var(--ok); }
+.wave td.lo { background: var(--bad); color: var(--hot); }
+.wave td.adr { background: color-mix(in srgb, var(--signal) 16%, transparent); }
+.wave td.dat { background: var(--tint); }
+.wave td.hold { background: color-mix(in srgb, var(--signal) 8%, transparent); color: var(--muted); }
+.wave td.wt { color: var(--muted); }
+.wave td.err { background: var(--bad); color: var(--hot); font-weight: 700; }
+.wave td.cl { cursor: pointer; user-select: none; }
+.wave td.cl:hover { outline: 2px solid var(--copper); outline-offset: -2px; }
+.wave td.xfer { box-shadow: inset 0 -3px 0 var(--good); font-weight: 700; }
+.out { font-size: 14px; display: grid; gap: 6px; }
+.out .bad { color: var(--hot); font-weight: 600; }
+.out .good { color: var(--good); font-weight: 600; }
+</style>
+<style>
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.fld { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-family: var(--mono); min-width: 0; max-width: 100%; }
+.fld select, .fld input[type=text], .fld input[type=number] { width: 100%; font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.fld input[type=text], .fld input[type=number] { width: 120px; }
+.wave td.on { background: color-mix(in srgb, var(--signal) 26%, transparent); font-weight: 600; }
+.wave td.ip { background: color-mix(in srgb, var(--copper) 30%, transparent); font-weight: 700; }
+.wave td.irq { background: var(--copper); color: var(--panel); font-weight: 700; }
+.wave td.w1c { background: var(--tint); color: var(--copper); font-weight: 700; }
+.wave td.lost { box-shadow: inset 0 0 0 2px var(--hot); }
+table.t td.win { background: var(--tint); font-weight: 700; }
+table.t select { font: 13px var(--mono); padding: 3px 4px; }
+.log { font-family: var(--mono); font-size: 12.5px; display: grid; gap: 3px; max-height: 220px; overflow-y: auto; }
+.log .bad { color: var(--hot); } .log .good { color: var(--good); } .log .note { color: var(--muted); }
+svg.wv { width: 100%; height: auto; display: block; }
+svg.wv text { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+svg.wv .m { fill: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 20 companion</div>
+    <h1>Peripherals Lab</h1>
+    <p class="lede">Click a GPIO pin cycle by cycle and watch it cross the synchronizer into a sticky interrupt. Run the PLIC by hand: requests, priorities, threshold, claim and complete. Drift a UART receiver's clock until it reads the wrong byte. Then mismatch an SPI controller and peripheral, and see loopback hide it.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#gpio">1 · GPIO pin to interrupt</a>
+      <a href="#plic">2 · PLIC by hand</a>
+      <a href="#uart">3 · UART baud budget</a>
+      <a href="#spi">4 · SPI mode mismatch</a>
+      <a href="#quiz">5 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="gpio" aria-labelledby="h-gpio">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Section 20.1, Figs. 20.4 and 20.5</div>
+      <h2 id="h-gpio">A pin edge needs two cycles to cross the synchronizer, and the pending bit stays set until software writes a 1</h2>
+      <p class="principle">Click the <b>pin</b> row to toggle the pin in a cycle, and the <b>W1C</b> rows to write 1 to rise_ip or high_ip in that cycle. sync1 and sync2 form the 2-flop synchronizer (input_val = sync2), and prev holds the previous value for edge detection.</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="gRiseIe" checked> rise_ie</label>
+        <label class="chk"><input type="checkbox" id="gFallIe"> fall_ie</label>
+        <label class="chk"><input type="checkbox" id="gHighIe"> high_ie</label>
+        <label class="chk"><input type="checkbox" id="gLowIe"> low_ie</label>
+        <span class="tog" role="group" aria-label="Synchronizer"><button id="gSync" aria-pressed="true">2-flop sync</button><button id="gNoSync" aria-pressed="false">no sync (bug)</button></span>
+        <span class="tog" role="group" aria-label="Same-cycle rule"><button id="gSetWins" aria-pressed="true">set wins</button><button id="gClrWins" aria-pressed="false">clear wins</button></span>
+        <button class="btn chip" data-gp="pulse">a 1-cycle pulse</button>
+        <button class="btn chip" data-gp="race">clear races an edge</button>
+        <button class="btn chip" data-gp="level">level re-arms</button>
+      </div>
+      <div class="wave" id="gWave"></div>
+      <p class="narr" id="gNarr"></p>
+    </div>
+  </section>
+
+  <section class="exp" id="plic" aria-labelledby="h-plic">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Section 20.3, Example 20.3</div>
+      <h2 id="h-plic">The highest priority wins, a tie goes to the lowest id, and a claimed source stays silent until it is completed</h2>
+      <p class="principle">Requests are levels from the devices. Each <b>clock</b> the gateway sets pending = pending OR (request AND NOT in progress). <b>Claim</b> returns the winner, clears its pending bit and marks it in progress. <b>Complete</b> ends it. MExtInt = (winner's priority &gt; threshold).</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <button class="btn" id="pClk">Clock</button>
+        <button class="btn" id="pClaim">Claim (lw)</button>
+        <label class="fld">complete id<select id="pCid"></select></label>
+        <button class="btn" id="pCompl">Complete (sw)</button>
+        <div class="sl" style="grid-template-columns: 82px 140px 28px;"><label for="pTh">threshold</label><input type="range" id="pTh" min="0" max="7" value="2"><output id="pTho">2</output></div>
+        <button class="btn chip" data-pp="ex">Example 20.3</button>
+        <button class="btn chip" data-pp="tie">tie</button>
+        <button class="btn chip" data-pp="eq">priority = threshold</button>
+        <button class="btn chip" data-pp="early">complete before service</button>
+      </div>
+      <div class="two">
+        <div class="scroll"><table class="t" id="pTab"></table></div>
+        <div class="sliders">
+          <div class="kpis">
+            <div class="kv"><span class="k">winner (claim returns)</span><span class="v" id="pWin">0</span></div>
+            <div class="kv"><span class="k">MExtInt</span><span class="v" id="pIrq">0</span></div>
+          </div>
+          <div class="log" id="pLog" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="uart" aria-labelledby="h-uart">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Section 20.4, Figs. 20.9 to 20.11</div>
+      <h2 id="h-uart">Each sample lands in the middle of its bit until the two clocks drift apart by about half a bit over the frame</h2>
+      <p class="principle">The transmitter sends one frame. The receiver finds the start edge, waits <b>8</b> ticks of its own 16x clock, then samples every 16 ticks. A receiver clock that is fast or slow by e% moves every sample by e% of the time since the edge. Dots show where the receiver samples; a red dot has landed in the wrong bit.</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="fld">data (hex)<input type="text" id="uData" value="5A" maxlength="2"></label>
+        <label class="fld">data bits<select id="uBits"><option>5</option><option>6</option><option>7</option><option selected>8</option></select></label>
+        <label class="fld">parity<select id="uPar"><option value="n">none</option><option value="o">odd</option><option value="e" selected>even</option></select></label>
+        <label class="fld">stop bits<select id="uStop"><option>1</option><option>2</option></select></label>
+        <span class="tog" role="group" aria-label="Sample point"><button id="uMid" aria-pressed="true">sample at 8/16</button><button id="uEarly" aria-pressed="false">sample at 1/16 (bug)</button></span>
+      </div>
+      <div class="sl"><label for="uErr">receiver clock</label><input type="range" id="uErr" min="-80" max="80" value="0"><output id="uErro">0.0%</output></div>
+      <svg class="wv" id="uSvg" viewBox="0 0 1000 170" role="img" aria-label="UART frame and the receiver's sample points"></svg>
+      <div class="kpis">
+        <div class="kv"><span class="k">receiver reads</span><span class="v" id="uGot">-</span></div>
+        <div class="kv"><span class="k">flags</span><span class="v" id="uFlags">-</span></div>
+        <div class="kv"><span class="k">worst sample position</span><span class="v" id="uMargin">-</span></div>
+      </div>
+      <p class="narr" id="uNarr"></p>
+      <div class="grp">baud divisor (book: divisor = f_clk / (2^UART_PRESCALE x 16 x baud))</div>
+      <div class="row">
+        <label class="fld">f_clk (MHz)<input type="number" id="dF" value="320"></label>
+        <label class="fld">UART_PRESCALE<input type="number" id="dP" value="5" min="0" max="8"></label>
+        <label class="fld">baud<select id="dB"><option selected>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option><option>921600</option></select></label>
+        <span class="out" id="dOut"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="spi" aria-labelledby="h-spi">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 4 · Section 20.5, Fig. 20.12, Table 20.4</div>
+      <h2 id="h-spi">If the controller and the peripheral disagree on mode or bit order, both receive garbage, but loopback still passes</h2>
+      <p class="principle"><b>CPOL</b> is the idle level of SCK. With <b>CPHA</b> 0, data is driven before the first edge and sampled on leading edges. With CPHA 1, data is driven on leading edges and sampled on trailing edges. Each side applies its own settings to the one SCK wire.</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="fld">controller mode<select id="sCm"><option value="0">0 (CPOL 0, CPHA 0)</option><option value="1">1 (CPOL 0, CPHA 1)</option><option value="2">2 (CPOL 1, CPHA 0)</option><option value="3">3 (CPOL 1, CPHA 1)</option></select></label>
+        <label class="fld">controller order<select id="sCo"><option value="m">MSB first</option><option value="l">LSB first</option></select></label>
+        <label class="fld">peripheral mode<select id="sPm"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+        <label class="fld">peripheral order<select id="sPo"><option value="m">MSB first</option><option value="l">LSB first</option></select></label>
+        <label class="fld">controller sends<input type="text" id="sCd" value="A7" maxlength="2"></label>
+        <label class="fld">peripheral sends<input type="text" id="sPd" value="3C" maxlength="2"></label>
+        <label class="chk"><input type="checkbox" id="sLoop"> loopback (SDI = SDO)</label>
+      </div>
+      <svg class="wv" id="sSvg" viewBox="0 0 1000 200" role="img" aria-label="SPI transfer waveform"></svg>
+      <div class="kpis">
+        <div class="kv"><span class="k">peripheral received</span><span class="v" id="sPr">-</span></div>
+        <div class="kv"><span class="k">controller received</span><span class="v" id="sCr">-</span></div>
+        <div class="kv"><span class="k">verdict</span><span class="v" id="sV">-</span></div>
+      </div>
+      <p class="narr" id="sNarr"></p>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions a peripheral DV interview asks</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 20 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design, online chapter). The models are simplified. The notes' Lab 11 section has the RTL, the block-level testbench, a GIF made from the real simulation, and a bug hunt with 14 injected bugs.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const hx2 = v => v.toString(16).toUpperCase().padStart(2, '0');
+  const press = (on, off) => { $(on).setAttribute('aria-pressed', 'true'); $(off).setAttribute('aria-pressed', 'false'); };
+
+  // ---------------- 1. GPIO ----------------
+  const N = 18;
+  let pin = new Array(N).fill(0), w1r = new Array(N).fill(0), w1h = new Array(N).fill(0), noSync = false, clrWins = false;
+  const GP = {
+    pulse: () => { pin = pin.map((_, c) => c === 3 ? 1 : 0); w1r.fill(0); w1h.fill(0); w1r[12] = 1; },
+    race: () => { pin = pin.map((_, c) => c >= 4 ? 1 : 0); w1r.fill(0); w1h.fill(0); w1r[6] = 1; },
+    level: () => { pin = pin.map((_, c) => c >= 2 && c < 13 ? 1 : 0); w1r.fill(0); w1h.fill(0); w1h[7] = 1; w1h[15] = 1; $('gHighIe').checked = true; $('gRiseIe').checked = false; }
+  };
+  GP.pulse();
+  function gpioSim() {
+    const s1 = [], s2 = [], pv = [], ip = { r: [], f: [], h: [], l: [] }, cond = { r: [], f: [], h: [], l: [] }, irq = [], lost = { r: [], h: [] };
+    for (let c = 0; c < N; c++) {
+      s1[c] = c ? pin[c - 1] : 0; s2[c] = c ? s1[c - 1] : 0;
+      const cur = noSync ? pin[c] : s2[c];
+      pv[c] = noSync ? (c ? pin[c - 1] : 0) : (c ? s2[c - 1] : 0);
+      cond.r[c] = cur & !pv[c] ? 1 : 0; cond.f[c] = !cur & pv[c] ? 1 : 0; cond.h[c] = cur; cond.l[c] = cur ? 0 : 1;
+      for (const k of ['r', 'f', 'h', 'l']) {
+        if (c === 0) { ip[k][c] = 0; continue; }
+        const prev = ip[k][c - 1], cl = (k === 'r' ? w1r[c - 1] : k === 'h' ? w1h[c - 1] : 0), cd = cond[k][c - 1];
+        if (clrWins && cl) { ip[k][c] = 0; if (cd && (k === 'r' || k === 'h')) lost[k][c - 1] = 1; }
+        else ip[k][c] = (cl ? 0 : prev) | cd;
+      }
+      irq[c] = (ip.r[c] & $('gRiseIe').checked) | (ip.f[c] & $('gFallIe').checked) | (ip.h[c] & $('gHighIe').checked) | (ip.l[c] & $('gLowIe').checked) ? 1 : 0;
+    }
+    return { s1, s2, pv, ip, cond, irq, lost };
+  }
+  function gpioRender() {
+    const r = gpioSim();
+    const row = (nm, arr, cls, click, extra) => `<tr><td class="nm">${nm}</td>${arr.map((v, c) => `<td class="${click ? 'cl ' : ''}${v ? cls : ''}${extra && extra[c] ? ' lost' : ''}" ${click ? `data-r="${click}" data-c="${c}" tabindex="0" role="button" aria-label="${nm} cycle ${c}"` : ''}>${v ? 1 : 0}</td>`).join('')}</tr>`;
+    $('gWave').innerHTML = `<table><tr><th>cycle</th>${pin.map((_, c) => `<th>${c}</th>`).join('')}</tr>` +
+      row('pin (click)', pin, 'on', 'pin') + row('sync1', r.s1, 'on') + row(noSync ? 'input_val = pin' : 'sync2 = input_val', noSync ? pin : r.s2, 'on') + row('prev', r.pv, 'on') +
+      row('rise cond', r.cond.r, 'on') + row('W1C rise_ip (click)', w1r, 'w1c', 'w1r', r.lost.r) + row('rise_ip', r.ip.r, 'ip') + row('fall_ip', r.ip.f, 'ip') +
+      row('W1C high_ip (click)', w1h, 'w1c', 'w1h', r.lost.h) + row('high_ip', r.ip.h, 'ip') + row('low_ip', r.ip.l, 'ip') + row('GPIOIntr', r.irq, 'irq') + '</table>';
+    const firstPin = pin.indexOf(1), firstIrq = r.irq.indexOf(1);
+    let t = '';
+    if (firstPin >= 0) t += `The pin rises in cycle ${firstPin}; input_val follows in cycle ${noSync ? firstPin : firstPin + 2}${noSync ? ' (no synchronizer: same cycle, so a metastable value could reach the edge logic)' : ' (two synchronizer flops)'}. `;
+    if (firstIrq >= 0) t += `GPIOIntr first rises in cycle ${firstIrq}. `;
+    if (r.lost.r.some(Boolean) || r.lost.h.some(Boolean)) t += 'Red outline: a condition arrived in the same cycle as the clearing write and was LOST because the clear won. With "set wins" the bit stays set and the handler sees the new event. ';
+    else if (clrWins) t += 'Clear-wins only loses an event when the condition and the clearing write share a cycle: try "clear races an edge". ';
+    if (pin.some((v, c) => v && c > 0 && !pin[c - 1]) && pin.filter(Boolean).length === 1) t += 'A one-cycle pulse is gone from the pin by the time software looks, but rise_ip and fall_ip remember it: that is what sticky means. ';
+    if (w1h.some(Boolean)) t += 'high_ip is a level: clearing it while the pin is still high only lasts one cycle; it sets again at once. The handler must remove the cause first. ';
+    $('gNarr').textContent = t;
+  }
+  $('gWave').addEventListener('click', e => { const td = e.target.closest('td[data-r]'); if (!td) return; const a = { pin, w1r, w1h }[td.dataset.r]; a[+td.dataset.c] ^= 1; gpioRender(); });
+  $('gWave').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); } });
+  ['gRiseIe', 'gFallIe', 'gHighIe', 'gLowIe'].forEach(id => $(id).addEventListener('change', gpioRender));
+  $('gSync').addEventListener('click', () => { noSync = false; press('gSync', 'gNoSync'); gpioRender(); });
+  $('gNoSync').addEventListener('click', () => { noSync = true; press('gNoSync', 'gSync'); gpioRender(); });
+  $('gSetWins').addEventListener('click', () => { clrWins = false; press('gSetWins', 'gClrWins'); gpioRender(); });
+  $('gClrWins').addEventListener('click', () => { clrWins = true; press('gClrWins', 'gSetWins'); gpioRender(); });
+  document.querySelectorAll('[data-gp]').forEach(b => b.addEventListener('click', () => { GP[b.dataset.gp](); if (b.dataset.gp !== 'level') { $('gRiseIe').checked = true; $('gHighIe').checked = false; } gpioRender(); }));
+  gpioRender();
+
+  // ---------------- 2. PLIC ----------------
+  const SRC = [[1, 'timer block'], [3, 'GPIO'], [6, 'SPI'], [10, 'UART'], [12, 'DMA'], [31, 'sensor']];
+  let P = {};
+  function pReset(cfg) { P = {}; SRC.forEach(([id, nm]) => P[id] = { id, nm, req: 0, prio: 1, en: 1, pend: 0, prog: 0 }); Object.assign(P, {}); if (cfg) cfg(); $('pLog').innerHTML = ''; pRender(); }
+  function best() { let b = 0, bp = 0; SRC.forEach(([id]) => { const s = P[id]; if (s.pend && s.en && s.prio > bp) { b = id; bp = s.prio; } }); return [b, bp]; }
+  function log(t, cls) { const d = document.createElement('div'); d.className = cls || ''; d.textContent = t; $('pLog').prepend(d); }
+  function pClock() { SRC.forEach(([id]) => { const s = P[id]; if (s.req && !s.prog && !s.pend) { s.pend = 1; log(`clock: source ${id} (${s.nm}) becomes pending`, 'note'); } }); }
+  function pRender() {
+    const [b, bp] = best(), th = +$('pTh').value, irq = b && bp > th;
+    $('pTab').innerHTML = '<tr><th>id</th><th>device</th><th>request</th><th>priority</th><th>enable (M)</th><th>pending</th><th>in progress</th></tr>' + SRC.map(([id]) => { const s = P[id];
+      return `<tr><td class="m${id === b ? ' win' : ''}">${id}</td><td>${s.nm}</td><td><label class="chk"><input type="checkbox" data-k="req" data-id="${id}" ${s.req ? 'checked' : ''}> ${s.req ? 'high' : 'low'}</label></td>` +
+        `<td><select data-k="prio" data-id="${id}" aria-label="priority of ${id}">${[0, 1, 2, 3, 4, 5, 6, 7].map(p => `<option ${p === s.prio ? 'selected' : ''}>${p}</option>`).join('')}</select></td>` +
+        `<td><input type="checkbox" data-k="en" data-id="${id}" ${s.en ? 'checked' : ''} aria-label="enable ${id}"></td><td class="m">${s.pend}</td><td class="m">${s.prog}</td></tr>`; }).join('');
+    $('pWin').textContent = b ? `${b} (prio ${bp})` : '0';
+    $('pIrq').textContent = irq ? '1' : '0'; $('pIrq').className = 'v ' + (irq ? 'fail' : '');
+    $('pCid').innerHTML = SRC.map(([id]) => `<option ${P[id].prog ? 'selected' : ''}>${id}</option>`).join('');
+  }
+  $('pTab').addEventListener('change', e => { const el = e.target, s = P[+el.dataset.id]; if (!s) return;
+    if (el.dataset.k === 'req') { s.req = el.checked ? 1 : 0; log(`device ${s.id} request ${s.req ? 'rises' : 'drops'}`); pClock(); }
+    if (el.dataset.k === 'prio') s.prio = +el.value; if (el.dataset.k === 'en') s.en = el.checked ? 1 : 0; pRender(); });
+  $('pTh').addEventListener('input', () => { $('pTho').textContent = $('pTh').value; pRender(); });
+  $('pClk').addEventListener('click', () => { pClock(); pRender(); });
+  $('pClaim').addEventListener('click', () => { const [b] = best();
+    if (!b) log('claim returns 0: nothing pending and enabled (a handler must accept 0)', 'note');
+    else { P[b].pend = 0; P[b].prog = 1; log(`claim returns ${b}: pending[${b}] = 0, ${b} in progress`, 'good'); }
+    pClock(); pRender(); });
+  $('pCompl').addEventListener('click', () => { const id = +$('pCid').value, s = P[id];
+    if (!s.en) log(`complete ${id}: ignored, ${id} is not enabled for this context`, 'bad');
+    else if (!s.prog) log(`complete ${id}: ${id} was not in progress (no effect)`, 'note');
+    else { s.prog = 0; log(`complete ${id}: no longer in progress` + (s.req ? ` but its request is STILL HIGH: it is pending again on the next clock (spurious interrupt)` : ''), s.req ? 'bad' : 'good'); }
+    pClock(); pRender(); });
+  const PP = {
+    ex: () => { P[3].prio = 5; P[10].prio = 4; SRC.forEach(([id]) => P[id].en = (id === 3 || id === 10) ? 1 : 0); $('pTh').value = 2; P[10].req = 1; P[3].req = 1; pClock(); log('Example 20.3: GPIO (3) priority 5, UART (10) priority 4, threshold 2; both request. Claim twice, completing each after "servicing" it (uncheck its request).', 'note'); },
+    tie: () => { P[6].prio = 4; P[10].prio = 4; P[31].prio = 4; P[6].req = P[10].req = P[31].req = 1; $('pTh').value = 0; pClock(); log('Three sources at priority 4: claim returns the lowest id, 6.', 'note'); },
+    eq: () => { P[12].prio = 3; P[12].req = 1; $('pTh').value = 3; pClock(); log('Priority 3 against threshold 3: pending, but MExtInt stays 0 (it must be strictly greater). Move the threshold to 2.', 'note'); },
+    early: () => { P[3].prio = 5; P[3].req = 1; $('pTh').value = 0; pClock(); P[3].pend = 0; P[3].prog = 1; log('GPIO 3 has been claimed but its request is still high. Press Complete now (before servicing) and watch it come back.', 'note'); }
+  };
+  document.querySelectorAll('[data-pp]').forEach(b => b.addEventListener('click', () => { pReset(PP[b.dataset.pp]); $('pTho').textContent = $('pTh').value; pRender(); }));
+  pReset(PP.ex); $('pTho').textContent = $('pTh').value; pRender();
+
+  // ---------------- 3. UART ----------------
+  let early = false;
+  function uRender() {
+    let d = parseInt($('uData').value, 16); if (isNaN(d)) d = 0; d &= 255;
+    const nb = +$('uBits').value, par = $('uPar').value, st = +$('uStop').value, err = +$('uErr').value / 10;
+    $('uErro').textContent = (err > 0 ? '+' : '') + err.toFixed(1) + '%';
+    const mask = (1 << nb) - 1, dd = d & mask, ones = [...dd.toString(2)].filter(c => c === '1').length;
+    const bits = [0]; for (let i = 0; i < nb; i++) bits.push((dd >> i) & 1);
+    if (par !== 'n') bits.push(par === 'e' ? ones % 2 : 1 - ones % 2);
+    for (let i = 0; i < st; i++) bits.push(1);
+    const names = ['S'].concat([...Array(nb)].map((_, i) => 'D' + i)).concat(par !== 'n' ? ['P'] : []).concat(st === 2 ? ['T1', 'T2'] : ['T']);
+    const nbit = bits.length, x0 = 70, bw = (1000 - x0 - 30) / (nbit + 1);
+    // receiver: ticks of length (1/16)/(1+e) bit; samples at (MID + 16k) ticks after the start edge (plus 1 tick to see it)
+    const mid = early ? 1 : 8, tick = (1 / 16) / (1 + err / 100);
+    const samp = bits.map((_, k) => (mid + 0.5 + 16 * k) * tick);
+    let svg = '', yh = 40, yl = 80, x = x0 - 40, lv = 1;
+    let path = `M${x0 - 50} ${yh}`;
+    bits.forEach((b, i) => { const xs = x0 + i * bw; path += `H${xs}V${b ? yh : yl}`; });
+    path += `H${x0 + nbit * bw}V${yh}H${x0 + (nbit + 1) * bw}`;
+    for (let i = 0; i <= nbit; i++) svg += `<line x1="${x0 + i * bw}" x2="${x0 + i * bw}" y1="22" y2="96" stroke="var(--line)"/>`;
+    names.forEach((n, i) => svg += `<text x="${x0 + i * bw + bw / 2}" y="16" text-anchor="middle" class="m">${n}</text>`);
+    svg += `<path d="${path}" fill="none" stroke="var(--signal)" stroke-width="2"/><text x="4" y="64">TX</text>`;
+    let got = 0, bad = 0, worst = 0, pe = false, fe = false;
+    const rb = [];
+    samp.forEach((t, k) => {
+      const which = Math.floor(t), v = which < nbit ? bits[which] : 1, ok = which === k;
+      const pos = t - k; worst = Math.max(worst, Math.abs(pos - 0.5));
+      rb.push(v); if (!ok) bad++;
+      const xs = x0 + t * bw;
+      svg += `<circle cx="${xs}" cy="${v ? yh : yl}" r="5" fill="${ok ? 'var(--copper)' : 'var(--hot)'}"/><line x1="${xs}" x2="${xs}" y1="100" y2="112" stroke="${ok ? 'var(--copper)' : 'var(--hot)'}"/>`;
+    });
+    svg += `<text x="4" y="124" class="m">receiver samples (16x clock, ${early ? '1' : '8'} ticks after the edge, then every 16)</text>`;
+    svg += `<text x="4" y="150" class="m">receiver clock ${err >= 0 ? 'fast' : 'slow'} by ${Math.abs(err).toFixed(1)}%: last sample ${(samp[nbit - 1]).toFixed(2)} bit times after the start edge (ideal ${(nbit - 1 + (early ? 0.09 : 0.53)).toFixed(2)})</text>`;
+    $('uSvg').innerHTML = svg;
+    for (let i = 0; i < nb; i++) got |= rb[1 + i] << i;
+    if (par !== 'n') { const o = [...got.toString(2)].filter(c => c === '1').length, pb = rb[1 + nb]; pe = par === 'e' ? (o + pb) % 2 !== 0 : (o + pb) % 2 !== 1; }
+    fe = rb[1 + nb + (par !== 'n' ? 1 : 0)] !== 1;
+    const okAll = got === dd && !pe && !fe;
+    $('uGot').textContent = '0x' + hx2(got); $('uGot').className = 'v ' + (got === dd ? 'pass' : 'fail');
+    $('uFlags').textContent = (pe ? 'PE ' : '') + (fe ? 'FE' : '') || 'none'; $('uFlags').className = 'v ' + (pe || fe ? 'fail' : 'pass');
+    $('uMargin').textContent = `${(worst * 100).toFixed(0)}% off centre`;
+    $('uNarr').textContent = okAll ? (Math.abs(err) < 1 ? 'Every sample sits near the middle of its bit. Move the receiver clock: the drift adds up over the frame, so the last bits fail first.' : `Still correct: the worst sample is ${(worst * 100).toFixed(0)}% of a bit from the centre (it fails past 50%). ${early ? 'Sampling at 1/16 has lots of margin when the receiver is slow, almost none when it is fast (the far end slow): every sample drifts back toward the previous bit.' : ''}`)
+      : `Wrong: ${bad} sample(s) landed in a neighbouring bit. ${got !== dd ? `Data reads 0x${hx2(got)} instead of 0x${hx2(dd)}. ` : ''}${pe ? 'The parity check fails. ' : ''}${fe ? 'The stop bit was sampled as 0: framing error. ' : ''}With sampling in the middle, a frame of ${nbit} bits tolerates about ±${(50 / (nbit - 0.5)).toFixed(1)}% between the two ends.${early ? ' Sampling at 1/16 fails with only a few percent of fast receiver (slow far end): that was Lab 11 BUG_UART_SAMPLE_EARLY, invisible in loopback, caught by a remote UART running 3% slow.' : ''}`;
+    // divisor
+    const f = +$('dF').value * 1e6, p = +$('dP').value, b = +$('dB').value, exact = f / (2 ** p * 16 * b), dv = Math.max(1, Math.round(exact)), real = f / (2 ** p * 16 * dv), e2 = 100 * (real - b) / b;
+    $('dOut').innerHTML = `divisor ${exact.toFixed(2)}, use <b>${dv}</b>: actual ${real.toFixed(0)} baud, <span class="${Math.abs(e2) > 2 ? 'bad' : 'good'}">${e2 >= 0 ? '+' : ''}${e2.toFixed(2)}%</span>`;
+  }
+  ['uData', 'uBits', 'uPar', 'uStop', 'uErr', 'dF', 'dP', 'dB'].forEach(id => $(id).addEventListener('input', uRender));
+  $('uMid').addEventListener('click', () => { early = false; press('uMid', 'uEarly'); uRender(); });
+  $('uEarly').addEventListener('click', () => { early = true; press('uEarly', 'uMid'); uRender(); });
+  uRender();
+
+  // ---------------- 4. SPI ----------------
+  function sRender() {
+    const cm = +$('sCm').value, pm = +$('sPm').value, co = $('sCo').value, po = $('sPo').value, loop = $('sLoop').checked;
+    let cd = parseInt($('sCd').value, 16), pd = parseInt($('sPd').value, 16); cd = isNaN(cd) ? 0 : cd & 255; pd = isNaN(pd) ? 0 : pd & 255;
+    const cpol = cm >> 1, cpha = cm & 1, ppol = pm >> 1, ppha = pm & 1;
+    const outbit = (v, ord, i) => ord === 'm' ? (v >> (7 - i)) & 1 : (v >> i) & 1;
+    // drivers: index of the next bit to drive; samplers: bits received
+    let cSdo = cpha ? 0 : outbit(cd, co, 0), pSdo = ppha ? 0 : outbit(pd, po, 0), cNext = cpha ? 0 : 1, pNext = ppha ? 0 : 1;
+    const cRx = [], pRx = [], ev = []; let races = 0;
+    let level = cpol;
+    for (let e = 0; e < 16; e++) {
+      level ^= 1;
+      const cLead = level !== cpol, pLead = level !== ppol;
+      const cSamp = cpha ? !cLead : cLead, pSamp = ppha ? !pLead : pLead;
+      const sdi = loop ? cSdo : pSdo;
+      if (cSamp) cRx.push(sdi);
+      if (pSamp) pRx.push(cSdo);
+      ev.push({ e, level, cS: cSamp, pS: pSamp, cSdo, pSdo });
+      // a side that samples on the same edge the other side changes its data has no hold time: a race
+      if (!loop && ((pSamp && !cSamp) || (cSamp && !pSamp))) races++;
+      if (!cSamp && cNext < 8) cSdo = outbit(cd, co, cNext++);
+      if (!pSamp && pNext < 8) pSdo = outbit(pd, po, pNext++);
+      ev[e].cAfter = cSdo; ev[e].pAfter = pSdo;
+    }
+    const pack = (arr, ord) => { let v = 0; arr.slice(0, 8).forEach((b, i) => v |= b << (ord === 'm' ? 7 - i : i)); return v; };
+    const pr = pack(pRx, po), cr = pack(cRx, co);
+    const okP = pr === cd, okC = loop ? cr === cd : cr === pd;
+    $('sPr').textContent = loop ? 'not used' : '0x' + hx2(pr); $('sPr').className = 'v ' + (loop ? '' : okP ? 'pass' : 'fail');
+    $('sCr').textContent = '0x' + hx2(cr); $('sCr').className = 'v ' + (okC ? 'pass' : 'fail');
+    const pass = loop ? okC : okP && okC && !races;
+    $('sV').textContent = pass ? 'PASS' : (okP && okC ? 'RACE' : 'FAIL'); $('sV').className = 'v ' + (pass ? 'pass' : 'fail');
+    // waveform
+    const x0 = 120, hw = (1000 - x0 - 30) / 17;
+    const X = k => x0 + hw * (k + 0.5);
+    let s = '', sck = `M${x0 - 20} ${cpol ? 40 : 60}H${X(0)}`;
+    let lvl = cpol; for (let e = 0; e < 16; e++) { lvl ^= 1; sck += `V${lvl ? 40 : 60}H${X(e + 1)}`; } sck += `H${1000 - 10}`;
+    s += `<text x="6" y="20">CS</text><path d="M${x0 - 20} 10V26H${X(16)}V10H990" fill="none" stroke="var(--muted)" stroke-width="1.5"/>`;
+    s += `<text x="6" y="54">SCK</text><path d="${sck}" fill="none" stroke="var(--signal)" stroke-width="2"/>`;
+    const lane = (y, nm, get) => { s += `<text x="6" y="${y + 14}">${nm}</text>`; let p = `M${x0 - 20} ${y + (get(-1) ? 0 : 18)}`; for (let k = -1; k < 16; k++) { const v = k < 0 ? get(-1) : get(k), xx = k < 0 ? X(0) : X(k + 1); p += `V${y + (v ? 0 : 18)}H${xx}`; } s += `<path d="${p}" fill="none" stroke="var(--copper)" stroke-width="1.6"/>`; };
+    lane(80, 'ctrl SDO', k => k < 0 ? ev[0].cSdo : ev[k].cAfter);
+    lane(126, loop ? 'SDI (loop)' : 'periph SDO', k => loop ? (k < 0 ? ev[0].cSdo : ev[k].cAfter) : (k < 0 ? ev[0].pSdo : ev[k].pAfter));
+    ev.forEach(o => { if (o.pS && !loop) s += `<circle cx="${X(o.e)}" cy="114" r="4" fill="var(--signal)"/>`; if (o.cS) s += `<circle cx="${X(o.e)}" cy="160" r="4" fill="var(--copper)"/>`; });
+    s += `<text x="6" y="118" class="m">periph samples</text><text x="6" y="164" class="m">ctrl samples</text><text x="6" y="190" class="m">16 SCK edges, controller in mode ${cm}${loop ? ', loopback' : `, peripheral in mode ${pm}`}</text>`;
+    $('sSvg').innerHTML = s;
+    let t;
+    if (loop) t = cm !== pm || co !== po ? `Loopback PASSES even though the peripheral is set to mode ${pm} ${po === 'm' ? 'MSB' : 'LSB'}-first: the controller talks to itself, so any self-consistent mistake (wrong CPHA, wrong bit order) is invisible. Lab 11: BUG_SPI_IGNORE_PHASE and BUG_SPI_IGNORE_ENDIAN passed the book-style loopback plan and failed against a peripheral model.` : 'Loopback passes. It proves the shift registers and FIFOs work, not that the controller speaks the mode a real device expects.';
+    else if (okP && okC && races) t = `The bytes happen to arrive intact in this ideal model, but each side samples on the very edge where the other side changes its data (${races} edges): zero hold time. In silicon this works or fails depending on wire delays and temperature. Different CPOL with the same CPHA does exactly this.`;
+    else if (pass) t = `Both sides agree on the mode and the bit order: each samples the other's data in the middle of a bit.`;
+    else t = `Mismatch: ${cpol !== ppol ? 'different CPOL makes each side call the other side\'s leading edge "trailing"; ' : ''}${cpha !== ppha ? 'different CPHA makes one side sample while the other changes the data; ' : ''}${co !== po ? 'different bit order reverses the byte; ' : ''}nothing on the wires reveals it. Only a model of the far end (or the real chip) catches it.`;
+    $('sNarr').textContent = t;
+  }
+  ['sCm', 'sPm', 'sCo', 'sPo', 'sCd', 'sPd', 'sLoop'].forEach(id => $(id).addEventListener('input', sRender));
+  sRender();
+
+  // ---------------- 5. quiz ----------------
+  const Q = [
+    ['A handler clears high_ip by writing 1, but the interrupt fires again immediately. Why?', ['The pin is still high: high_ip is a level condition and sets again the next cycle. Remove the cause (disable high_ie or wait for the pin) before clearing', 'W1C writes need two writes', 'The PLIC was not completed', 'The synchronizer delays the clear'], 0, 'Sticky pending bits remember events; level conditions keep re-setting them.'],
+    ['Why does the GPIO input path have two flops before any logic?', ['The pins are asynchronous to PCLK; the second flop gives a metastable first flop a cycle to resolve, cutting the failure rate (MTBF) exponentially', 'To debounce switches', 'To align with the APB Access phase', 'To detect rising edges'], 0, 'RTL simulation never shows metastability; CDC lint and exact-latency checks find a missing synchronizer.'],
+    ['Two PLIC sources with equal priority are pending and enabled. Which does claim return, and what if priority equals the threshold?', ['The lowest id; and no interrupt at all, because the priority must be strictly greater than the threshold', 'The highest id; interrupt fires', 'Whichever arrived first; interrupt fires', 'Both, in one word; no interrupt'], 0, 'Lab 11 BUG_PLIC_TIE_HIGH_ID and BUG_PLIC_THRESH_GE were caught by a cycle-exact model.'],
+    ['Why must a PLIC handler service the device before writing complete?', ['A level request still high at completion makes the source pending again immediately: a spurious second interrupt', 'Complete is ignored otherwise', 'The claim register would return 0 forever', 'The hart would lose MIE'], 0, 'The gateway only blocks a source while it is in progress (claimed, not completed).'],
+    ['On RV32, how do you read the 64-bit mtime safely?', ['Read hi, then lo, then hi again; retry if the two hi values differ', 'Read lo then hi', 'Disable interrupts and read hi then lo', 'Use a 64-bit lw'], 0, 'A carry between two 32-bit reads gives a value 2^32 off. The book\'s delay() dereferences a uint64_t*, which compiles to two loads.'],
+    ['UART loopback passes for every configuration. What class of bug can still remain?', ['Errors that transmitter and receiver share (wrong parity polarity, wrong bit order, a sample point that only fails with a different clock): loopback is self-consistent', 'FIFO overflow bugs', 'DLAB banking bugs', 'Nothing: loopback covers the pins'], 0, 'Lab 11 BUG_UART_PARITY_INV and BUG_UART_SAMPLE_EARLY passed the loopback plan 5/5 and failed against an independent UART agent.'],
+    ['A test polls LSR until TEMT = 1, then reads LSR again to check OE, and finds OE never set. What happened?', ['Reading LSR clears OE: the polling reads consumed it. Collect OE from every LSR read', 'OE is write-only', 'TEMT and OE are the same bit', 'The FIFO was disabled'], 0, 'Read side effects need care in tests too. Lab 11 then found an RTL race: an overrun in the same cycle as the clearing read was lost until set was given priority.'],
+    ['Which registers must a UVM bit-bash sequence exclude in these peripherals?', ['Side-effect fields: W1C pending bits, read-to-clear status, FIFO windows (THR/RBR, txdata/rxdata), claim/complete, and banked registers handled separately', 'All read-only registers', 'Only 64-bit registers', 'None: bit-bash is always safe'], 0, 'Mark them NO_REG_TESTS / NO_REG_BIT_BASH_TEST and test them with their own sequences.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

@@ -206,7 +206,7 @@ Two honest simplifications: there is **no S-mode**, so satp translates U-mode ac
 
 ### Watch one miss, cycle by cycle
 
-&#91;image: A TLB miss and a two-level Sv32 walk, from the real simulation\]
+![A TLB miss and a two-level Sv32 walk, from the real simulation](../gifs/ch11-tlb-miss-walk.gif)
 
 This is the `lw s4` in tests/mmu/mmu\_basic.S whose level-0 table lives in **uncached** RAM, so the walker's second read goes out over AHB. Five stall cycles: the miss, the root PTE (DTIM, same cycle), then Adr, Data, Mem3 on the bus, and the replay hits. Note GatedStallW dropping as soon as SelHPTW rises: that is what lets the busfsm leave Mem3 while StallW is still high.
 
@@ -371,3 +371,8 @@ Entries are checked in order, so regions 2, 4, 5 and 6 override region 15 inside
 > - A TOR region's top is **exclusive**: the region is \[pmpaddr(i−1) << 2, pmpaddr(i) << 2). 0x801000FC is the first address *outside* the region.
 >
 > Off-by-one errors at TOR edges are the most common PMP RTL bug. Cover the first byte, the last byte and the byte just past the end of every region.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch11-lab.html`](../companion-pages/ch11-lab.html) (download and open in a browser).

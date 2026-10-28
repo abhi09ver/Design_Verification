@@ -1,0 +1,423 @@
+<title>Branch Prediction Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–12 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
+.chk input { accent-color: var(--copper); }
+.wave { overflow-x: auto; }
+.wave table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.wave th, .wave td { border: 1px solid var(--line); padding: 3px 5px; text-align: center; min-width: 46px; white-space: nowrap; }
+.wave th { color: var(--muted); font-weight: 600; }
+.wave td.nm { text-align: left; color: var(--ink); font-weight: 600; min-width: 112px; background: var(--panel); position: sticky; left: 0; }
+.wave td.hi { background: var(--ok); }
+.wave td.lo { background: var(--bad); color: var(--hot); }
+.wave td.adr { background: color-mix(in srgb, var(--signal) 16%, transparent); }
+.wave td.dat { background: var(--tint); }
+.wave td.hold { background: color-mix(in srgb, var(--signal) 8%, transparent); color: var(--muted); }
+.wave td.wt { color: var(--muted); }
+.wave td.err { background: var(--bad); color: var(--hot); font-weight: 700; }
+.wave td.cl { cursor: pointer; user-select: none; }
+.wave td.cl:hover { outline: 2px solid var(--copper); outline-offset: -2px; }
+.wave td.xfer { box-shadow: inset 0 -3px 0 var(--good); font-weight: 700; }
+.out { font-size: 14px; display: grid; gap: 6px; }
+.out .bad { color: var(--hot); font-weight: 600; }
+.out .good { color: var(--good); font-weight: 600; }
+</style>
+<style>
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.fld { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-family: var(--mono); min-width: 0; max-width: 100%; }
+.fld select { width: 100%; }
+.strip { display: flex; flex-wrap: wrap; gap: 2px; }
+.strip span { width: 12px; height: 16px; border-radius: 2px; background: var(--ok); }
+.strip span.x { background: var(--hot); }
+.pht { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 3px; font-family: var(--mono); font-size: 11px; }
+.pht div { text-align: center; padding: 4px 0; border-radius: 3px; border: 1px solid var(--line); }
+.pht div.c0 { background: var(--bg); color: var(--muted); }
+.pht div.c1 { background: color-mix(in srgb, var(--signal) 10%, transparent); }
+.pht div.c2 { background: color-mix(in srgb, var(--copper) 18%, transparent); }
+.pht div.c3 { background: color-mix(in srgb, var(--copper) 38%, transparent); font-weight: 600; }
+.pht div.hot { outline: 2px solid var(--ink); }
+table.t td.ok { color: var(--good); font-weight: 600; } table.t td.no { color: var(--hot); font-weight: 600; }
+.fsm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fsm .s { border: 1px solid var(--line); border-radius: 22px; padding: 10px 14px; font-family: var(--mono); font-size: 13px; background: var(--bg); min-width: 108px; text-align: center; }
+.fsm .s.on { border-color: var(--copper); background: var(--tint); font-weight: 600; }
+.fsm .s small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.stack { display: grid; gap: 4px; font-family: var(--mono); font-size: 13px; max-width: 260px; }
+.stack div { border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; background: var(--bg); display: flex; justify-content: space-between; }
+.stack div.top { border-color: var(--copper); background: var(--tint); }
+.log { font-family: var(--mono); font-size: 12.5px; display: grid; gap: 3px; max-height: 260px; overflow-y: auto; }
+.log .bad { color: var(--hot); } .log .good { color: var(--good); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 13 companion</div>
+    <h1>Branch Prediction Lab</h1>
+    <p class="lede">Run the book's branch patterns through static, 1-bit, 2-bit and gshare predictors and watch the counters train. Click a 2-bit counter through a loop, price misprediction with Example 13.1's CPI formula, and push and pop a return address stack until it overflows. A self-check closes the page.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#play">1 · Predictor playground</a>
+      <a href="#fsm">2 · 2-bit counter</a>
+      <a href="#cpi">3 · What a miss costs</a>
+      <a href="#ras">4 · Return stack</a>
+      <a href="#quiz">5 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="play" aria-labelledby="h-play">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 13.1.1–13.1.3</div>
+      <h2 id="h-play">A per-branch counter learns a bias; global history learns a pattern</h2>
+      <p class="principle"><b>1-bit</b> = last outcome · <b>2-bit</b> = saturating counter, index PC[b+1:2] · <b>gshare</b> = 2-bit counters indexed by PC[b+1:2] xor GHR (k = b bits of history) · <b>BTFN</b> = backward taken, forward not taken. The model is ideal: every update is seen by the next prediction.</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="fld">branch pattern<select id="gPat">
+          <option value="nested">Code Example 13.1: nested loops 5 x 10</option>
+          <option value="eqn">Code Example 13.2: correlated (eqntott)</option>
+          <option value="alt">one branch: T, N, T, N …</option>
+          <option value="p3">one branch: T, T, N repeating</option>
+          <option value="rnd">one branch: random, 70% taken</option>
+          <option value="alias">two branches sharing a counter (b = 2)</option>
+        </select></label>
+        <label class="fld">predictor<select id="gPred">
+          <option value="nt">static: not taken</option>
+          <option value="btfn">static: BTFN</option>
+          <option value="one">1-bit</option>
+          <option value="two" selected>2-bit (bimodal)</option>
+          <option value="gs">gshare</option>
+        </select></label>
+        <label class="fld">index bits b<select id="gB"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+      </div>
+      <div class="kpis">
+        <div class="kv"><span class="k">dynamic branches</span><span class="v" id="gN">0</span></div>
+        <div class="kv"><span class="k">accuracy</span><span class="v" id="gAcc">0%</span></div>
+        <div class="kv"><span class="k">last half</span><span class="v" id="gAcc2">0%</span></div>
+        <div class="kv"><span class="k">cycles lost (2 per miss)</span><span class="v" id="gLost">0</span></div>
+      </div>
+      <div class="grp">every prediction, in order (green right, red wrong)</div>
+      <div class="strip" id="gStrip" aria-label="Prediction outcomes"></div>
+      <div class="two">
+        <div class="scroll"><table class="t" id="gTab"></table></div>
+        <div class="sliders"><div class="grp">counter table after the run (11 / 10 predict taken)</div><div class="pht" id="gPht"></div></div>
+      </div>
+      <p class="narr" id="gNarr"></p>
+    </div>
+  </section>
+
+  <section class="exp" id="fsm" aria-labelledby="h-fsm">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Fig. 13.2</div>
+      <h2 id="h-fsm">Two surprises in a row to change its mind</h2>
+      <p class="principle">Click what the branch actually did. The counter predicts with its top bit, moves one step toward the outcome, and stops at 00 and 11.</p>
+    </div>
+    <div class="bench">
+      <div class="fsm" id="fStates"></div>
+      <div class="row">
+        <button class="btn" id="fT">Taken</button><button class="btn" id="fN">Not taken</button>
+        <button class="btn" id="fLoop">Play one pass of a 10-trip loop</button><button class="btn" id="fReset">Reset to 01</button>
+      </div>
+      <div class="log" id="fLog" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="cpi" aria-labelledby="h-cpi">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Example 13.1</div>
+      <h2 id="h-cpi">CPI = base + branches × miss rate × penalty</h2>
+      <p class="principle">Each misprediction throws away penalty × width issue slots. The same accuracy costs a wide or deep core far more.</p>
+    </div>
+    <div class="bench two">
+      <div class="sliders">
+        <div class="sl"><label for="cB">branches %</label><input type="range" id="cB" min="5" max="35" value="17"><output id="cBo"></output></div>
+        <div class="sl"><label for="cT">taken %</label><input type="range" id="cT" min="10" max="90" value="42"><output id="cTo"></output></div>
+        <div class="sl"><label for="cA">accuracy %</label><input type="range" id="cA" min="0" max="100" value="58"><output id="cAo"></output></div>
+        <div class="sl"><label for="cP">penalty</label><input type="range" id="cP" min="1" max="20" value="2"><output id="cPo"></output></div>
+        <div class="sl"><label for="cW">issue width</label><input type="range" id="cW" min="1" max="4" value="1"><output id="cWo"></output></div>
+        <div class="row"><button class="btn chip" data-pre="ex">Example 13.1</button><button class="btn chip" data-pre="ss">2-wide</button><button class="btn chip" data-pre="p4">Pentium 4-like</button><button class="btn chip" data-pre="lab">Lab 10 bench</button></div>
+      </div>
+      <div class="sliders">
+        <div class="kpis">
+          <div class="kv"><span class="k">ideal CPI</span><span class="v" id="cIdeal"></span></div>
+          <div class="kv"><span class="k">CPI</span><span class="v" id="cCPI"></span></div>
+          <div class="kv"><span class="k">slowdown</span><span class="v" id="cSlow"></span></div>
+        </div>
+        <p class="narr" id="cNarr"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="ras" aria-labelledby="h-ras">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 4 · Section 13.1.5 and Fig. 13.10</div>
+      <h2 id="h-ras">Calls push, returns pop; too deep and the oldest addresses are overwritten</h2>
+      <p class="principle">A circular stack of N entries. Call at address A pushes A + 4; a return predicts the top and pops. Overflow wraps and overwrites the oldest entry; only the deepest returns then mispredict.</p>
+    </div>
+    <div class="bench">
+      <div class="row">
+        <label class="fld">entries<select id="rN"><option>2</option><option>3</option><option selected>4</option><option>8</option></select></label>
+        <label class="fld">program<select id="rPre"><option value="fig">Fig. 13.10: two nested calls</option><option value="deep">6-deep call chain</option><option value="fib">fib(5), recursive</option></select></label>
+        <button class="btn" id="rStep">Step</button><button class="btn" id="rRun">Run all</button><button class="btn" id="rReset">Reset</button>
+      </div>
+      <div class="two">
+        <div class="stack" id="rStack"></div>
+        <div class="log" id="rLog" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 13 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). The models are ideal (no pipeline delay); the notes' Lab 10 section has the RTL, the exact-model check and a real waveform of a misprediction.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const hx = v => '0x' + v.toString(16);
+
+  // ---------- 1. playground ----------
+  function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+  function pattern(p) {
+    const t = [], r = rng(7);
+    if (p === 'nested') { for (let i = 0; i < 5; i++) { for (let j = 0; j < 10; j++) t.push({ pc: 0x134, name: 'branch_j', back: true, tk: j < 9 }); t.push({ pc: 0x13c, name: 'branch_i', back: true, tk: i < 4 }); } }
+    else if (p === 'eqn') {
+      for (let i = 0; i < 40; i++) {
+        const aa = r() < 0.5 ? 2 : 1, bb = r() < 0.5 ? 2 : 1;
+        t.push({ pc: 0x1004, name: 'branch_aa', back: false, tk: aa !== 2 });
+        t.push({ pc: 0x100c, name: 'branch_bb', back: false, tk: bb !== 2 });
+        t.push({ pc: 0x1014, name: 'branch_aabb', back: false, tk: (aa === 2) === (bb === 2) });
+        t.push({ pc: 0x1020, name: 'loop', back: true, tk: i < 39 });
+      }
+    }
+    else if (p === 'alt') for (let i = 0; i < 60; i++) t.push({ pc: 0x200, name: 'alt', back: false, tk: i % 2 === 0 });
+    else if (p === 'p3') for (let i = 0; i < 60; i++) t.push({ pc: 0x200, name: 'p3', back: false, tk: i % 3 !== 2 });
+    else if (p === 'rnd') for (let i = 0; i < 80; i++) t.push({ pc: 0x200, name: 'rnd', back: false, tk: r() < 0.7 });
+    else for (let i = 0; i < 40; i++) { t.push({ pc: 0x100, name: 'A (always T)', back: true, tk: true }); t.push({ pc: 0x110, name: 'B (always N)', back: false, tk: false }); }
+    return t;
+  }
+  function run() {
+    const tr = pattern($('gPat').value), pred = $('gPred').value, b = +$('gB').value, n = 1 << b, mask = n - 1;
+    const tab = new Array(n).fill(pred === 'one' ? 0 : 1);
+    let ghr = 0, ok = 0, ok2 = 0;
+    const res = [], per = {};
+    tr.forEach((x, i) => {
+      let idx = (x.pc >> 2) & mask;
+      if (pred === 'gs') idx ^= ghr;
+      let p;
+      if (pred === 'nt') p = false; else if (pred === 'btfn') p = x.back; else if (pred === 'one') p = tab[idx] === 1; else p = tab[idx] >= 2;
+      const good = p === x.tk;
+      ok += good; if (i >= tr.length / 2) ok2 += good;
+      res.push(good);
+      const k = x.name + ' @ ' + hx(x.pc); per[k] = per[k] || [0, 0]; per[k][0] += good; per[k][1]++;
+      if (pred === 'one') tab[idx] = x.tk ? 1 : 0;
+      else if (pred === 'two' || pred === 'gs') tab[idx] = x.tk ? Math.min(3, tab[idx] + 1) : Math.max(0, tab[idx] - 1);
+      ghr = ((ghr << 1) | (x.tk ? 1 : 0)) & mask;
+    });
+    $('gN').textContent = tr.length;
+    $('gAcc').textContent = Math.round(100 * ok / tr.length) + '%';
+    $('gAcc2').textContent = Math.round(100 * ok2 / Math.ceil(tr.length / 2)) + '%';
+    $('gLost').textContent = 2 * (tr.length - ok);
+    $('gStrip').innerHTML = res.map(g => `<span class="${g ? '' : 'x'}" title="${g ? 'right' : 'wrong'}"></span>`).join('');
+    $('gTab').innerHTML = '<tr><th>branch</th><th>right</th><th>accuracy</th></tr>' + Object.entries(per).map(([k, [g, t]]) => `<tr><td class="m">${k}</td><td class="m">${g} / ${t}</td><td class="${g / t >= 0.85 ? 'ok' : 'no'}">${Math.round(100 * g / t)}%</td></tr>`).join('');
+    const used = new Set(tr.map(x => (x.pc >> 2) & mask));
+    $('gPht').innerHTML = (pred === 'nt' || pred === 'btfn') ? '<div class="c0" style="grid-column:1/-1">static: no table</div>' :
+      tab.map((v, i) => `<div class="c${pred === 'one' ? v * 3 : v}${used.has(i) && pred !== 'gs' ? ' hot' : ''}" title="entry ${i}">${i}:${pred === 'one' ? v : v.toString(2).padStart(2, '0')}</div>`).join('');
+    const pat = $('gPat').value, N = {
+      nested: { one: 'The book\'s numbers: branch_j 80% (wrong on the first and last trip of each pass), branch_i 60%.', two: 'branch_j 88% here: the book\'s 90% assumes a warm counter; starting at 01 the very first trip is one extra miss. branch_i stays at 60%: 5 trips are too few to train.', gs: 'With enough history bits gshare learns the inner loop\'s exit as well. Try b = 4 and b = 6: short histories cannot see 9 takens back.', nt: 'Not taken is wrong on every loop trip: the old pipeline\'s behaviour.', btfn: 'Both branches are backward: BTFN predicts taken and only misses the exits, already as good as the 2-bit.' },
+      eqn: { two: 'branch_aabb is 50/50 on its own; a per-branch counter cannot do better than guessing.', gs: 'branch_aabb is fully decided by the two branches before it. With the global history in the index gshare predicts it far better than chance once its counters warm up (see the last-half accuracy).', one: 'Per-branch history cannot see the correlation.', nt: 'Not taken: right only when the branches happen to fall through.', btfn: 'Forward branches are predicted not taken: no help here.' },
+      alt: { two: 'Alternating outcomes can pin a 2-bit counter between 01 and 10 and be wrong every time, or right half the time, depending on where it starts.', gs: 'One bit of history is enough: after T comes N. gshare reaches ~100% after warm-up.', one: '1-bit is wrong on every single prediction of an alternating branch: the worst case.', nt: 'Not taken: 50%.', btfn: 'Forward branch, predicted not taken: 50%.' },
+      p3: { two: 'T, T, N: the counter stays in the taken half; it misses every third outcome (67%).', gs: 'The pattern repeats every 3 branches; history learns it.', one: '1-bit misses twice per period.', nt: 'Not taken: 33%.', btfn: '33%.' },
+      rnd: { two: 'No history can beat 70% on truly random outcomes; the 2-bit counter gets close to it by predicting taken.', gs: 'gshare spreads a random branch over many counters and does slightly worse: history only helps when there is a pattern.', one: '1-bit flips on every surprise and stays below the 70% a fixed "taken" guess would get.', nt: '30%.', btfn: '30%.' },
+      alias: { two: 'With b = 2 both branches map to entry 0 (0x100 and 0x110 >> 2 = 64 and 68, & 3 = 0): they fight over one counter. Raise b to 3 or more and both reach 100%.', gs: 'gshare separates them through the history even with few index bits.', one: 'Aliasing: each branch overwrites the other\'s state.', nt: 'Not taken: B is always right, A always wrong.', btfn: 'A is backward, B forward: static BTFN gets both right, no table needed.' }
+    };
+    $('gNarr').textContent = (N[pat] && N[pat][pred]) || '';
+  }
+  ['gPat', 'gPred', 'gB'].forEach(id => $(id).addEventListener('change', run));
+  run();
+
+  // ---------- 2. 2-bit counter ----------
+  let st = 1;
+  const SN = ['00 Strongly NT', '01 Weakly NT', '10 Weakly T', '11 Strongly T'];
+  function fRender() { $('fStates').innerHTML = [3, 2, 1, 0].map(s => `<div class="s${s === st ? ' on' : ''}">${SN[s]}<small>predict ${s >= 2 ? 'taken' : 'not taken'}</small></div>`).join(''); }
+  function fGo(tk) { const p = st >= 2, ok = p === tk; const old = st; st = tk ? Math.min(3, st + 1) : Math.max(0, st - 1);
+    const line = document.createElement('div'); line.className = ok ? 'good' : 'bad';
+    line.textContent = `${SN[old].slice(0, 2)}: predicted ${p ? 'T' : 'N'}, actual ${tk ? 'T' : 'N'} ${ok ? 'right' : 'WRONG'} -> ${SN[st].slice(0, 2)}`;
+    $('fLog').prepend(line); fRender(); }
+  $('fT').addEventListener('click', () => fGo(true)); $('fN').addEventListener('click', () => fGo(false));
+  $('fLoop').addEventListener('click', () => { for (let i = 0; i < 10; i++) fGo(i < 9); });
+  $('fReset').addEventListener('click', () => { st = 1; $('fLog').innerHTML = ''; fRender(); });
+  fRender();
+
+  // ---------- 3. CPI ----------
+  const PRE = { ex: [17, 42, 58, 2, 1], ss: [17, 42, 58, 5, 2], p4: [17, 42, 95, 20, 4], lab: [15, 40, 94, 2, 1] };
+  function cRender() {
+    const b = +$('cB').value / 100, t = +$('cT').value / 100, a = +$('cA').value / 100, p = +$('cP').value, w = +$('cW').value;
+    ['cB', 'cT', 'cA', 'cP', 'cW'].forEach(id => $(id + 'o').textContent = $(id).value);
+    const ideal = 1 / w;
+    const real = ideal + b * (1 - a) * p;
+    $('cIdeal').textContent = ideal.toFixed(2); $('cCPI').textContent = real.toFixed(3); $('cSlow').textContent = Math.round(100 * (real / ideal - 1)) + '%';
+    $('cNarr').textContent = `Each miss costs ${p} cycles = ${p * w} lost issue slots. ${(100 * b * (1 - a)).toFixed(1)} misses per 100 instructions. ` +
+      (a <= 0.6 && p === 2 && w === 1 ? 'With accuracy = the not-taken fraction this is "predict not taken": Example 13.1 gets CPI 1.14.' : '') +
+      (w > 1 ? ` A ${w}-wide core loses ${w}x the work per miss, so the slowdown is bigger even at the same accuracy.` : '') +
+      ` Lab 10's C benchmark measured CPI 1.238 (not taken) and 1.020 (gshare), with load-use stalls included.`;
+  }
+  ['cB', 'cT', 'cA', 'cP', 'cW'].forEach(id => $(id).addEventListener('input', cRender));
+  document.querySelectorAll('[data-pre]').forEach(bt => bt.addEventListener('click', () => { const v = PRE[bt.dataset.pre]; ['cB', 'cT', 'cA', 'cP', 'cW'].forEach((id, i) => $(id).value = v[i]); cRender(); }));
+  cRender();
+
+  // ---------- 4. RAS ----------
+  let ras, ptr, evs, pos, ok, tot;
+  function program(p) {
+    if (p === 'fig') return [['call', 0x105c], ['call', 0x1140], ['ret', 0x1230], ['ret', 0x11b4]];
+    if (p === 'deep') { const e = []; for (let i = 0; i < 6; i++) e.push(['call', 0x1000 + 0x100 * i]); for (let i = 5; i >= 0; i--) e.push(['ret', 0x1080 + 0x100 * i]); return e; }
+    const e = []; (function fib(n, site) { e.push(['call', site]); if (n >= 2) { fib(n - 1, 0x2010); fib(n - 2, 0x2020); } e.push(['ret', 0x2040]); })(5, 0x1000); return e;
+  }
+  function rReset() { const n = +$('rN').value; ras = new Array(n).fill(null); ptr = 0; evs = program($('rPre').value); pos = 0; ok = 0; tot = 0; $('rLog').innerHTML = ''; rRender(); }
+  const truth = [];
+  function rStep() {
+    if (pos >= evs.length) return;
+    const n = ras.length, [k, a] = evs[pos];
+    // the true return address = the matching call's a + 4: keep a software stack
+    if (pos === 0) truth.length = 0;
+    const line = document.createElement('div');
+    if (k === 'call') { ptr = (ptr + 1) % n; ras[ptr] = a + 4; truth.push(a + 4); line.textContent = `${hx(a)}: call, push ${hx(a + 4)}`; }
+    else { const pred = ras[ptr], real = truth.pop(); ptr = (ptr - 1 + n) % n; tot++; const g = pred === real; ok += g; line.className = g ? 'good' : 'bad'; line.textContent = `${hx(a)}: ret, predict ${pred === null ? '(empty)' : hx(pred)}, real ${hx(real)} ${g ? 'right' : 'WRONG'}`; }
+    $('rLog').append(line); pos++; rRender();
+  }
+  function rRender() {
+    const n = ras.length;
+    $('rStack').innerHTML = Array.from({ length: n }, (_, i) => n - 1 - i).map(i => `<div class="${i === ptr ? 'top' : ''}"><span>[${i}]${i === ptr ? ' Ptr' : ''}</span><span>${ras[i] === null ? '-' : hx(ras[i])}</span></div>`).join('') +
+      `<p class="caption">${tot ? `${ok} of ${tot} returns predicted` : 'press Step'}${pos >= evs.length ? ' · done' : ''}</p>`;
+  }
+  $('rStep').addEventListener('click', rStep); $('rRun').addEventListener('click', () => { while (pos < evs.length) rStep(); });
+  $('rReset').addEventListener('click', rReset); ['rN', 'rPre'].forEach(id => $(id).addEventListener('change', rReset));
+  rReset();
+
+  // ---------- 5. quiz ----------
+  const Q = [
+    ['A 5-stage core predicts not taken; 20% of instructions are branches and 50% of those are taken. CPI with a 2-cycle penalty?', ['1.2: 0.2 x 0.5 x 2 extra cycles per instruction', '1.1', '1.4', '2.0'], 0, 'Example 13.1 does the same arithmetic for CoreMark (CPI 1.14).'],
+    ['Why does a 2-bit counter beat a 1-bit one on loops?', ['The single not-taken exit only weakens it (11 to 10), so the next pass is still predicted taken: 1 miss per pass instead of 2', 'It has more entries', 'It uses global history', 'It predicts the exit'], 0, 'Code Example 13.1: branch_j 80% (1-bit) vs 90% (2-bit).'],
+    ['When does gshare beat a bimodal predictor, and when is it worse?', ['Better when a branch correlates with recent branches (eqntott); worse with tiny tables, where spreading each branch over many counters causes conflicts', 'Always better', 'Better only for loops', 'Worse only for calls'], 0, 'Fig. 13.6, and Lab 10: worse at 4 entries, better from 64.'],
+    ['The BTB is tagless. What happens when a plain addi shares an entry with a taken jump?', ['Fetch predicts a jump and fetches the wrong path; Execute sees the fetched-next PC is not PC + 4 and flushes. Accuracy only, never correctness, as long as non-CFIs are checked too', 'The addi is skipped', 'The core hangs', 'Nothing: the BTB knows it is not a branch'], 0, 'Lab 10 BUG_BP_CFI_ONLY checked only branches and jumps: it executed the wrong path, but only with a small BTB or a planted alias.'],
+    ['Why does Wally update the predictor at the end of Memory and not in Execute?', ['So that branches flushed by an older trap or CSR write never train it; the GHR then never needs repair', 'Execute has no time left', 'To save power', 'Because the BTB is read in Memory'], 0, 'The cost is stale history in Fetch, which Wally fixes by forwarding in-flight outcomes (Fig. 13.17).'],
+    ['What does GHR forwarding buy?', ['The Fetch-stage history includes branches still in flight, so a tight loop indexes the same counters whether or not its last iteration was predicted right', 'A bigger table', 'Faster recovery', 'Tagged entries'], 0, 'Lab 10: 426 vs 398 mispredictions on the C benchmark, and with it the RTL matches an ideal model exactly.'],
+    ['A branch predictor bug makes counters wrap 11 to 00. What fails?', ['Nothing functional: lock-step and self-checks pass. Only a performance check (counters vs a reference model or a CPI baseline) sees it', 'Lock-step immediately', 'The self-check', 'Synthesis'], 0, 'Lab 10 BUG_PHT_NO_SAT: flushes doubled, caught only by the model.'],
+    ['How does a RAS predict returns, and what does a flush do to it?', ['Push PC + 4 on a call, pop on a return; a call or return that already acted and is then flushed must be undone (Wally repairs, Lab 10 restores a pointer snapshot)', 'It stores every jalr target', 'It is reset on every flush', 'It is updated only at commit, so no repair'], 0, 'Lab 10 BUG_RAS_NO_REPAIR: +2 mispredictions in a 12,000-instruction program, caught only by the exact model.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

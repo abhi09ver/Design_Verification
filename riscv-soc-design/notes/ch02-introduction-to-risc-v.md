@@ -224,7 +224,7 @@ Each assembly instruction is exactly one 32-bit word; the encoding was designed 
 
 Watch it happen on the book's own branch, `beq x0, x0, -8`:
 
-&#91;image: Animation: the B-type instruction 0xFE000CE3 is unscrambled step by step into ImmExt 0xFFFFFFF8, which is minus 8\]
+![Animation: the B-type instruction 0xFE000CE3 is unscrambled step by step into ImmExt 0xFFFFFFF8, which is minus 8](../gifs/ch02-btype-immediate.gif)
 
 ### Worked examples (book Examples 2.1 and 2.2)
 
@@ -728,3 +728,8 @@ The book also names three well-known open-source families: Cadence VeeR (origina
 ### 2.10 The book's framing to quote in interviews
 
 "Logic verification is the most difficult and time-consuming part of processor design, so each feature begins with a test plan." Every later chapter follows the same structure: principle, then RISC-V specifics, then a test plan, then the Wally implementation. The authors close by saying they are confident bugs remain undetected, which makes a good opening line for why CPU DV exists.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch02-lab.html`](../companion-pages/ch02-lab.html) (download and open in a browser).

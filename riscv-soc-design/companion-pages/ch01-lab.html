@@ -1,0 +1,420 @@
+<title>Power Wall Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single lab-notebook column; each experiment is an instrument panel with controls on top, readouts beside the display. */
+:root {
+  --bg: #f2f4f6;          /* wafer grey */
+  --panel: #ffffff;
+  --ink: #15202b;
+  --muted: #5a6876;
+  --line: #d4dbe2;
+  --copper: #b05a24;      /* interconnect copper: the accent */
+  --signal: #2c6aae;      /* data / RISC */
+  --hot: #c0392b;         /* power, CISC cost */
+  --cell-on: #b05a24;
+  --cell-off: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --cell-on: #e08a4f; --cell-off: #24303b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --cell-on: #e08a4f; --cell-off: #24303b; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 500; font-size: 17px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+label.ctl { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+input[type=range] { width: min(320px, 100%); accent-color: var(--copper); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { font: 500 13px var(--body); padding: 7px 12px; background: transparent; color: var(--ink); border: 0; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--copper); border-color: var(--copper); color: var(--panel); }
+.btn:focus-visible, .seg button:focus-visible, input:focus-visible, .era:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* scaling lab */
+.scale-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.die-box { display: grid; gap: 8px; }
+canvas#die { width: 100%; max-width: 420px; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.readouts { display: grid; gap: 10px; }
+.ro { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.ro .k { font-size: 13px; color: var(--muted); }
+.ro .v { font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; text-align: right; }
+.ro .why { grid-column: 1 / -1; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.meter { height: 10px; background: var(--cell-off); border-radius: 2px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--copper); width: 0; transition: width .25s ease; }
+.meter.hot i { background: var(--hot); }
+.verdict { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+.verdict.bad { border-left-color: var(--hot); }
+
+/* race */
+.race { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.machine { border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.machine h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.machine h3 small { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 400; }
+.cisc h3 { color: var(--hot); } .risc h3 { color: var(--signal); }
+.code { font-family: var(--mono); font-size: 13px; display: grid; gap: 2px; }
+.code div { padding: 3px 8px; border-radius: 3px; border-left: 3px solid transparent; white-space: pre; overflow-x: auto; }
+.code div.on { background: var(--bg); border-left-color: currentColor; }
+.cisc .code div.on { color: var(--hot); } .risc .code div.on { color: var(--signal); }
+.code .sub { color: var(--muted); padding-left: 22px; }
+.bytes { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 2px; font-family: var(--mono); font-size: 12px; }
+.bytes span { aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 2px; color: var(--muted); min-width: 0; }
+.bytes span.done { color: var(--panel); }
+.cisc .bytes span.done { background: var(--hot); border-color: var(--hot); }
+.risc .bytes span.done { background: var(--signal); border-color: var(--signal); }
+.bytes.src span { color: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; }
+.clock { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.iron { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14px; min-width: 520px; width: 100%; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* eras */
+.eras { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+.era { flex: 0 0 auto; display: grid; gap: 2px; text-align: left; font: 500 13px var(--body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); cursor: pointer; }
+.era .y { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.era[aria-selected="true"] { border-color: var(--copper); background: var(--panel); box-shadow: inset 0 -3px 0 var(--copper); }
+.era-detail { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.speed { display: grid; gap: 6px; }
+.speedbar { height: 12px; background: var(--cell-off); border-radius: 2px; overflow: hidden; }
+.speedbar i { display: block; height: 100%; background: var(--copper); transition: width .35s ease; }
+dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; }
+dt { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-top: 2px; }
+dd { margin: 0; }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+@media (max-width: 760px) {
+  .scale-grid, .race, .era-detail { grid-template-columns: minmax(0, 1fr); }
+  .bytes { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .meter i, .speedbar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 1 companion</div>
+    <h1>Power Wall Lab</h1>
+    <p class="lede">Three experiments that turn Chapter 1 from history into mechanism: why shrinking transistors once gave free speed, why that stopped in 2004, and why simple RISC instructions beat powerful CISC ones.</p>
+    <nav class="jump" aria-label="Experiments">
+      <a href="#scaling">1 · Scaling and the power wall</a>
+      <a href="#race">2 · CISC vs RISC race</a>
+      <a href="#eras">3 · Switch technology eras</a>
+    </nav>
+  </header>
+
+  <!-- ===================== 1. SCALING ===================== -->
+  <section class="exp" id="scaling" aria-labelledby="h-scaling">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 1.1, 1.2, 1.6</div>
+      <h2 id="h-scaling">Shrink the transistor, watch the power</h2>
+      <p class="principle"><b>P = α · C · V² · f</b> per transistor. Each process generation shrinks every dimension by 0.7.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="ctl" for="gen">Process generation: <span id="genLabel">0 (baseline)</span>
+          <input id="gen" type="range" min="0" max="8" step="1" value="3">
+        </label>
+        <div class="ctl">
+          <span>Supply voltage</span>
+          <div class="seg" role="group" aria-label="Supply voltage rule">
+            <button id="modeDennard" aria-pressed="true">Scales with size (Dennard, before 2004)</button>
+            <button id="modeFixed" aria-pressed="false">Stuck near 1 V (after 2004)</button>
+          </div>
+        </div>
+      </div>
+      <div class="scale-grid">
+        <div class="die-box">
+          <canvas id="die" width="840" height="840" aria-label="Fixed-size die showing transistors that can switch within the power budget"></canvas>
+          <div class="caption" id="dieCaption">Same die area every generation. Lit cells = transistors that can switch at full speed within the original power budget.</div>
+        </div>
+        <div class="readouts">
+          <div class="ro"><span class="k">Transistors on the die</span><span class="v" id="rN">8×</span><span class="why">area per transistor × 0.5 each generation</span></div>
+          <div class="ro"><span class="k">Clock frequency</span><span class="v" id="rF">2.7×</span><span class="why">gate delay × 0.7 → f × 1.4</span></div>
+          <div class="ro"><span class="k">Power per transistor</span><span class="v" id="rP">0.13×</span><span class="why" id="rPwhy">C × 0.7, V² × 0.49, f × 1.43</span></div>
+          <div class="ro"><span class="k">Power density (chip)</span><span class="v" id="rD">1.0×</span>
+            <div class="meter" id="dMeter" style="grid-column:1/-1"><i id="dBar"></i></div>
+            <span class="why" id="rDwhy">transistors × power each</span></div>
+          <div class="ro"><span class="k">Dark silicon at original power</span><span class="v" id="rDark">0%</span><span class="why">fraction that must stay idle to keep power flat</span></div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 2. RACE ===================== -->
+  <section class="exp" id="race" aria-labelledby="h-race">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Section 1.6</div>
+      <h2 id="h-race">Copy 16 bytes: one powerful instruction vs eighty simple ones</h2>
+      <p class="principle"><b>T = N × CPI × Tc.</b> CISC shrinks N. RISC shrinks CPI and Tc. Illustrative timings in the spirit of 1992: a 66 MHz microcoded CISC vs a 200 MHz pipelined RISC.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <button class="btn primary" id="play">Run</button>
+        <button class="btn" id="step">Step 5 ns</button>
+        <button class="btn" id="reset">Reset</button>
+        <label class="ctl" for="speed">Playback speed
+          <input id="speed" type="range" min="1" max="10" value="4">
+        </label>
+        <span class="clock" id="clock">t = 0 ns</span>
+      </div>
+      <div>
+        <div class="caption" style="margin-bottom:4px">Source string in memory</div>
+        <div class="bytes src" id="srcBytes"></div>
+      </div>
+      <div class="race">
+        <div class="machine cisc">
+          <h3>CISC <small>66 MHz · Tc 15.2 ns · microcoded</small></h3>
+          <div class="code" id="ciscCode">
+            <div data-i="0">REP MOVSB        ; copy CX bytes [SI] → [DI]</div>
+            <div class="sub" data-i="1">µ1  tmp ← mem[SI]</div>
+            <div class="sub" data-i="2">µ2  mem[DI] ← tmp</div>
+            <div class="sub" data-i="3">µ3  SI++, DI++</div>
+            <div class="sub" data-i="4">µ4  CX--, repeat if CX ≠ 0</div>
+          </div>
+          <div class="bytes" id="ciscDst"></div>
+          <div class="stats">
+            <div class="stat"><span class="k">Instructions</span><span class="v" id="cN">0</span></div>
+            <div class="stat"><span class="k">Cycles</span><span class="v" id="cC">0</span></div>
+            <div class="stat"><span class="k">Bytes copied</span><span class="v" id="cB">0</span></div>
+          </div>
+        </div>
+        <div class="machine risc">
+          <h3>RISC <small>200 MHz · Tc 5 ns · pipelined</small></h3>
+          <div class="code" id="riscCode">
+            <div data-i="0">loop: lb   t0, 0(a1)</div>
+            <div data-i="1">      sb   t0, 0(a0)</div>
+            <div data-i="2">      addi a0, a0, 1</div>
+            <div data-i="3">      addi a1, a1, 1</div>
+            <div data-i="4">      bne  a1, a2, loop</div>
+            <div class="sub" data-i="5">      (taken-branch bubble)</div>
+          </div>
+          <div class="bytes" id="riscDst"></div>
+          <div class="stats">
+            <div class="stat"><span class="k">Instructions</span><span class="v" id="rIN">0</span></div>
+            <div class="stat"><span class="k">Cycles</span><span class="v" id="rIC">0</span></div>
+            <div class="stat"><span class="k">Bytes copied</span><span class="v" id="rIB">0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="iron">
+        <table aria-label="Iron law comparison">
+          <thead><tr><th>Machine</th><th>N instructions</th><th>CPI</th><th>Tc</th><th>Time = N × CPI × Tc</th></tr></thead>
+          <tbody>
+            <tr><td>CISC</td><td class="num">1</td><td class="num">64</td><td class="num">15.2 ns</td><td class="num">970 ns</td></tr>
+            <tr><td>RISC</td><td class="num">80</td><td class="num">1.2</td><td class="num">5.0 ns</td><td class="num">480 ns</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">RISC executes 80× more instructions and still finishes about twice as fast. Intel's answer from the Pentium Pro on: decode x86 into RISC-like micro-ops, so a modern x86 runs like the right-hand machine inside.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 3. ERAS ===================== -->
+  <section class="exp" id="eras" aria-labelledby="h-eras">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Sections 1.3 to 1.7</div>
+      <h2 id="h-eras">Every era is a better switch, or a better way to use one</h2>
+      <p class="principle">Pick an era. The bar shows roughly how fast its switch toggles, on a log scale from one per second to a trillion.</p>
+    </div>
+    <div class="bench">
+      <div class="eras" role="tablist" aria-label="Eras" id="eraTabs"></div>
+      <div class="era-detail">
+        <div class="speed">
+          <span class="caption">Switching speed (log scale)</span>
+          <div class="speedbar"><i id="spBar"></i></div>
+          <span class="clock" id="spText"></span>
+        </div>
+        <dl id="eraDl"></dl>
+      </div>
+    </div>
+  </section>
+
+  <footer>Companion to the Ch 1 tab of your notes doc. Numbers in experiments 1 and 2 are idealized models of the book's arguments, not measurements.</footer>
+</div>
+
+<script>
+(function () {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = x => x >= 100 ? Math.round(x).toLocaleString('en-US') + '×' : (x >= 10 ? x.toFixed(0) : x >= 1 ? x.toFixed(1) : x.toFixed(2)) + '×';
+
+  /* ---------- Experiment 1: scaling ---------- */
+  const gen = document.getElementById('gen');
+  const bD = document.getElementById('modeDennard'), bF = document.getElementById('modeFixed');
+  let fixedV = false;
+  const canvas = document.getElementById('die'), ctx = canvas.getContext('2d');
+  // stable pseudo-random order for which cells stay lit
+  const order = []; let seed = 7;
+  for (let i = 0; i < 4096; i++) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; order.push(seed / 0x7fffffff); }
+  let phase = 0;
+
+  function model() {
+    const g = +gen.value, s = Math.pow(0.7, g);
+    const N = 1 / (s * s), f = 1 / s, C = s, V = fixedV ? 1 : s;
+    const P = C * V * V * f, D = N * P;
+    const lit = Math.min(1, 1 / D);
+    return { g, s, N, f, P, D, lit };
+  }
+  function drawDie() {
+    const m = model();
+    const W = canvas.width, side = Math.min(48, Math.round(6 / m.s));   // cells per side grows as transistors shrink
+    const cell = W / side, gap = Math.max(1, cell * 0.12);
+    ctx.fillStyle = css('--bg'); ctx.fillRect(0, 0, W, W);
+    const on = css('--cell-on'), off = css('--cell-off');
+    for (let r = 0; r < side; r++) for (let c = 0; c < side; c++) {
+      const k = (r * side + c) % order.length;
+      const isLit = order[k] < m.lit;
+      let a = 1;
+      if (isLit && !reduce) a = 0.55 + 0.45 * Math.abs(Math.sin(phase * 0.05 + order[k] * 40));
+      ctx.globalAlpha = isLit ? a : 1;
+      ctx.fillStyle = isLit ? on : off;
+      ctx.fillRect(c * cell + gap / 2, r * cell + gap / 2, cell - gap, cell - gap);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function update() {
+    const m = model();
+    document.getElementById('genLabel').textContent = m.g === 0 ? '0 (baseline)' : `${m.g} (feature size × ${m.s.toFixed(2)})`;
+    document.getElementById('rN').textContent = fmt(m.N);
+    document.getElementById('rF').textContent = fmt(m.f);
+    document.getElementById('rP').textContent = fmt(m.P);
+    document.getElementById('rPwhy').textContent = fixedV ? 'C × 0.7, V² × 1 (stuck), f × 1.43 → about 1× per generation: no saving' : 'C × 0.7, V² × 0.49, f × 1.43 → 0.5× per generation';
+    document.getElementById('rD').textContent = fmt(m.D);
+    document.getElementById('rDwhy').textContent = fixedV ? '2× transistors × 1× power each = 2× hotter every generation' : '2× transistors × 0.5× power each = constant';
+    const bar = document.getElementById('dBar'), meter = document.getElementById('dMeter');
+    bar.style.width = Math.min(100, Math.log2(m.D * 2) / Math.log2(64) * 100) + '%';
+    meter.classList.toggle('hot', m.D > 1.01);
+    document.getElementById('rDark').textContent = Math.round((1 - m.lit) * 100) + '%';
+    const v = document.getElementById('verdict');
+    if (!fixedV) { v.className = 'verdict'; v.textContent = `Dennard era: ${fmt(m.N)} the transistors at ${fmt(m.f)} the clock, for the same power per mm². Architects spent this on pipelines, caches and out-of-order cores.`; }
+    else if (m.g === 0) { v.className = 'verdict'; v.textContent = 'Baseline. Move the slider to shrink with the voltage stuck.'; }
+    else { v.className = 'verdict bad'; v.textContent = `Voltage stuck: power density is ${fmt(m.D)} the baseline. To stay within the same cooling, ${Math.round((1 - m.lit) * 100)}% of the die must sit idle (dark silicon) — so the industry stopped raising clocks and went multicore with specialized accelerators.`; }
+    drawDie();
+  }
+  gen.addEventListener('input', update);
+  bD.addEventListener('click', () => { fixedV = false; bD.setAttribute('aria-pressed', 'true'); bF.setAttribute('aria-pressed', 'false'); update(); });
+  bF.addEventListener('click', () => { fixedV = true; bF.setAttribute('aria-pressed', 'true'); bD.setAttribute('aria-pressed', 'false'); update(); });
+  if (!reduce) (function tick() { phase++; drawDie(); requestAnimationFrame(tick); })();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawDie);
+  update();
+
+  /* ---------- Experiment 2: race ---------- */
+  const STR = 'RISC-V WINS 1992'.split('');
+  const NB = STR.length;
+  const TC_CISC = 1000 / 66, TC_RISC = 5;
+  const CISC_PER = 4, RISC_PER = 6;            // cycles per byte (RISC: 5 instructions + 1 bubble)
+  const src = document.getElementById('srcBytes'), cd = document.getElementById('ciscDst'), rd = document.getElementById('riscDst');
+  [src, cd, rd].forEach((el, k) => STR.forEach(ch => { const s = document.createElement('span'); s.textContent = k === 0 ? (ch === ' ' ? '␣' : ch) : '·'; el.appendChild(s); }));
+  let t = 0, playing = false, last = 0;
+  const cisEnd = NB * CISC_PER * TC_CISC, rEnd = NB * RISC_PER * TC_RISC;
+
+  function render() {
+    document.getElementById('clock').textContent = `t = ${Math.round(t)} ns`;
+    // CISC
+    const cc = Math.min(NB * CISC_PER, Math.floor(t / TC_CISC));
+    const cb = Math.min(NB, Math.floor((cc + 2) / CISC_PER));    // byte lands after micro-op 2
+    const cStep = cc >= NB * CISC_PER ? -1 : cc % CISC_PER;
+    document.querySelectorAll('#ciscCode div').forEach(d => { const i = +d.dataset.i; d.classList.toggle('on', cStep >= 0 && (i === 0 || i === cStep + 1)); });
+    cd.querySelectorAll('span').forEach((s, i) => { const done = i < cb; s.classList.toggle('done', done); s.textContent = done ? (STR[i] === ' ' ? '␣' : STR[i]) : '·'; });
+    document.getElementById('cN').textContent = cc > 0 ? 1 : 0;
+    document.getElementById('cC').textContent = cc;
+    document.getElementById('cB').textContent = cb;
+    // RISC
+    const rc = Math.min(NB * RISC_PER, Math.floor(t / TC_RISC));
+    const rSlot = rc >= NB * RISC_PER ? -1 : rc % RISC_PER;
+    const rb = Math.min(NB, Math.floor((rc + 4) / RISC_PER));    // byte lands after sb (slot 1)
+    const rInstr = Math.min(NB * 5, Math.floor(rc / RISC_PER) * 5 + Math.min(5, rc % RISC_PER));
+    document.querySelectorAll('#riscCode div').forEach(d => d.classList.toggle('on', +d.dataset.i === rSlot));
+    rd.querySelectorAll('span').forEach((s, i) => { const done = i < rb; s.classList.toggle('done', done); s.textContent = done ? (STR[i] === ' ' ? '␣' : STR[i]) : '·'; });
+    document.getElementById('rIN').textContent = rInstr;
+    document.getElementById('rIC').textContent = rc;
+    document.getElementById('rIB').textContent = rb;
+  }
+  function frame(ts) {
+    if (!playing) return;
+    const dt = last ? ts - last : 16; last = ts;
+    const speed = +document.getElementById('speed').value;
+    t = Math.min(cisEnd + 5, t + dt * speed * 0.12);
+    render();
+    if (t >= cisEnd + 5) { setPlaying(false); return; }
+    requestAnimationFrame(frame);
+  }
+  function setPlaying(p) {
+    playing = p; last = 0;
+    document.getElementById('play').textContent = p ? 'Pause' : (t >= cisEnd ? 'Replay' : 'Run');
+    if (p) requestAnimationFrame(frame);
+  }
+  document.getElementById('play').addEventListener('click', () => { if (!playing && t >= cisEnd) t = 0; setPlaying(!playing); });
+  document.getElementById('step').addEventListener('click', () => { setPlaying(false); t = Math.min(cisEnd + 5, t + 5); render(); });
+  document.getElementById('reset').addEventListener('click', () => { setPlaying(false); t = 0; render(); });
+  // open in a revealing state: mid-race, RISC already ahead
+  t = 240; render();
+
+  /* ---------- Experiment 3: eras ---------- */
+  const ERAS = [
+    { y: '1830s', name: 'Gears', hz: 1, sw: 'Ten-toothed brass gears, hand-cranked', ex: 'Babbage Difference and Analytical Engines', unl: 'The idea of a programmable machine with memory', limit: 'Too complex to machine in his lifetime' },
+    { y: '1941–44', name: 'Relays', hz: 50, sw: 'Electromechanical relays (ms)', ex: 'Zuse Z3, Harvard Mark I', unl: 'Binary, electrically controlled computing', limit: 'Slow and unreliable; the first literal bug was a moth in a relay' },
+    { y: '1943–45', name: 'Vacuum tubes', hz: 1e5, sw: 'Vacuum tubes (µs)', ex: 'Colossus, ENIAC: 5 kHz, 30 tons, 174 kW', unl: 'Electronic speed, about 1000× relays', limit: 'Heat and burn-out: one ENIAC tube failed every two days' },
+    { y: '1948–49', name: 'Stored program', hz: 1e5, sw: 'Same tubes, new idea', ex: 'Manchester Baby, EDSAC, then EDVAC', unl: 'Programs live in memory as data: software is born', limit: 'Instruction fetch and data share one memory (von Neumann)' },
+    { y: '1961', name: 'Transistors', hz: 1e7, sw: 'Discrete germanium transistors (ns)', ex: 'IBM 7030 Stretch: 150,000 transistors', unl: 'Pipelining, interrupts, memory protection all pioneered here', limit: 'Hand-wiring thousands of discrete parts' },
+    { y: '1964', name: 'One ISA, many machines', hz: 1e7, sw: 'Solid Logic Technology modules', ex: 'IBM System/360, still runs on z16 today', unl: 'Architecture separated from microarchitecture', limit: 'Mainframes cost up to $2 million' },
+    { y: '1971', name: 'Microprocessor', hz: 7.4e5, sw: '2,300 pMOS transistors on one chip', ex: 'Intel 4004 (4-bit)', unl: 'A whole CPU per chip; cost falls with Moore’s Law', limit: 'Tiny: 4-bit, about 740 kHz' },
+    { y: '1982–85', name: 'RISC', hz: 2e7, sw: 'NMOS / CMOS VLSI', ex: 'RISC-I, MIPS-I, ARM1, SPARC', unl: 'Simple instructions at CPI ≈ 1 and short cycles', limit: 'More instructions per program' },
+    { y: '1993–95', name: 'Superscalar, out-of-order', hz: 2e8, sw: 'Millions of CMOS transistors', ex: 'Pentium (2-wide), Pentium Pro (OoO, micro-ops)', unl: 'IPC above 1; CISC outside, RISC inside', limit: 'Complexity and power climb fast' },
+    { y: '2004–06', name: 'Power wall → multicore', hz: 3.4e9, sw: 'CMOS, voltage no longer scaling', ex: 'Pentium 4 at 3.4 GHz, then Intel Core', unl: 'Parallelism instead of frequency', limit: 'Software must be parallel; coherence and ordering bugs' },
+    { y: '2010→', name: 'RISC-V', hz: 5e9, sw: 'FinFET / gate-all-around', ex: 'Billions of cores, including inside NVIDIA GPUs', unl: 'An open ISA anyone can implement and verify', limit: 'Ecosystem still maturing for high-end cores' }
+  ];
+  const tabs = document.getElementById('eraTabs');
+  ERAS.forEach((e, i) => {
+    const b = document.createElement('button');
+    b.className = 'era'; b.setAttribute('role', 'tab'); b.id = 'era-' + i;
+    b.innerHTML = `<span class="y">${e.y}</span><span>${e.name}</span>`;
+    b.addEventListener('click', () => pick(i));
+    b.addEventListener('keydown', ev => { if (ev.key === 'ArrowRight') { pick(Math.min(ERAS.length - 1, i + 1), true); } if (ev.key === 'ArrowLeft') { pick(Math.max(0, i - 1), true); } });
+    tabs.appendChild(b);
+  });
+  function pick(i, focus) {
+    const e = ERAS[i];
+    tabs.querySelectorAll('.era').forEach((b, k) => { b.setAttribute('aria-selected', k === i ? 'true' : 'false'); b.tabIndex = k === i ? 0 : -1; });
+    if (focus) document.getElementById('era-' + i).focus();
+    document.getElementById('spBar').style.width = Math.max(3, Math.log10(e.hz) / 12 * 100) + '%';
+    const hz = e.hz >= 1e9 ? (e.hz / 1e9).toFixed(1) + ' GHz' : e.hz >= 1e6 ? (e.hz / 1e6).toFixed(0) + ' MHz' : e.hz >= 1e3 ? (e.hz / 1e3).toFixed(0) + ' kHz' : e.hz + ' Hz';
+    document.getElementById('spText').textContent = `≈ ${hz} (order of magnitude)`;
+    document.getElementById('eraDl').innerHTML =
+      `<dt>Switch</dt><dd>${e.sw}</dd><dt>Example</dt><dd>${e.ex}</dd><dt>Unlocked</dt><dd>${e.unl}</dd><dt>Limit</dt><dd>${e.limit}</dd>`;
+  }
+  pick(9);
+})();
+</script>

@@ -191,7 +191,7 @@ The simplification versus Wally: the arrays are read combinationally (hit in the
 - **cache\_basic.S:** 132 instructions in 305 cycles: 30 accesses, 13 misses, 5 eviction writebacks and 3 flush writebacks, matched event by event by the model.
 - **Miss cost:** a clean miss stalls 7 cycles (detect + 5-cycle fill burst + WriteLine); a dirty miss stalls 12 (adds a 5-cycle writeback burst). The animation is that dirty miss, from the simulation:
 
-&#91;image: Lab 7 waveform: a store miss evicts a dirty line, a writeback burst then a fill burst\]
+![Lab 7 waveform: a store miss evicts a dirty line, a writeback burst then a fill burst](../gifs/ch10-dirty-miss.gif)
 
 **A bug I wrote myself, and which check found it.** My first burst engine reset its beat counters on the same edge that captured the last read beat, and the reset had priority. So word 3 of every fetched line was lost. **Lock-step caught it** in scenario 4: a store miss into a line pre-filled through the uncached alias read back 0 instead of 0xA3A3A3A3. **The cache model said MATCH**, because it checks *which* line moves and when, not the bytes inside it. That is a clean example of why one checker is never enough.
 
@@ -339,3 +339,8 @@ Store 0x12345678 to …\_0388, then 0xAABBCCDD to …\_03C8.
 - Each cache level should be **4–8× larger** than the level below it. With 16 KiB L1I and L1D, the L2 should be at least 8 × 32 = 256 KiB. L3 is typically 4–64 MiB and is shared by all cores.
 - **Inclusive** caches hold everything in the levels below, which coherence needs for snoop filtering. **Exclusive** caches hold none of it, which uses space best. **NINE** (non-inclusive, non-exclusive) caches may hold some of it.
 - **Associativity and virtual memory** (Section 11.1.1.7): if each way is no larger than a page, indexing does not need translation. Wally's 4 KiB ways on 4 KiB pages are the example.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch10-lab.html`](../companion-pages/ch10-lab.html) (download and open in a browser).

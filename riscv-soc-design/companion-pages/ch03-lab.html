@@ -1,0 +1,359 @@
+<title>Toolchain Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1 and Ch 2 companions: bench panels, copper = active, signal blue = reference/expected. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --off: #e7ebef;
+  --tint: #fbf1ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --off: #1d2731; --tint: #2a1f18; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --off: #1d2731; --tint: #2a1f18; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 0; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 90ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--copper); border-color: var(--copper); color: var(--panel); }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+input[type=text], select { font: 14px var(--mono); padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); min-width: 0; max-width: 100%; }
+label.cap, .caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+
+.grid3 { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.grid3 > .wide { grid-column: 1 / -1; }
+.prog { font-family: var(--mono); font-size: 12.5px; display: grid; gap: 1px; max-height: 470px; overflow: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.prog div { padding: 2px 8px; border-left: 3px solid transparent; white-space: pre; }
+.prog div.lab { color: var(--copper); padding-top: 6px; }
+.prog div.on { border-left-color: var(--copper); background: var(--tint); }
+.prog .hx { color: var(--muted); }
+table.regs { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.regs td { padding: 3px 6px; border-bottom: 1px solid var(--line); }
+table.regs td:first-child { color: var(--muted); font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.regs td:last-child { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+table.regs tr.chg td:last-child { color: var(--copper); font-weight: 600; }
+.log { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; height: 200px; overflow: auto; white-space: pre; }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.verdict { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 4px; background: var(--bg); }
+.verdict .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.verdict .v { font-family: var(--display); font-weight: 700; font-size: 22px; }
+.verdict .d { font-size: 13px; color: var(--muted); }
+.pass { color: var(--good); } .fail { color: var(--hot); } .pend { color: var(--muted); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+
+.reloc-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--mono); font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.math { font-family: var(--mono); font-size: 13.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; white-space: pre-wrap; overflow-x: auto; }
+.math b { color: var(--copper); font-weight: 600; }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 860px) { .grid3 { grid-template-columns: minmax(0, 1fr); } .prog { max-height: 300px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 3 companion</div>
+    <h1>Toolchain Bench</h1>
+    <p class="lede">Two instruments for Chapter 3. Run the book's sumtest on a small instruction-set simulator, inject a hardware bug, and see whether a signature check and a lock-step compare each catch it. Then work out the hi/lo split the linker writes into every <code>la</code> and <code>auipc</code>.</p>
+    <nav class="jump" aria-label="Instruments">
+      <a href="#iss">1 · sumtest: signature vs lock-step</a>
+      <a href="#reloc">2 · The +0x800 linker puzzle</a>
+    </nav>
+  </header>
+
+  <!-- ============ 1. ISS ============ -->
+  <section class="exp" id="iss" aria-labelledby="h-iss">
+    <div class="exp-head">
+      <div class="eyebrow">Instrument 1 · Sections 3.3.8–3.3.10 and 3.7</div>
+      <h2 id="h-iss">Run sumtest, then break the "hardware"</h2>
+      <p class="principle">The program and addresses are my GCC 13.2 build of the book's sumtest.S + sum.S (rv64gc, today's link.ld). <b>Reference = a correct ISS. DUT = the same ISS with the bug you pick.</b> The signature check compares only the two words at begin_signature at the end. Lock-step compares every register and memory write, instruction by instruction.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="cap" for="nSel">N</label>
+        <select id="nSel"></select>
+        <label class="cap" for="bugSel">DUT bug</label>
+        <select id="bugSel">
+          <option value="none">None (a correct core)</option>
+          <option value="instret">instret skips 16-bit (compressed) instructions</option>
+          <option value="cadd">c.add writes rs2 instead of rd + rs2</option>
+          <option value="bltu">blt compares unsigned instead of signed</option>
+          <option value="ldsp">c.ldsp returns 0 instead of the memory value</option>
+        </select>
+        <label class="check"><input type="checkbox" id="junk"> start with junk in the registers (as riscv-arch-test does)</label>
+      </div>
+      <div class="controls">
+        <button class="btn" id="stepBtn">Step</button>
+        <button class="btn primary" id="runBtn">Run to tohost</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <span class="caption" id="status"></span>
+      </div>
+      <div class="grid3">
+        <div style="display:grid; gap:8px">
+          <h3>Program (objdump)</h3>
+          <div class="prog" id="prog"></div>
+        </div>
+        <div style="display:grid; gap:8px">
+          <h3>DUT registers</h3>
+          <table class="regs"><tbody id="regs"></tbody></table>
+          <h3>Memory</h3>
+          <table class="regs"><tbody id="mem"></tbody></table>
+        </div>
+        <div class="wide" style="display:grid; gap:8px">
+          <h3>DUT trace (Sail format)</h3>
+          <div class="log" id="log" aria-live="polite"></div>
+          <div class="narr" id="narr"></div>
+        </div>
+      </div>
+      <div class="verdicts">
+        <div class="verdict"><span class="k">Signature check (riscv-arch-test style)</span><span class="v pend" id="vSig">running…</span><span class="d" id="dSig"></span></div>
+        <div class="verdict"><span class="k">Lock-step compare (Chapter 5 style)</span><span class="v pend" id="vLock">running…</span><span class="d" id="dLock"></span></div>
+        <div class="verdict"><span class="k">Instructions in the call: 13 + 4N</span><span class="v" id="vCount"></span><span class="d" id="dCount"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. RELOC ============ -->
+  <section class="exp" id="reloc" aria-labelledby="h-rel">
+    <div class="exp-head">
+      <div class="eyebrow">Instrument 2 · Sections 3.3.2 and 3.3.3</div>
+      <h2 id="h-rel">How the linker splits a PC-relative offset</h2>
+      <p class="principle">auipc adds <b>hi &lt;&lt; 12</b> to the PC; addi then adds a <b>sign-extended</b> 12-bit lo. If lo would be 0x800 or more it reads as negative, so hi must round up: <b>hi = (offset + 0x800) &gt;&gt; 12</b>.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="cap" for="pcIn">PC of auipc</label>
+        <input type="text" id="pcIn" value="0x80000008" spellcheck="false" size="14">
+        <label class="cap" for="tgIn">Target symbol address</label>
+        <input type="text" id="tgIn" value="0x80004000" spellcheck="false" size="14">
+        <label class="cap" for="rdSel">rd</label>
+        <select id="rdSel"><option value="2">sp (x2)</option><option value="5" selected>t0 (x5)</option><option value="6">t1 (x6)</option><option value="10">a0 (x10)</option></select>
+      </div>
+      <div class="controls" aria-label="Presets">
+        <span class="caption">Presets:</span>
+        <button class="btn chip" data-pc="0x80000000" data-tg="0x80005200" data-rd="2">la sp, topofstack</button>
+        <button class="btn chip" data-pc="0x80000008" data-tg="0x80004000" data-rd="5">la t0, N</button>
+        <button class="btn chip" data-pc="0x80000024" data-tg="0x80004008" data-rd="5">la t0, begin_signature</button>
+        <button class="btn chip" data-pc="0x80000034" data-tg="0x80001000" data-rd="6">la t1, tohost</button>
+        <button class="btn chip" data-pc="0x10104" data-tg="0x14978" data-rd="10">book Fig 3.2 medany</button>
+        <button class="btn chip" data-pc="0x80000000" data-tg="0x80001800" data-rd="5">edge: low bits = 0x800</button>
+      </div>
+      <p class="caption" id="relErr" role="status"></p>
+      <div class="math" id="relMath"></div>
+      <div class="reloc-out">
+        <div class="kv"><span class="k">auipc (R_RISCV_PCREL_HI20)</span><span class="v" id="oAuipc"></span></div>
+        <div class="kv"><span class="k">addi (R_RISCV_PCREL_LO12_I)</span><span class="v" id="oAddi"></span></div>
+        <div class="kv"><span class="k">Check: PC + (hi &lt;&lt; 12) + lo</span><span class="v" id="oCheck"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Companion to the Ch 3 tab of your notes. The ISS models only the instructions sumtest uses, on RV64 with the C extension; instret starts at 5 because the simulator's boot ROM has already retired five instructions, which matches the book's Sail trace.</footer>
+</div>
+
+<script>
+(function () {
+  const M64 = (1n << 64n) - 1n;
+  const hx = (v, w = 16) => '0x' + (BigInt.asUintN(64, BigInt(v))).toString(16).toUpperCase().padStart(w, '0');
+  const sx = v => BigInt.asIntN(64, v);
+  const RN = { 1: 'ra', 2: 'sp', 5: 't0', 6: 't1', 8: 's0', 9: 's1', 10: 'a0', 24: 's8', 25: 's9' };
+  const SHOW = [10, 8, 9, 24, 25, 2, 1, 5, 6];
+
+  // ---------- the program: my GCC 13.2 build of sumtest ----------
+  const P = [];
+  const I = (pc, sz, hex, asm, fn, label) => P.push({ pc, sz, hex, asm, fn, label });
+  I(0x80000000, 4, '00005117', 'auipc   sp,0x5', s => s.wx(2, BigInt(s.pc) + 0x5000n), 'rvtest_entry_point');
+  I(0x80000004, 4, '20010113', 'addi    sp,sp,512', s => s.wx(2, s.x[2] + 512n));
+  I(0x80000008, 4, '00004297', 'auipc   t0,0x4', s => s.wx(5, BigInt(s.pc) + 0x4000n));
+  I(0x8000000c, 4, 'ff828293', 'addi    t0,t0,-8', s => s.wx(5, s.x[5] - 8n));
+  I(0x80000010, 4, '0002b503', 'ld      a0,0(t0)', s => s.wx(10, s.ld(s.x[5])));
+  I(0x80000014, 4, 'c0202c73', 'rdinstret s8', s => s.wx(24, s.instret));
+  I(0x80000018, 4, '02c000ef', 'jal     80000044 <sum>', s => { s.wx(1, BigInt(s.pc + 4)); s.npc = 0x80000044; });
+  I(0x8000001c, 4, 'c0202cf3', 'rdinstret s9', s => s.wx(25, s.instret));
+  I(0x80000020, 4, '418c8cb3', 'sub     s9,s9,s8', s => s.wx(25, s.x[25] - s.x[24]));
+  I(0x80000024, 4, '00004297', 'auipc   t0,0x4', s => s.wx(5, BigInt(s.pc) + 0x4000n));
+  I(0x80000028, 4, 'fe428293', 'addi    t0,t0,-28', s => s.wx(5, s.x[5] - 28n));
+  I(0x8000002c, 4, '00a2b023', 'sd      a0,0(t0)', s => s.sd(s.x[5], s.x[10]));
+  I(0x80000030, 4, '0192b423', 'sd      s9,8(t0)', s => s.sd(s.x[5] + 8n, s.x[25]));
+  I(0x80000034, 4, '00001317', 'auipc   t1,0x1', s => s.wx(6, BigInt(s.pc) + 0x1000n), 'write_tohost');
+  I(0x80000038, 4, 'fcc30313', 'addi    t1,t1,-52', s => s.wx(6, s.x[6] - 52n));
+  I(0x8000003c, 2, '4285', 'c.li    t0,1', s => s.wx(5, 1n));
+  I(0x8000003e, 4, '00533023', 'sd      t0,0(t1)', s => { s.sd(s.x[6], s.x[5]); s.halt = true; });
+  I(0x80000042, 2, 'a001', 'c.j     80000042', s => { s.npc = s.pc; }, 'self_loop');
+  I(0x80000044, 2, '1141', 'c.addi  sp,-16', s => s.wx(2, s.x[2] - 16n), 'sum');
+  I(0x80000046, 2, 'e022', 'c.sdsp  s0,0(sp)', s => s.sd(s.x[2], s.x[8]));
+  I(0x80000048, 2, 'e426', 'c.sdsp  s1,8(sp)', s => s.sd(s.x[2] + 8n, s.x[9]));
+  I(0x8000004a, 2, '4401', 'c.li    s0,0', s => s.wx(8, 0n));
+  I(0x8000004c, 2, '4485', 'c.li    s1,1', s => s.wx(9, 1n));
+  I(0x8000004e, 4, '00954563', 'blt     a0,s1,80000058', s => {
+      const lt = s.bug === 'bltu' ? (BigInt.asUintN(64, s.x[10]) < BigInt.asUintN(64, s.x[9])) : (sx(s.x[10]) < sx(s.x[9]));
+      if (lt) s.npc = 0x80000058; }, 'for');
+  I(0x80000052, 2, '9426', 'c.add   s0,s1', s => s.wx(8, s.bug === 'cadd' ? s.x[9] : s.x[8] + s.x[9]));
+  I(0x80000054, 2, '0485', 'c.addi  s1,1', s => s.wx(9, s.x[9] + 1n));
+  I(0x80000056, 2, 'bfe5', 'c.j     8000004e', s => { s.npc = 0x8000004e; });
+  I(0x80000058, 2, '8522', 'c.mv    a0,s0', s => s.wx(10, s.x[8]), 'done');
+  I(0x8000005a, 2, '6402', 'c.ldsp  s0,0(sp)', s => s.wx(8, s.bug === 'ldsp' ? 0n : s.ld(s.x[2])));
+  I(0x8000005c, 2, '64a2', 'c.ldsp  s1,8(sp)', s => s.wx(9, s.bug === 'ldsp' ? 0n : s.ld(s.x[2] + 8n)));
+  I(0x8000005e, 2, '0141', 'c.addi  sp,16', s => s.wx(2, s.x[2] + 16n));
+  I(0x80000060, 2, '8082', 'c.jr    ra', s => { s.npc = Number(s.x[1]); });
+  const byPc = new Map(P.map(p => [p.pc, p]));
+
+  const SIG = 0x80004008n, NADDR = 0x80004000n, TOHOST = 0x80001000n;
+  function makeState(bug, N, junk) {
+    const s = { bug, pc: 0x80000000, npc: 0, x: Array(32).fill(0n), mem: new Map(), instret: 5n, n: 5, halt: false, writes: [] };
+    if (junk) { s.x[8] = 0xFEEDBEADFEEDBEADn; s.x[9] = 0xFF76DF56FF76DF56n; s.x[1] = 0xFEEDBEADn; s.x[10] = 0x1n; }
+    s.mem.set(NADDR, BigInt(N)); s.mem.set(SIG, 0xDEADBEEFDEADBEEFn); s.mem.set(SIG + 8n, 0xDEADBEEFDEADBEEFn); s.mem.set(TOHOST, 0n);
+    s.wx = (r, v) => { if (r) { s.x[r] = BigInt.asUintN(64, v); s.writes.push({ k: 'x', r, v: s.x[r] }); } };
+    s.ld = a => s.mem.get(BigInt.asUintN(64, a)) ?? 0n;
+    s.sd = (a, v) => { a = BigInt.asUintN(64, a); s.mem.set(a, BigInt.asUintN(64, v)); s.writes.push({ k: 'm', a, v: BigInt.asUintN(64, v) }); };
+    return s;
+  }
+  function step(s) {
+    if (s.halt) return null;
+    const ins = byPc.get(s.pc);
+    s.writes = []; s.npc = s.pc + ins.sz;
+    ins.fn(s);
+    const rec = { n: s.n, pc: s.pc, ins, writes: s.writes };
+    if (!(s.bug === 'instret' && ins.sz === 2)) s.instret += 1n;
+    s.n += 1; s.pc = s.npc;
+    return rec;
+  }
+  const fmtRec = r => {
+    let t = `[${r.n}] [M]: ${hx(r.pc)} (0x${r.ins.hex.toUpperCase()}) ${r.ins.asm}`;
+    for (const w of r.writes) t += w.k === 'x' ? `\nx${w.r} <- ${hx(w.v)}` : (w.a === TOHOST ? `\nhtif[${hx(w.a)}] <- ${hx(w.v)}` : `\nmem[W,${hx(w.a)}] <- ${hx(w.v)}`);
+    return t;
+  };
+  const sameRec = (a, b) => a && b && a.pc === b.pc && a.writes.length === b.writes.length &&
+    a.writes.every((w, i) => w.k === b.writes[i].k && w.v === b.writes[i].v && (w.k === 'x' ? w.r === b.writes[i].r : w.a === b.writes[i].a));
+
+  // ---------- UI ----------
+  const nSel = document.getElementById('nSel');
+  for (let n = 1; n <= 10; n++) { const o = document.createElement('option'); o.value = n; o.textContent = n; if (n === 4) o.selected = true; nSel.appendChild(o); }
+  const progEl = document.getElementById('prog');
+  P.forEach(p => {
+    if (p.label) { const l = document.createElement('div'); l.className = 'lab'; l.textContent = `${p.pc.toString(16)} <${p.label}>:`; progEl.appendChild(l); }
+    const d = document.createElement('div'); d.dataset.pc = p.pc;
+    d.innerHTML = `${p.pc.toString(16)}: <span class="hx">${p.hex.padEnd(8, ' ')}</span>  ${p.asm}`;
+    progEl.appendChild(d);
+  });
+  let dut, ref, lines, diverged, lastChanged;
+  const NARR = {
+    none: 'A correct core. Both checks should pass.',
+    instret: 'A counter bug. Most of sum is compressed code, so the measured count comes out too low.',
+    cadd: 'A datapath bug in one compressed instruction. The sum comes out wrong.',
+    bltu: 'A comparison bug that only shows with a negative operand. N is always positive here.',
+    ldsp: 'A load bug in the epilogue. Whether anything notices depends on what s0 and s1 held before the call.'
+  };
+  function reset() {
+    const N = +nSel.value, bug = document.getElementById('bugSel').value, junk = document.getElementById('junk').checked;
+    dut = makeState(bug, N, junk); ref = makeState('none', N, junk); lines = []; diverged = null; lastChanged = new Set();
+    document.getElementById('narr').textContent = NARR[bug];
+    render();
+  }
+  function stepBoth() {
+    const r1 = step(dut), r2 = step(ref);
+    if (!r1) return false;
+    lastChanged = new Set(r1.writes.filter(w => w.k === 'x').map(w => w.r));
+    lines.push(fmtRec(r1));
+    if (!diverged && !sameRec(r1, r2)) diverged = { d: r1, r: r2 };
+    return true;
+  }
+  function render() {
+    progEl.querySelectorAll('div[data-pc]').forEach(d => d.classList.toggle('on', +d.dataset.pc === dut.pc && !dut.halt));
+    const cur = progEl.querySelector('div.on'); if (cur) { const top = cur.offsetTop - progEl.offsetTop; if (top < progEl.scrollTop || top > progEl.scrollTop + progEl.clientHeight - 30) progEl.scrollTop = Math.max(0, top - 60); }
+    document.getElementById('regs').innerHTML = SHOW.map(r => `<tr class="${lastChanged.has(r) ? 'chg' : ''}"><td>${RN[r]} (x${r})</td><td>${hx(dut.x[r])}</td></tr>`).join('') +
+      `<tr><td>instret</td><td>${hx(dut.instret)}</td></tr>`;
+    const sp = dut.x[2];
+    const memRows = [['N @ 80004000', NADDR], ['sig[0] @ 80004008', SIG], ['sig[1] @ 80004010', SIG + 8n], ['tohost @ 80001000', TOHOST]];
+    if (sp && sp < 0x80005200n) memRows.push(['stack 0(sp)', sp], ['stack 8(sp)', sp + 8n]); else memRows.push(['stack 0x800051F0', 0x800051F0n], ['stack 0x800051F8', 0x800051F8n]);
+    document.getElementById('mem').innerHTML = memRows.map(([n, a]) => `<tr><td>${n}</td><td>${hx(dut.mem.get(a) ?? 0n)}</td></tr>`).join('');
+    const log = document.getElementById('log'); log.textContent = lines.slice(-40).join('\n'); log.scrollTop = log.scrollHeight;
+    document.getElementById('status').textContent = dut.halt ? `stopped: tohost = ${dut.mem.get(TOHOST)}` : `next: ${hx(dut.pc, 8)}`;
+    const N = BigInt(nSel.value), expSum = N * (N + 1n) / 2n, expCnt = 13n + 4n * N;
+    const vSig = document.getElementById('vSig'), dSig = document.getElementById('dSig'), vLock = document.getElementById('vLock'), dLock = document.getElementById('dLock');
+    if (dut.halt) {
+      const g0 = dut.mem.get(SIG), g1 = dut.mem.get(SIG + 8n), ok = g0 === expSum && g1 === expCnt;
+      vSig.textContent = ok ? 'PASS' : 'FAIL'; vSig.className = 'v ' + (ok ? 'pass' : 'fail');
+      dSig.textContent = `got ${g0.toString(16).toUpperCase()}, ${g1.toString(16).toUpperCase()}; expected ${expSum.toString(16).toUpperCase()}, ${expCnt.toString(16).toUpperCase()}`;
+    } else { vSig.textContent = 'not finished'; vSig.className = 'v pend'; dSig.textContent = 'Compared once, when the test writes tohost.'; }
+    if (diverged) {
+      vLock.textContent = 'FAIL'; vLock.className = 'v fail';
+      const w = diverged.d.writes[0], e = diverged.r.writes[0];
+      const what = w && w.k === 'x' ? `x${w.r} = ${hx(w.v)}, reference ${e ? hx(e.v) : 'none'}` : 'write mismatch';
+      dLock.textContent = `diverged at instruction [${diverged.d.n}] ${diverged.d.ins.asm}: ${what}`;
+    } else if (dut.halt) { vLock.textContent = 'PASS'; vLock.className = 'v pass'; dLock.textContent = `all ${dut.n - 5} instructions matched the reference`; }
+    else { vLock.textContent = 'matching so far'; vLock.className = 'v pend'; dLock.textContent = `${dut.n - 5} instructions compared`; }
+    document.getElementById('vCount').textContent = `${expCnt} (0x${expCnt.toString(16).toUpperCase()})`;
+    document.getElementById('dCount').textContent = `2 + 5 prologue + 4×${N} loop + 1 exit blt + 5 epilogue; sum(${N}) = ${expSum}`;
+  }
+  document.getElementById('stepBtn').addEventListener('click', () => { stepBoth(); render(); });
+  document.getElementById('runBtn').addEventListener('click', () => { let k = 0; while (!dut.halt && k++ < 500) stepBoth(); render(); });
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  ['nSel', 'bugSel', 'junk'].forEach(id => document.getElementById(id).addEventListener('change', () => { reset(); }));
+  reset();
+  for (let k = 0; k < 14; k++) stepBoth();   // open mid-call so the page shows a live state
+  render();
+
+  // ---------- 2. relocation calculator ----------
+  const ABI = { 2: 'sp', 5: 't0', 6: 't1', 10: 'a0' };
+  const parse = s => { s = s.trim().toLowerCase(); if (!/^(0x[0-9a-f]+|\d+)$/.test(s)) throw new Error(`"${s}" is not an address`); return BigInt(s); };
+  const h = (v, w) => '0x' + v.toString(16).toUpperCase().padStart(w || 1, '0');
+  function reloc() {
+    const err = document.getElementById('relErr'); err.textContent = '';
+    let pc, tg; try { pc = parse(document.getElementById('pcIn').value); tg = parse(document.getElementById('tgIn').value); } catch (e) { err.textContent = e.message; return; }
+    const rd = +document.getElementById('rdSel').value;
+    const off = tg - pc;
+    if (off < -(1n << 31n) - 0x800n || off >= (1n << 31n) - 0x800n) { err.textContent = 'Out of reach: auipc + addi can only span about ±2 GiB from the PC.'; }
+    const hi = (off + 0x800n) >> 12n;               // arithmetic shift on BigInt
+    const lo = off - (hi << 12n);
+    const hiField = BigInt.asUintN(20, hi), loField = BigInt.asUintN(12, lo);
+    const auipc = (hiField << 12n) | (BigInt(rd) << 7n) | 0x17n;
+    const addi = (loField << 20n) | (BigInt(rd) << 15n) | (BigInt(rd) << 7n) | 0x13n;
+    const lowBits = BigInt.asUintN(12, off);
+    const neg = off < 0n;
+    document.getElementById('relMath').innerHTML =
+      `offset = target − PC = ${h(tg)} − ${h(pc)} = ${neg ? '−' + h(-off) : h(off)}\n` +
+      `low 12 bits of offset = ${h(lowBits, 3)}  ${lowBits >= 0x800n ? '<b>≥ 0x800: addi would read it as negative, so hi rounds up</b>' : '(below 0x800: no rounding needed)'}\n` +
+      `hi = (offset + 0x800) >> 12 = <b>${hi < 0n ? '−' + h(-hi) : h(hi)}</b>\n` +
+      `lo = offset − (hi << 12)    = <b>${lo}</b>  (${lo < 0n ? '−' + h(-lo) : h(lo)})`;
+    document.getElementById('oAuipc').textContent = `auipc ${ABI[rd]}, ${h(hiField)}  →  ${h(auipc, 8)}`;
+    document.getElementById('oAddi').textContent = `addi ${ABI[rd]}, ${ABI[rd]}, ${lo}  →  ${h(addi, 8)}`;
+    document.getElementById('oCheck').textContent = `${h(pc + (hi << 12n) + lo)} ${pc + (hi << 12n) + lo === tg ? '= target' : '≠ target'}`;
+  }
+  ['pcIn', 'tgIn'].forEach(id => document.getElementById(id).addEventListener('input', reloc));
+  document.getElementById('rdSel').addEventListener('change', reloc);
+  document.querySelectorAll('[data-pc]').forEach(b => { if (b.tagName === 'BUTTON') b.addEventListener('click', () => {
+    document.getElementById('pcIn').value = b.dataset.pc; document.getElementById('tgIn').value = b.dataset.tg; document.getElementById('rdSel').value = b.dataset.rd; reloc(); }); });
+  reloc();
+})();
+</script>

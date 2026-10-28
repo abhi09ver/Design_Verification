@@ -200,7 +200,7 @@ This creates a **structural hazard**: a store in M and a load in E both want the
 
 The self-checking test passes: 15 instructions in 22 cycles, including 4 cycles of fill. You can see each mechanism once. ori gets t0 forwarded from M. and stalls one cycle behind lb and then takes t2 from W. beq resolves in E and kills sb and xori, which become bubbles.
 
-&#91;image: The Fig. 7.15 program stepping through the five stages, one cycle per frame: forwarding arrows, the load-use stall, and the flush of the two wrong-path instructions\]
+![The Fig. 7.15 program stepping through the five stages, one cycle per frame: forwarding arrows, the load-use stall, and the flush of the two wrong-path instructions](../gifs/ch07-pipeline-hazards.gif)
 
 ### 7.2.2.2 Pipeline registers: `flopenrc`
 
@@ -498,3 +498,8 @@ What to say about it in an interview:
 - `CSRWriteFenceM` is the "flush the pipe after a CSR write" rule from Ch 2. `RetM` flushes because mret and sret change privilege and PC.
 
 **Coverage to propose:** cross each pair of {stall cause} × {flush cause} in the same cycle, check that `$onehot0` holds on the hazard outputs where it should, and add the assertion `StallX |-> StallY` for every Y older than X.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch07-lab.html`](../companion-pages/ch07-lab.html) (download and open in a browser).

@@ -241,7 +241,7 @@ The PC mux grows two levels (book Fig. 8.17). PC1NextF is the branch/jump target
 
 I added the same mechanism to my Lab 3 core (details in the Lab section). This is the real simulator output for a misaligned `lw`, the handler, and `mret`:
 
-&#91;image: A misaligned load trapping in Memory: the pipeline flushes, jumps to the handler, stalls on a CSR read, refetches after a CSR write, and mret resumes after the faulting load\]
+![A misaligned load trapping in Memory: the pipeline flushes, jumps to the handler, stalls on a CSR read, refetches after a CSR write, and mret resumes after the faulting load](../gifs/ch08-trap-through-pipeline.gif)
 
 The cycle-by-cycle key points:
 
@@ -503,3 +503,8 @@ This tab has been checked against all 22 sections of Chapter 8 (8.1–8.5), Tabl
 - mscratch holds a dedicated **trap stack** (`topoftrapstack`). `csrrw tp, mscratch, tp` swaps it in on entry and swaps it back before mret.
 - The handler logs mcause and mtval to the signature on every trap. That is how the book's privileged tests produce signatures without a reference model.
 - ecall arguments: a0 = 0, 1 or 3 switches mode by rewriting MPP (`csrc mstatus, 0x1800; slli a0, a0, 11; csrs mstatus, a0`). a0 = 4 ends the test through `write_tohost`.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch08-lab.html`](../companion-pages/ch08-lab.html) (download and open in a browser).

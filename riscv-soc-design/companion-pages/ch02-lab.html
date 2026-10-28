@@ -1,0 +1,518 @@
+<title>Bits to Datapath Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: lab-notebook column shared with the Ch 1 companion; each instrument is a bench panel with controls above and readouts beside the display. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --wire: #b8c2cc; --off: #e7ebef;
+  --f-imm: #dbe7f5; --f-reg: #e8ebee; --f-op: #ffffff;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --wire: #3a4754; --off: #1d2731;
+  --f-imm: #1d3350; --f-reg: #232d37; --f-op: #151d25; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --wire: #3a4754; --off: #1d2731;
+  --f-imm: #1d3350; --f-reg: #232d37; --f-op: #151d25; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 70ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--copper); border-color: var(--copper); color: var(--panel); }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn[aria-pressed="true"] { border-color: var(--copper); box-shadow: inset 0 -2px 0 var(--copper); }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+input[type=text], select { font: 15px var(--mono); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); min-width: 0; }
+input#asm { width: min(420px, 100%); }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.err { color: var(--hot); font-family: var(--mono); font-size: 13px; }
+
+/* encoder */
+.bitstrip { overflow-x: auto; min-width: 0; }
+.bench > * { min-width: 0; }
+.strip { display: grid; grid-template-columns: repeat(32, minmax(18px, 1fr)); gap: 2px; min-width: 620px; font-family: var(--mono); }
+.strip .fld { grid-row: 1; text-align: center; font-size: 11px; padding: 3px 0; border-radius: 3px 3px 0 0; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip .bit { grid-row: 2; text-align: center; padding: 6px 0; font-size: 14px; border: 1px solid var(--line); border-radius: 2px; }
+.strip .idx { grid-row: 3; text-align: center; font-size: 10px; color: var(--muted); }
+.k-imm { background: var(--f-imm); } .k-reg { background: var(--f-reg); } .k-op { background: var(--f-op); }
+.enc-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--mono); font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* datapath */
+.dp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.dp-svg { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.dp-svg .blk rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+.dp-svg .blk.on rect { stroke: var(--copper); stroke-width: 2.4; }
+.dp-svg text { fill: var(--ink); font-family: var(--body); font-size: 12px; }
+.dp-svg .small { font-size: 10px; fill: var(--muted); font-family: var(--mono); }
+.dp-svg .w { fill: none; stroke: var(--wire); stroke-width: 2; }
+.dp-svg .w.on { stroke: var(--copper); stroke-width: 3.2; }
+.dp-svg .w.on.ctl { stroke: var(--signal); }
+.phase { display: flex; gap: 4px; flex-wrap: wrap; }
+.phase span { font-family: var(--mono); font-size: 12px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); }
+.phase span.on { border-color: var(--copper); color: var(--ink); box-shadow: inset 0 -2px 0 var(--copper); }
+.sig { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sig td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.sig td:first-child { color: var(--muted); }
+.sig td:last-child { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sig tr.hot td:last-child { color: var(--copper); font-weight: 600; }
+.prog { font-family: var(--mono); font-size: 13px; display: grid; gap: 2px; }
+.prog div { padding: 3px 8px; border-left: 3px solid transparent; white-space: pre; overflow-x: auto; }
+.prog div.on { border-left-color: var(--copper); background: var(--bg); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+
+/* trap */
+.trap-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.csr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.csr .kv.flash .v { color: var(--copper); }
+.mode { display: flex; gap: 6px; }
+.mode span { font-family: var(--mono); font-size: 13px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); }
+.mode span.on { background: var(--copper); border-color: var(--copper); color: var(--panel); }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; }
+ol.steps li { color: var(--muted); }
+ol.steps li.done { color: var(--ink); }
+ol.steps li.now { color: var(--ink); font-weight: 600; }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+@media (max-width: 800px) { .dp-grid, .trap-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 2 companion</div>
+    <h1>Bits to Datapath Lab</h1>
+    <p class="lede">Three instruments for Chapter 2: encode and decode any RV32I instruction bit by bit, watch the single-cycle core execute the book's sample program one phase at a time, and step through a trap as the hardware fills mepc, mcause and mtval.</p>
+    <nav class="jump" aria-label="Instruments">
+      <a href="#encoder">1 · Encoder / decoder</a>
+      <a href="#datapath">2 · Single-cycle datapath</a>
+      <a href="#trap">3 · Taking a trap</a>
+    </nav>
+  </header>
+
+  <!-- ============ 1. ENCODER ============ -->
+  <section class="exp" id="encoder" aria-labelledby="h-enc">
+    <div class="exp-head">
+      <div class="eyebrow">Instrument 1 · Sections 2.1 and 2.2</div>
+      <h2 id="h-enc">Type an instruction or a hex word</h2>
+      <p class="principle"><b>rs1, rs2, rd and the sign bit never move.</b> Everything else is decided by the 7-bit opcode.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="asm">Assembly or 0x hex</label>
+        <input id="asm" type="text" value="sub x3, x4, x5" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="controls" aria-label="Examples">
+        <span class="caption">Try:</span>
+        <button class="btn chip" data-ex="sub x3, x4, x5">sub x3, x4, x5</button>
+        <button class="btn chip" data-ex="0x03E90523">0x03E90523</button>
+        <button class="btn chip" data-ex="beq x0, x0, -8">beq x0, x0, -8</button>
+        <button class="btn chip" data-ex="addi x1, x1, -2048">addi x1, x1, -2048</button>
+        <button class="btn chip" data-ex="lui x1, 0x4">lui x1, 0x4</button>
+        <button class="btn chip" data-ex="jal ra, 2048">jal ra, 2048</button>
+        <button class="btn chip" data-ex="lw x3, 4(x1)">lw x3, 4(x1)</button>
+        <button class="btn chip" data-ex="srai t0, t1, 3">srai t0, t1, 3</button>
+      </div>
+      <div class="err" id="encErr" role="status"></div>
+      <div class="bitstrip"><div class="strip" id="strip"></div></div>
+      <div class="enc-out">
+        <div class="kv"><span class="k">Hex</span><span class="v" id="oHex"></span></div>
+        <div class="kv"><span class="k">Format</span><span class="v" id="oFmt"></span></div>
+        <div class="kv"><span class="k">Assembly</span><span class="v" id="oAsm"></span></div>
+        <div class="kv"><span class="k">Immediate (ImmExt)</span><span class="v" id="oImm"></span></div>
+      </div>
+      <p class="caption" id="oNote"></p>
+    </div>
+  </section>
+
+  <!-- ============ 2. DATAPATH ============ -->
+  <section class="exp" id="datapath" aria-labelledby="h-dp">
+    <div class="exp-head">
+      <div class="eyebrow">Instrument 2 · Section 2.7.1</div>
+      <h2 id="h-dp">The single-cycle core, one phase at a time</h2>
+      <p class="principle">Start: <b>x1 = 0x2000, x2 = 7, mem[0x2004] = 0x2A</b>, program at 0x1000. In real hardware all five phases happen inside one clock period; here they are slowed down.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <button class="btn primary" id="dpPlay">Play</button>
+        <button class="btn" id="dpStep">Next phase</button>
+        <button class="btn" id="dpReset">Reset</button>
+        <div class="phase" id="phaseBar" aria-label="Phase"></div>
+      </div>
+      <div class="dp-grid">
+        <div style="min-width:0">
+          <svg class="dp-svg" viewBox="0 0 860 420" role="img" aria-label="Single-cycle datapath with the active path highlighted">
+            <!-- wires (drawn first) -->
+            <path class="w" id="w-pcnext" d="M70 110 V160"/>
+            <path class="w" id="w-pc-irom" d="M100 190 H130"/>
+            <path class="w" id="w-pc-add" d="M85 160 V60 H130"/>
+            <path class="w" id="w-pc-srca" d="M85 220 V385 H400 V178 H420"/>
+            <path class="w" id="w-instr" d="M220 190 H265"/>
+            <path class="w" id="w-instr-ext" d="M240 190 V330 H265"/>
+            <path class="w ctl" id="w-instr-ctl" d="M240 190 V40 H265"/>
+            <path class="w" id="w-r1" d="M385 160 H420"/>
+            <path class="w" id="w-r2" d="M385 230 H420"/>
+            <path class="w" id="w-r1cmp" d="M400 160 V90 H470"/>
+            <path class="w" id="w-r2cmp" d="M410 230 V110 H470"/>
+            <path class="w" id="w-imm" d="M385 330 H408 V250 H420"/>
+            <path class="w" id="w-srca" d="M445 170 H480"/>
+            <path class="w" id="w-srcb" d="M445 240 H480"/>
+            <path class="w" id="w-ieuadr" d="M580 200 H630"/>
+            <path class="w" id="w-target" d="M605 200 V20 H40 V80"/>
+            <path class="w" id="w-alures" d="M580 250 H600 V290 H760"/>
+            <path class="w" id="w-rdata" d="M730 220 H760"/>
+            <path class="w" id="w-plus4" d="M180 60 H200 V20"/>
+            <path class="w" id="w-plus4mux" d="M180 70 H55 V80"/>
+            <path class="w" id="w-result" d="M790 255 H830 V405 H250 V300 H265"/>
+            <path class="w ctl" id="w-eq" d="M570 100 H600 V60 H385"/>
+            <!-- blocks -->
+            <g class="blk" id="b-pcmux"><rect x="30" y="80" width="60" height="30" rx="4"/><text x="60" y="100" text-anchor="middle">PC mux</text></g>
+            <g class="blk" id="b-pc"><rect x="40" y="160" width="60" height="60" rx="4"/><text x="70" y="195" text-anchor="middle">PC</text></g>
+            <g class="blk" id="b-add"><rect x="130" y="45" width="50" height="35" rx="4"/><text x="155" y="67" text-anchor="middle">+4</text></g>
+            <g class="blk" id="b-irom"><rect x="130" y="145" width="90" height="90" rx="4"/><text x="175" y="185" text-anchor="middle">IROM</text><text class="small" x="175" y="203" text-anchor="middle">A → RD</text></g>
+            <g class="blk" id="b-ctl"><rect x="265" y="20" width="120" height="44" rx="4"/><text x="325" y="40" text-anchor="middle">Controller</text><text class="small" x="325" y="56" text-anchor="middle">op, funct3, funct7</text></g>
+            <g class="blk" id="b-rf"><rect x="265" y="130" width="120" height="140" rx="4"/><text x="325" y="200" text-anchor="middle">Register file</text><text class="small" x="272" y="160">A1</text><text class="small" x="272" y="230">A2</text><text class="small" x="272" y="258">A3 WD3</text><text class="small" x="378" y="160" text-anchor="end">RD1</text><text class="small" x="378" y="230" text-anchor="end">RD2</text></g>
+            <g class="blk" id="b-ext"><rect x="265" y="310" width="120" height="40" rx="4"/><text x="325" y="335" text-anchor="middle">Extend</text></g>
+            <g class="blk" id="b-amux"><rect x="420" y="150" width="25" height="45" rx="3"/><text class="small" x="432" y="176" text-anchor="middle">A</text></g>
+            <g class="blk" id="b-bmux"><rect x="420" y="220" width="25" height="45" rx="3"/><text class="small" x="432" y="246" text-anchor="middle">B</text></g>
+            <g class="blk" id="b-cmp"><rect x="470" y="75" width="100" height="45" rx="4"/><text x="520" y="102" text-anchor="middle">Comparator</text></g>
+            <g class="blk" id="b-alu"><rect x="480" y="150" width="100" height="120" rx="4"/><text x="530" y="205" text-anchor="middle">ALU</text><text class="small" x="530" y="222" text-anchor="middle">adder → IEUAdr</text></g>
+            <g class="blk" id="b-dtim"><rect x="630" y="160" width="100" height="100" rx="4"/><text x="680" y="205" text-anchor="middle">DTIM</text><text class="small" x="680" y="222" text-anchor="middle">data memory</text></g>
+            <g class="blk" id="b-rmux"><rect x="760" y="205" width="30" height="100" rx="3"/><text class="small" x="775" y="258" text-anchor="middle">R</text></g>
+            <text class="small" x="610" y="14">IEUAdr → PC mux (branch / jump)</text>
+            <text class="small" x="300" y="400">Result → register file WD3, written at the rising clock edge</text>
+          </svg>
+          <p class="caption">Copper = data path in use this phase; blue = control. The ALU's adder output IEUAdr goes both to the DTIM and back to the PC mux.</p>
+        </div>
+        <div style="display:grid; gap:12px; min-width:0">
+          <div class="prog" id="prog">
+            <div>0x1000  lw   x3, 4(x1)</div>
+            <div>0x1004  sub  x5, x3, x2</div>
+            <div>0x1008  beq  x0, x0, 0x1000</div>
+          </div>
+          <div class="narr" id="narr" role="status"></div>
+          <table class="sig" aria-label="Signal values"><tbody id="sigs"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. TRAP ============ -->
+  <section class="exp" id="trap" aria-labelledby="h-trap">
+    <div class="exp-head">
+      <div class="eyebrow">Instrument 3 · Section 2.3.5</div>
+      <h2 id="h-trap">Taking a trap, step by step</h2>
+      <p class="principle"><b>mtvec = 0x80000100</b> (the handler). The program is running in U-mode at 0x80000040.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="trapKind">Cause</label>
+        <select id="trapKind">
+          <option value="ecall">ecall from U-mode (system call)</option>
+          <option value="illegal">Illegal instruction</option>
+          <option value="lfault">Load access fault (unmapped address)</option>
+          <option value="timer">Machine timer interrupt</option>
+        </select>
+        <button class="btn primary" id="trStep">Next step</button>
+        <button class="btn" id="trReset">Reset</button>
+      </div>
+      <div class="trap-grid">
+        <div style="display:grid; gap:12px">
+          <div class="mode" aria-label="Privilege mode"><span id="mU">U</span><span id="mS">S</span><span id="mM">M</span></div>
+          <div class="csr">
+            <div class="kv" id="kPC"><span class="k">PC</span><span class="v" id="vPC"></span></div>
+            <div class="kv" id="kInsn"><span class="k">Instruction at PC</span><span class="v" id="vInsn"></span></div>
+            <div class="kv" id="kEpc"><span class="k">mepc</span><span class="v" id="vEpc"></span></div>
+            <div class="kv" id="kCause"><span class="k">mcause</span><span class="v" id="vCause"></span></div>
+            <div class="kv" id="kTval"><span class="k">mtval</span><span class="v" id="vTval"></span></div>
+            <div class="kv" id="kMpp"><span class="k">mstatus.MPP (saved mode)</span><span class="v" id="vMpp"></span></div>
+          </div>
+        </div>
+        <div style="display:grid; gap:10px">
+          <ol class="steps" id="trSteps"></ol>
+          <div class="narr" id="trNarr" role="status"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Companion to the Ch 2 tab of your notes doc. The encoder covers RV32I plus ecall, ebreak, fence and mret. Trap cause codes follow the RISC-V privileged specification.</footer>
+</div>
+
+<script>
+(function () {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hex8 = v => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0');
+
+  /* ================= 1. ENCODER / DECODER ================= */
+  const ABI = ['zero','ra','sp','gp','tp','t0','t1','t2','s0','s1','a0','a1','a2','a3','a4','a5','a6','a7','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','t3','t4','t5','t6'];
+  function reg(s) {
+    s = s.trim().toLowerCase();
+    if (s === 'fp') return 8;
+    let m = /^x(\d{1,2})$/.exec(s); if (m && +m[1] < 32) return +m[1];
+    const i = ABI.indexOf(s); if (i >= 0) return i;
+    throw new Error(`"${s}" is not a register (use x0-x31 or an ABI name such as a0, t1, sp)`);
+  }
+  function num(s) {
+    s = s.trim().toLowerCase(); let neg = false;
+    if (s.startsWith('-')) { neg = true; s = s.slice(1); }
+    let v = s.startsWith('0x') ? parseInt(s.slice(2), 16) : s.startsWith('0b') ? parseInt(s.slice(2), 2) : parseInt(s, 10);
+    if (!/^(0x[0-9a-f]+|0b[01]+|\d+)$/.test(s) || isNaN(v)) throw new Error(`"${s}" is not a number`);
+    return neg ? -v : v;
+  }
+  function range(v, lo, hi, what) { if (v < lo || v > hi) throw new Error(`${what} ${v} is out of range [${lo}, ${hi}]`); }
+  const R = { add:[0,0], sub:[0,32], sll:[1,0], slt:[2,0], sltu:[3,0], xor:[4,0], srl:[5,0], sra:[5,32], or:[6,0], and:[7,0] };
+  const IA = { addi:0, slti:2, sltiu:3, xori:4, ori:6, andi:7 };
+  const SH = { slli:[1,0], srli:[5,0], srai:[5,32] };
+  const LD = { lb:0, lh:1, lw:2, lbu:4, lhu:5 }, ST = { sb:0, sh:1, sw:2 };
+  const BR = { beq:0, bne:1, blt:4, bge:5, bltu:6, bgeu:7 };
+  const encR = (f7, rs2, rs1, f3, rd, op) => ((f7 << 25) | (rs2 << 20) | (rs1 << 15) | (f3 << 12) | (rd << 7) | op) >>> 0;
+  const encI = (imm, rs1, f3, rd, op) => (((imm & 0xfff) << 20) | (rs1 << 15) | (f3 << 12) | (rd << 7) | op) >>> 0;
+  const encS = (imm, rs2, rs1, f3, op) => ((((imm >> 5) & 0x7f) << 25) | (rs2 << 20) | (rs1 << 15) | (f3 << 12) | ((imm & 0x1f) << 7) | op) >>> 0;
+  const encB = (imm, rs2, rs1, f3) => ((((imm >> 12) & 1) << 31) | (((imm >> 5) & 0x3f) << 25) | (rs2 << 20) | (rs1 << 15) | (f3 << 12) | (((imm >> 1) & 0xf) << 8) | (((imm >> 11) & 1) << 7) | 0x63) >>> 0;
+  const encJ = (imm, rd) => ((((imm >> 20) & 1) << 31) | (((imm >> 1) & 0x3ff) << 21) | (((imm >> 11) & 1) << 20) | (((imm >> 12) & 0xff) << 12) | (rd << 7) | 0x6f) >>> 0;
+  function memop(s) { const m = /^(.*)\((.*)\)$/.exec(s.trim()); if (!m) throw new Error(`expected offset(register), got "${s}"`); return [num(m[1] || '0'), reg(m[2])]; }
+
+  function assemble(line) {
+    line = line.replace(/#.*$/, '').trim();
+    const sp = line.search(/\s/); const mn = (sp < 0 ? line : line.slice(0, sp)).toLowerCase();
+    const a = sp < 0 ? [] : line.slice(sp).split(',').map(x => x.trim()).filter(x => x.length);
+    const need = n => { if (a.length !== n) throw new Error(`${mn} takes ${n} operand${n === 1 ? '' : 's'}`); };
+    if (mn in R) { need(3); return encR(R[mn][1], reg(a[2]), reg(a[1]), R[mn][0], reg(a[0]), 0x33); }
+    if (mn in IA) { need(3); const v = num(a[2]); range(v, -2048, 2047, 'immediate'); return encI(v, reg(a[1]), IA[mn], reg(a[0]), 0x13); }
+    if (mn in SH) { need(3); const v = num(a[2]); range(v, 0, 31, 'shift amount'); return encR(SH[mn][1], v, reg(a[1]), SH[mn][0], reg(a[0]), 0x13); }
+    if (mn in LD) { need(2); const [o, b] = memop(a[1]); range(o, -2048, 2047, 'offset'); return encI(o, b, LD[mn], reg(a[0]), 0x03); }
+    if (mn in ST) { need(2); const [o, b] = memop(a[1]); range(o, -2048, 2047, 'offset'); return encS(o, reg(a[0]), b, ST[mn], 0x23); }
+    if (mn in BR) { need(3); const v = num(a[2]); range(v, -4096, 4094, 'branch offset'); if (v & 1) throw new Error('branch offsets must be even'); return encB(v, reg(a[1]), reg(a[0]), BR[mn]); }
+    if (mn === 'jal') { need(2); const v = num(a[1]); range(v, -1048576, 1048574, 'jump offset'); if (v & 1) throw new Error('jump offsets must be even'); return encJ(v, reg(a[0])); }
+    if (mn === 'jalr') { if (a.length === 2) { const [o, b] = memop(a[1]); range(o, -2048, 2047, 'offset'); return encI(o, b, 0, reg(a[0]), 0x67); } need(3); const v = num(a[2]); range(v, -2048, 2047, 'offset'); return encI(v, reg(a[1]), 0, reg(a[0]), 0x67); }
+    if (mn === 'lui' || mn === 'auipc') { need(2); const v = num(a[1]); range(v, 0, 0xfffff, 'upper immediate'); return ((v << 12) | (reg(a[0]) << 7) | (mn === 'lui' ? 0x37 : 0x17)) >>> 0; }
+    if (mn === 'ecall') return 0x00000073; if (mn === 'ebreak') return 0x00100073;
+    if (mn === 'fence') return 0x0ff0000f; if (mn === 'mret') return 0x30200073;
+    throw new Error(`"${mn}" is not an RV32I instruction this encoder knows`);
+  }
+
+  const sx = (v, b) => (v << (32 - b)) >> (32 - b);
+  function decode(w) {
+    const op = w & 0x7f, rd = (w >>> 7) & 31, f3 = (w >>> 12) & 7, rs1 = (w >>> 15) & 31, rs2 = (w >>> 20) & 31, f7 = w >>> 25;
+    const r = n => 'x' + n, imI = sx(w >>> 20, 12), imS = sx(((w >>> 25) << 5) | rd, 12);
+    const imB = sx((((w >>> 31) & 1) << 12) | (((w >>> 7) & 1) << 11) | (((w >>> 25) & 0x3f) << 5) | (((w >>> 8) & 0xf) << 1), 13);
+    const imJ = sx((((w >>> 31) & 1) << 20) | (((w >>> 12) & 0xff) << 12) | (((w >>> 20) & 1) << 11) | (((w >>> 21) & 0x3ff) << 1), 21);
+    const find = (o, k) => Object.keys(o).find(n => JSON.stringify(o[n]) === JSON.stringify(k));
+    const F = (fmt, fields, asm, imm, note) => ({ fmt, fields, asm, imm, note });
+    const fR = [[31,25,'funct7','op'],[24,20,'rs2','reg'],[19,15,'rs1','reg'],[14,12,'funct3','op'],[11,7,'rd','reg'],[6,0,'opcode','op']];
+    const fI = [[31,20,'imm[11:0]','imm'],[19,15,'rs1','reg'],[14,12,'funct3','op'],[11,7,'rd','reg'],[6,0,'opcode','op']];
+    const fS = [[31,25,'imm[11:5]','imm'],[24,20,'rs2','reg'],[19,15,'rs1','reg'],[14,12,'funct3','op'],[11,7,'imm[4:0]','imm'],[6,0,'opcode','op']];
+    const fB = [[31,31,'12','imm'],[30,25,'imm[10:5]','imm'],[24,20,'rs2','reg'],[19,15,'rs1','reg'],[14,12,'funct3','op'],[11,8,'imm[4:1]','imm'],[7,7,'11','imm'],[6,0,'opcode','op']];
+    const fU = [[31,12,'imm[31:12]','imm'],[11,7,'rd','reg'],[6,0,'opcode','op']];
+    const fJ = [[31,31,'20','imm'],[30,21,'imm[10:1]','imm'],[20,20,'11','imm'],[19,12,'imm[19:12]','imm'],[11,7,'rd','reg'],[6,0,'opcode','op']];
+    if (op === 0x33) { const n = find(R, [f3, f7]); if (n) return F('R', fR, `${n} ${r(rd)}, ${r(rs1)}, ${r(rs2)}`, null, `funct7 = ${f7.toString(2).padStart(7,'0')} picks ${n}`); }
+    if (op === 0x13) {
+      if (f3 === 1 || f3 === 5) { const n = find(SH, [f3, f7]); if (n) return F('I (shift)', fR.map(f => f[2] === 'rs2' ? [24,20,'shamt','imm'] : f), `${n} ${r(rd)}, ${r(rs1)}, ${rs2}`, rs2, 'shift amount sits where rs2 would be; bit 30 picks arithmetic'); }
+      else { const n = find(IA, f3); return F('I', fI, `${n} ${r(rd)}, ${r(rs1)}, ${imI}`, imI, 'immediate is sign-extended from bit 31'); }
+    }
+    if (op === 0x03) { const n = find(LD, f3); if (n) return F('I (load)', fI, `${n} ${r(rd)}, ${imI}(${r(rs1)})`, imI, 'address = rs1 + sign-extended immediate'); }
+    if (op === 0x23) { const n = find(ST, f3); if (n) return F('S', fS, `${n} ${r(rs2)}, ${imS}(${r(rs1)})`, imS, 'immediate split around rd’s position so rs1/rs2 stay put'); }
+    if (op === 0x63) { const n = find(BR, f3); if (n) return F('B', fB, `${n} ${r(rs1)}, ${r(rs2)}, ${imB}`, imB, 'bit 0 of the offset is always 0, so it is not stored'); }
+    if (op === 0x6f) return F('J', fJ, `jal ${r(rd)}, ${imJ}`, imJ, 'reach ±1 MiB; rd gets PC+4');
+    if (op === 0x67 && f3 === 0) return F('I (jalr)', fI, `jalr ${r(rd)}, ${imI}(${r(rs1)})`, imI, 'target = (rs1 + imm) with bit 0 cleared');
+    if (op === 0x37) return F('U', fU, `lui ${r(rd)}, 0x${(w >>> 12).toString(16)}`, (w & 0xfffff000) | 0, 'upper 20 bits; low 12 bits zero');
+    if (op === 0x17) return F('U', fU, `auipc ${r(rd)}, 0x${(w >>> 12).toString(16)}`, (w & 0xfffff000) | 0, 'rd = PC + upper immediate');
+    if (w === 0x73) return F('I (system)', fI, 'ecall', null, 'traps to the execution environment');
+    if (w === 0x00100073) return F('I (system)', fI, 'ebreak', null, 'breakpoint trap');
+    if (w === 0x30200073) return F('I (system)', fI, 'mret', null, 'return from an M-mode trap');
+    if (op === 0x0f) return F('I (fence)', fI, 'fence', null, 'orders memory accesses');
+    return null;
+  }
+
+  const strip = document.getElementById('strip');
+  function renderEnc(src) {
+    const err = document.getElementById('encErr'); err.textContent = '';
+    let w;
+    try {
+      const s = src.trim();
+      if (/^0x[0-9a-f]{1,8}$/i.test(s)) w = parseInt(s.slice(2), 16) >>> 0; else w = assemble(s);
+    } catch (e) { err.textContent = e.message; return; }
+    const d = decode(w);
+    if (!d) { err.textContent = `${hex8(w)} does not decode to an instruction this lab knows (illegal on a real core)`; return; }
+    strip.innerHTML = '';
+    d.fields.forEach(([hi, lo, name, k]) => {
+      const f = document.createElement('div'); f.className = 'fld k-' + k; f.textContent = name; f.title = `${name}: bits ${hi}:${lo}`;
+      f.style.gridColumn = `${32 - hi} / ${33 - lo}`; strip.appendChild(f);
+    });
+    for (let b = 31; b >= 0; b--) {
+      const k = (d.fields.find(f => b <= f[0] && b >= f[1]) || [0,0,0,'op'])[3];
+      const c = document.createElement('div'); c.className = 'bit k-' + k; c.textContent = (w >>> b) & 1; c.style.gridColumn = String(32 - b); strip.appendChild(c);
+      const i = document.createElement('div'); i.className = 'idx'; i.textContent = b; i.style.gridColumn = String(32 - b); strip.appendChild(i);
+    }
+    document.getElementById('oHex').textContent = hex8(w);
+    document.getElementById('oFmt').textContent = d.fmt;
+    document.getElementById('oAsm').textContent = d.asm;
+    document.getElementById('oImm').textContent = d.imm === null ? '—' : `${d.imm}  (${hex8(d.imm)})`;
+    document.getElementById('oNote').textContent = d.note;
+  }
+  const asmIn = document.getElementById('asm');
+  asmIn.addEventListener('input', () => renderEnc(asmIn.value));
+  document.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => { asmIn.value = b.dataset.ex; renderEnc(asmIn.value); }));
+  renderEnc(asmIn.value);
+
+  /* ================= 2. DATAPATH STEPPER ================= */
+  const PH = ['Fetch', 'Decode', 'Execute', 'Memory', 'Writeback'];
+  const pb = document.getElementById('phaseBar');
+  PH.forEach(p => { const s = document.createElement('span'); s.textContent = p; pb.appendChild(s); });
+  // per instruction: active wires/blocks per phase, signals, narration
+  const PROG = [
+    { pc: 0x1000, insn: 0x0040A183, name: 'lw x3, 4(x1)',
+      ph: [
+        { w: ['w-pc-irom','w-pc-add'], b: ['b-pc','b-irom','b-add'], n: 'PC = 0x1000 addresses the IROM, which returns 0x0040A183. The +4 adder starts computing 0x1004.' },
+        { w: ['w-instr','w-instr-ext','w-instr-ctl'], b: ['b-rf','b-ext','b-ctl'], n: 'rs1 = 1 (bits 19:15) reads x1 = 0x2000 on RD1. Extend builds ImmExt = 4. The controller decodes lw: ALUSrc picks ImmExt, ResultSrc picks memory.' },
+        { w: ['w-r1','w-imm','w-srca','w-srcb'], b: ['b-amux','b-bmux','b-alu'], n: 'SrcA = 0x2000, SrcB = 4. The ALU adder produces IEUAdr = 0x2004.' },
+        { w: ['w-ieuadr','w-rdata'], b: ['b-dtim','b-rmux'], n: 'The DTIM reads address 0x2004 and returns ReadData = 0x2A.' },
+        { w: ['w-result','w-plus4mux','w-pcnext'], b: ['b-rf','b-pcmux','b-pc'], n: 'At the rising edge: x3 ← 0x2A (rd = 3, bits 11:7) and PC ← PCPlus4 = 0x1004.' }
+      ],
+      sig: { PC: 0x1000, Instr: 0x0040A183, R1: 0x2000, R2: '—', ImmExt: 4, SrcA: 0x2000, SrcB: 4, 'IEUAdr / ALUResult': 0x2004, ReadData: 0x2A, Result: 0x2A, PCNext: 0x1004, RegWrite: 1, MemWrite: 0, ResultSrc: 'memory', PCSrc: 0 } },
+    { pc: 0x1004, insn: 0x402182B3, name: 'sub x5, x3, x2',
+      ph: [
+        { w: ['w-pc-irom','w-pc-add'], b: ['b-pc','b-irom','b-add'], n: 'PC = 0x1004; the IROM returns 0x402182B3.' },
+        { w: ['w-instr','w-instr-ctl'], b: ['b-rf','b-ctl'], n: 'A1 = 3, A2 = 2: RD1 = x3 = 0x2A (just written), RD2 = x2 = 7. funct7 bit 5 = 1 tells the controller this R-type is sub.' },
+        { w: ['w-r1','w-r2','w-srca','w-srcb','w-alures'], b: ['b-amux','b-bmux','b-alu'], n: 'The ALU subtracts: 0x2A − 7 = 0x23.' },
+        { w: ['w-ieuadr'], b: ['b-dtim'], n: 'The DTIM also reads address 0x23 because the adder output always feeds it, but the result mux ignores ReadData. Harmless here; Chapter 12 shows why real LSUs gate this.' },
+        { w: ['w-alures','w-result','w-plus4mux','w-pcnext'], b: ['b-rmux','b-rf','b-pcmux','b-pc'], n: 'x5 ← 0x23; PC ← 0x1008.' }
+      ],
+      sig: { PC: 0x1004, Instr: 0x402182B3, R1: 0x2A, R2: 7, ImmExt: '—', SrcA: 0x2A, SrcB: 7, 'IEUAdr / ALUResult': 0x23, ReadData: '(ignored)', Result: 0x23, PCNext: 0x1008, RegWrite: 1, MemWrite: 0, ResultSrc: 'ALU', PCSrc: 0 } },
+    { pc: 0x1008, insn: 0xFE000CE3, name: 'beq x0, x0, 0x1000',
+      ph: [
+        { w: ['w-pc-irom','w-pc-add'], b: ['b-pc','b-irom','b-add'], n: 'PC = 0x1008; the IROM returns 0xFE000CE3.' },
+        { w: ['w-instr','w-instr-ext','w-instr-ctl'], b: ['b-rf','b-ext','b-ctl'], n: 'A1 = A2 = 0: x0 is hardwired to 0. Extend unscrambles the B-type immediate: ImmExt = 0xFFFFFFF8 (−8).' },
+        { w: ['w-r1cmp','w-r2cmp','w-eq','w-pc-srca','w-imm','w-srca','w-srcb'], b: ['b-cmp','b-alu','b-amux','b-bmux'], n: 'In parallel: the comparator sees 0 == 0 and raises Eq; the ALU adds PC + ImmExt = 0x1008 − 8 = 0x1000. That is why the comparator is separate from the ALU.' },
+        { w: [], b: [], n: 'No memory access, no register write (RegWrite = 0, MemWrite = 0).' },
+        { w: ['w-target','w-pcnext'], b: ['b-pcmux','b-pc'], n: 'PCSrc = Branch & Eq = 1, so the PC mux picks IEUAdr: PC ← 0x1000. The program loops forever.' }
+      ],
+      sig: { PC: 0x1008, Instr: 0xFE000CE3, R1: 0, R2: 0, ImmExt: 0xFFFFFFF8, SrcA: 0x1008, SrcB: 0xFFFFFFF8, 'IEUAdr / ALUResult': 0x1000, ReadData: '—', Result: '—', PCNext: 0x1000, RegWrite: 0, MemWrite: 0, ResultSrc: '—', PCSrc: 1 } }
+  ];
+  let ii = 0, pp = -1, timer = null;
+  const fmtSig = v => typeof v === 'number' ? (v > 9 || v < 0 ? hex8(v) : String(v)) : v;
+  const hotFor = [['PC','Instr'], ['R1','R2','ImmExt'], ['SrcA','SrcB','IEUAdr / ALUResult'], ['ReadData'], ['Result','PCNext']];
+  function renderDp() {
+    document.querySelectorAll('.dp-svg .w, .dp-svg .blk').forEach(e => e.classList.remove('on'));
+    pb.querySelectorAll('span').forEach((s, k) => s.classList.toggle('on', k === pp));
+    document.querySelectorAll('#prog div').forEach((d, k) => d.classList.toggle('on', k === ii));
+    const ins = PROG[ii], tb = document.getElementById('sigs');
+    if (pp < 0) {
+      document.getElementById('narr').textContent = `Next: ${ins.name} at ${hex8(ins.pc)}. Press Play or Next phase.`;
+      tb.innerHTML = ''; return;
+    }
+    const ph = ins.ph[pp];
+    ph.w.forEach(id => document.getElementById(id).classList.add('on'));
+    ph.b.forEach(id => document.getElementById(id).classList.add('on'));
+    document.getElementById('narr').textContent = `${PH[pp]} · ${ins.name}: ${ph.n}`;
+    const shown = new Set(hotFor.slice(0, pp + 1).flat());
+    tb.innerHTML = Object.entries(ins.sig).map(([k, v]) => {
+      const vis = shown.has(k) || ['RegWrite','MemWrite','ResultSrc','PCSrc'].includes(k) && pp >= 1;
+      const hot = hotFor[pp] && hotFor[pp].includes(k);
+      return `<tr class="${hot ? 'hot' : ''}"><td>${k}</td><td>${vis ? fmtSig(v) : '…'}</td></tr>`;
+    }).join('');
+  }
+  function stepDp() {
+    pp++;
+    if (pp >= PH.length) { pp = 0; ii = (ii + 1) % PROG.length; }
+    renderDp();
+  }
+  function setPlay(on) {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById('dpPlay').textContent = on ? 'Pause' : 'Play';
+    if (on) timer = setInterval(stepDp, reduce ? 2600 : 1600);
+  }
+  document.getElementById('dpPlay').addEventListener('click', () => setPlay(!timer));
+  document.getElementById('dpStep').addEventListener('click', () => { setPlay(false); stepDp(); });
+  document.getElementById('dpReset').addEventListener('click', () => { setPlay(false); ii = 0; pp = -1; renderDp(); });
+  // open on a revealing frame: the beq's execute phase
+  ii = 2; pp = 2; renderDp();
+
+  /* ================= 3. TRAP WALKTHROUGH ================= */
+  const MTVEC = 0x80000100, PC0 = 0x80000040;
+  const TR = {
+    ecall:   { insn: 'ecall', cause: 8, causeTxt: '8 = environment call from U-mode', tval: 0, tvalTxt: '0 (no extra information)', resume: PC0 + 4,
+               handler: 'Handler reads the system-call number and arguments from a7 and a0-a5, does the work, writes the result to a0, and sets mepc = mepc + 4 so the program continues after the ecall.' },
+    illegal: { insn: '0x00000000 (all zeros)', cause: 2, causeTxt: '2 = illegal instruction', tval: 0x00000000, tvalTxt: '0x00000000 (the faulting instruction bits)', resume: PC0 + 4,
+               handler: 'Handler inspects mtval. It could emulate a missing instruction (e.g. floating point in software) and skip it with mepc + 4, or kill the program. Here it skips.' },
+    lfault:  { insn: 'lw a0, 0(a1), a1 = 0x30000000', cause: 5, causeTxt: '5 = load access fault', tval: 0x30000000, tvalTxt: '0x30000000 (the bad address)', resume: PC0 + 4,
+               handler: 'No memory or device lives at 0x30000000 on Wally’s map, so the PMA checker faulted the load. The OS would usually kill the program; here the handler skips it.' },
+    timer:   { insn: 'add t0, t1, t2 (not yet executed)', cause: 0x80000007, causeTxt: '0x80000007: top bit 1 = interrupt; 7 = machine timer', tval: 0, tvalTxt: '0', resume: PC0,
+               handler: 'Interrupts are asynchronous: mepc holds the instruction that did NOT execute yet, so the handler leaves mepc alone. It reprograms the timer (CLINT mtimecmp) and returns.' }
+  };
+  const STEPS = ['Instruction executes or interrupt arrives', 'mepc ← PC', 'mcause ← cause code', 'mtval ← extra information', 'MPP ← U, interrupts off; mode ← M', 'PC ← mtvec: handler starts', 'Handler runs', 'mret: PC ← mepc, mode ← MPP'];
+  let ts = 0;
+  const st = { mode: 'U', pc: PC0, epc: null, cause: null, tval: null, mpp: null };
+  function setMode(m) { ['U','S','M'].forEach(x => document.getElementById('m' + x).classList.toggle('on', x === m)); }
+  function renderTrap(flash) {
+    const t = TR[document.getElementById('trapKind').value];
+    setMode(st.mode);
+    document.getElementById('vPC').textContent = hex8(st.pc);
+    document.getElementById('vInsn').textContent = st.pc === MTVEC ? 'trap handler code' : (st.pc === PC0 ? t.insn : 'next instruction');
+    document.getElementById('vEpc').textContent = st.epc === null ? '—' : hex8(st.epc);
+    document.getElementById('vCause').textContent = st.cause === null ? '—' : t.causeTxt;
+    document.getElementById('vTval').textContent = st.tval === null ? '—' : t.tvalTxt;
+    document.getElementById('vMpp').textContent = st.mpp === null ? '—' : st.mpp;
+    ['kPC','kEpc','kCause','kTval','kMpp'].forEach(id => document.getElementById(id).classList.toggle('flash', id === flash));
+    document.getElementById('trSteps').innerHTML = STEPS.map((s, k) => `<li class="${k < ts - 1 ? 'done' : k === ts - 1 ? 'now' : ''}">${s}</li>`).join('');
+  }
+  function stepTrap() {
+    const t = TR[document.getElementById('trapKind').value];
+    const narr = document.getElementById('trNarr');
+    if (ts >= STEPS.length) { resetTrap(); return; }
+    ts++;
+    let flash = null;
+    switch (ts) {
+      case 1: narr.textContent = t.cause & 0x80000000 ? 'The CLINT timer fires between instructions. The hart is about to execute the add at 0x80000040, so the trap is taken before it.' : `The hart tries to execute ${t.insn} and detects the exception. Nothing it would have written is written.`; break;
+      case 2: st.epc = st.pc; flash = 'kEpc'; narr.textContent = 'Hardware saves the PC of the trapping (or interrupted) instruction in mepc, so the handler knows where to return.'; break;
+      case 3: st.cause = t.cause; flash = 'kCause'; narr.textContent = 'mcause gets a code for why. The top bit says interrupt (1) or exception (0).'; break;
+      case 4: st.tval = t.tval; flash = 'kTval'; narr.textContent = 'mtval gets supplementary information: the bad address for memory faults, the instruction bits for illegal instructions, or 0.'; break;
+      case 5: st.mpp = 'U'; st.mode = 'M'; flash = 'kMpp'; narr.textContent = 'The previous mode is saved in mstatus.MPP, the interrupt enable is saved (MPIE ← MIE) and cleared (MIE ← 0), and the hart switches to M-mode, the highest privilege.'; break;
+      case 6: st.pc = MTVEC; flash = 'kPC'; narr.textContent = 'PC jumps to mtvec, the handler address that M-mode software set up at boot.'; break;
+      case 7: if (t.resume !== st.epc) st.epc = t.resume; flash = t.resume !== PC0 ? 'kEpc' : null; narr.textContent = t.handler; break;
+      case 8: st.pc = st.epc; st.mode = st.mpp; flash = 'kPC'; narr.textContent = `mret jumps to mepc (${hex8(st.epc)}) and restores the saved mode (U). The program continues as if nothing happened.`; break;
+    }
+    document.getElementById('trStep').textContent = ts >= STEPS.length ? 'Run again' : 'Next step';
+    renderTrap(flash);
+  }
+  function resetTrap() {
+    ts = 0; Object.assign(st, { mode: 'U', pc: PC0, epc: null, cause: null, tval: null, mpp: null });
+    document.getElementById('trNarr').textContent = 'Running in U-mode. Press Next step to take the trap.';
+    document.getElementById('trStep').textContent = 'Next step';
+    renderTrap(null);
+  }
+  document.getElementById('trStep').addEventListener('click', stepTrap);
+  document.getElementById('trReset').addEventListener('click', resetTrap);
+  document.getElementById('trapKind').addEventListener('change', resetTrap);
+  resetTrap();
+  // open on a revealing frame: three steps into an ecall
+  stepTrap(); stepTrap(); stepTrap();
+})();
+</script>

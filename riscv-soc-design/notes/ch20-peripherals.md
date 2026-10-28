@@ -368,7 +368,7 @@ Code in `cpu-from-scratch`. Run `make periph`, then `make periphhunt`, then `mak
 
 One UART character (0x5A, 8E1) through the 16x receiver, then book Example 20.3 on the PLIC. Every waveform in the GIF is printed from the RTL by `tb/tb_periph_demo.sv`.
 
-&#91;image: Lab 11 simulation: UART frame sampling and PLIC claim/complete\]
+![Lab 11 simulation: UART frame sampling and PLIC claim/complete](../gifs/ch20-uart-plic.gif)
 
 ### The bug hunt: 14 injected bugs, two verification styles
 
@@ -466,3 +466,8 @@ Lab 11's first overflow test polled LSR and so consumed OE before checking it. A
 ### The 60-second story to tell
 
 "I built a GPIO, CLINT, PLIC, UART and SPI to the SiFive and 16550 register maps, and verified them two ways: the way the reference design's test plan does it, with loopback and signatures, and with a proper block-level bench. The block-level bench had a register model, cycle-exact models and independent UART and SPI agents with baud-error and error injection. I injected 14 bugs. The full bench caught all of them. The loopback plan missed four, every one a misreading of the protocol shared by transmitter and receiver, such as parity polarity or SPI clock phase. Along the way the bench also found a real race in my own RTL: an overrun arriving in the same cycle as the status read that clears it was lost, until I gave the set priority over the clear."
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch20-lab.html`](../companion-pages/ch20-lab.html) (download and open in a browser).

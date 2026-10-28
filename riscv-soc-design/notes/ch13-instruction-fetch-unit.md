@@ -156,7 +156,7 @@ As in Wally: classes branch / jump / call (`jal` or `jalr` writing x1 or x5) / r
 
 ### Watch a misprediction, cycle by cycle
 
-&#91;image: A loop exit predicted taken, the flush, and the counter update, from the real simulation (bimodal)\]
+![A loop exit predicted taken, the flush, and the counter update, from the real simulation (bimodal)](../gifs/ch13-mispredict.gif)
 
 The inner loop of Code Example 13.1 (tests/bp/bp\_basic.S) on the bimodal predictor: the tenth `blt` is predicted taken from a strongly-taken counter, two wrong-path instructions are fetched, Execute finds PCCorrectE = 0x028, Decode and Execute are flushed, and the counter drops to 10 at commit. This is book Fig. 13.21 in this core.
 
@@ -326,3 +326,8 @@ This tab has been checked against all 17 sections of Chapter 13, Table 13.1 and 
   - A return flushed in D or E (`FlushedRetDE`) increments Ptr.
   - **Coverpoint:** call/return depth beyond RAS\_SIZE (wrap-around), plus each repair case with a flush in the same cycle.
 - The book notes Wally also has predictors not described in the text, and points to \[Yeh91\] (two-level adaptive prediction) for them.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch13-lab.html`](../companion-pages/ch13-lab.html) (download and open in a browser).

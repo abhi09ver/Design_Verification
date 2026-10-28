@@ -150,7 +150,7 @@ Design choice: Wally prevents a stale read with *rules* (StoreStallD in Decode, 
 
 ### Watch it, cycle by cycle
 
-&#91;image: Synchronous-read D-cache: a fill, then a store hit, each forcing the next load to re-read, from the real simulation\]
+![Synchronous-read D-cache: a fill, then a store hit, each forcing the next load to re-read, from the real simulation](../gifs/ch12-sync-read-reread.gif)
 
 From tests/lsu/lsu\_hazards.S, case 1 (the book's Fig. 12.16 sequence). The fill in cycle 19 and the store hit in cycle 20 both use the port, so lw s0 re-reads in cycle 21. The store hit in cycle 23 costs lw s1 a re-read in cycle 24. lw s2 then hits in a single cycle because nothing wrote the array while its set was read.
 
@@ -242,3 +242,8 @@ This tab was checked against all 24 sections of Chapter 12 (12.1–12.7), Tables
   - In the original Ch 9 EBU only the IFU could be disabled. That worked until virtual memory made a *later* LSU request possible while an IFU fill was already in flight.
 - **Where Wally reports faults** (12.4.2): faults are raised at the *start* of the access, before a miss can begin. Once a line fill or writeback is in flight it cannot fault, because its address (the PAdrM line, or the victim tag plus set) was already checked when the line was first fetched.
 - **The book's own test plan is one sentence.** It reuses the Ch 7, 8, 9 and 11 tests and adds that "a more comprehensive test plan would stress the cache and its interaction with the HPTW". The cache × HPTW cross in the tab's test-plan section is the answer to that gap.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch12-lab.html`](../companion-pages/ch12-lab.html) (download and open in a browser).

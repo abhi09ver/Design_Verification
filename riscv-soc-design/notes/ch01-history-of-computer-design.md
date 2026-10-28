@@ -49,7 +49,7 @@ That is the magic: every node gave **2× transistors at 1.4× speed for the same
 
 With V fixed, doubling transistors and raising f now **raises power density** — the *power wall* (section 1.6). Progress since then comes from device inventions (strained silicon, high-k metal gates, FinFETs, gate-all-around) rather than pure shrinking, and node names (7 nm, 5 nm, 3 nm) no longer match any physical dimension.
 
-&#91;image: Two dies shrink through five generations: with voltage scaling, power density stays 1x and every transistor can switch; with voltage stuck, power density climbs to 35x and only 3% of the die can run at the same power\]
+![Two dies shrink through five generations: with voltage scaling, power density stays 1x and every transistor can switch; with voltage stuck, power density climbs to 35x and only 3% of the die can run at the same power](../gifs/ch01-dennard-scaling.gif)
 
 *Animated: the same die through five generations. Left, Dennard scaling keeps power density flat. Right, with voltage stuck, each transistor's power stays about the same (capacitance × 0.7, frequency × 1.43), so twice the transistors means **twice the power density every generation** — 35× after five. To stay within the same cooling, 97% of the die must stay dark. Try it yourself in experiment 1 of the companion page.*
 
@@ -461,3 +461,8 @@ I checked this tab against all nine sections of Chapter 1. The tab above already
   - Krste Asanović at the 2022 RISC-V Summit: "RISC-V is inevitable."
   - Mark Himelstein at the 2023 RISC-V Summit: "All your core are belong to us" (a play on the Zero Wing meme).
   - Babbage: "I wish to God these calculations had been executed by steam." The first computing was done to eliminate errors in hand-computed tables, which is verification's oldest motive.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch01-lab.html`](../companion-pages/ch01-lab.html) (download and open in a browser).

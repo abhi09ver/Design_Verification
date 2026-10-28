@@ -297,7 +297,7 @@ The hazard unit is a good first netlist to read (Code Examples 6.2–6.3). In rv
 | 2.88 | required: 3.03 period − 0.15 setup |
 | **−0.18** | **slack; real limit 1/(3.03 + 0.18) = 311 MHz** |
 
-&#91;image: STA walks the rv32e critical path stage by stage: arrival reaches 3.06 ns against a required time of 2.88 ns, so slack is −0.18 ns\]
+![STA walks the rv32e critical path stage by stage: arrival reaches 3.06 ns against a required time of 2.88 ns, so slack is −0.18 ns](../gifs/ch06-sta-critical-path.gif)
 
 Three lessons hide in this report:
 
@@ -560,3 +560,8 @@ This tab has been checked against all 23 sections of Chapter 6 (6.1–6.6) and i
   - In the gc configurations, caches plus branch-predictor RAMs are 65–70% of the area: 42 RAMs = 2 caches × 4 ways × (4 data subarrays + 1 tag), plus the BHT and BTB.
   - Flip-flops are 15–36% of the logic cell count but add 60–100% area, because a flop is large. Inverters and buffers are 15–30% of the cell count but only 10–15% of the area.
 - **Reproducing the feature sweep** (Fig. 6.24, Table 6.12): run `./wallySynth.py --featuresweep --tech {sky130|sky90|tsmc28psyn} --targetfreq {1000|3000|10000} [--usesram]`, then `./extractSummary.py`. Turning features off shortens the cycle and shrinks area. The area savings are bigger on SKY130 and SKY90 because their memories are tiny flop arrays; in TSMC28 the RAMs dominate. The PMP0 row (no PMP) removes the fetch-stage PMP-check critical path.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch06-lab.html`](../companion-pages/ch06-lab.html) (download and open in a browser).

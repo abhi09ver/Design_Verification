@@ -303,7 +303,7 @@ transaction_type_stability: assert property (
 [55] %Error: ahb.sv:10: Assertion failed in TOP.ahb_tb.transaction_type_stability
 ```
 
-&#91;image: Concurrent assertion evaluated edge by edge: one pass, then a failure at 55\]
+![Concurrent assertion evaluated edge by edge: one pass, then a failure at 55](../gifs/ch05-concurrent-assertion.gif)
 
 Reading the waveform: at edge 35, HREADY is low, so the check is scheduled for edge 45, where HTRANS is still NONSEQ: pass. At edge 45 HREADY is still low, so edge 55 is checked; HTRANS has become SEQ, and its past value was neither IDLE nor BUSY: **fail at 55**, the exact cycle of the bug. The companion page lets you edit these waveforms and watch the property re-evaluate.
 
@@ -715,3 +715,8 @@ The failing instruction is `or a7, t1, t1` with t1 = 2, stored with `sw a7, 4(gp
   - Questa prefers `$stop`, because it keeps the waves and coverage. Verilator prefers `$finish`.
 - **Verilator build.** It generates C++ in `obj_dir/` and builds `verilated.o`, `verilated_vcd_c.o` (tracing), `verilated_timing.o` (the `--timing` coroutines that let `#` delays and event controls in testbenches work) and `verilated_threads.o`. The book used 5.025.
 - **Book references.** The functional-coverage definition is from \[Mehta20\]. The book also points to IEEE 1800-2017 for the object-oriented testbench features that Chapter 5 leaves out. That gap is exactly where UVM sits, and Lab 11's RAL notes cover the register side of it.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch05-lab.html`](../companion-pages/ch05-lab.html) (download and open in a browser).

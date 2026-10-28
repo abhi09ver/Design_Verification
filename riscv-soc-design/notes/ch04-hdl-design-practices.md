@@ -172,7 +172,7 @@ The rule:
 - **`<=` (nonblocking) in `always_ff`.** Every right-hand side is sampled first, then all the left-hand sides update together, the way flip-flops do.
 - **`=` (blocking) in `always_comb`.** Each line sees the line before it. `<=` would also give the right answer there, but the block may be re-evaluated more often, which slows simulation.
 
-&#91;image: Blocking vs nonblocking in always\_ff: the blocking version collapses two flops into one\]
+![Blocking vs nonblocking in always_ff: the blocking version collapses two flops into one](../gifs/ch04-blocking-vs-nonblocking.gif)
 
 I simulated the book's synchronizer example in Icarus Verilog. With blocking assignments, `b = a; c = b;` copies a into b and then the *new* b into c in the same edge, so c is just b and the circuit has **one** flop. With nonblocking assignments, c gets the *old* b and there are **two** flops: a real two-stage synchronizer. A subtler trap: if you swap the two blocking lines (`c = b; b = a;`), the result has two flops again. With `=` the order of lines changes the hardware; with `<=` it never does. Verilator's lint catches the misuse:
 
@@ -557,3 +557,8 @@ The book never uses these, but interviewers who ask about latches and casez ofte
 | `// synopsys full_case parallel_case` | Old pragmas that only synthesis reads | Nothing | **Classic sim/synth mismatch.** Never use them; use the keywords above. |
 
 A one-hot FSM decode written with `unique case` plus an assertion such as `$onehot(state)` gives you a check during simulation, where the pragmas give none.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch04-lab.html`](../companion-pages/ch04-lab.html) (download and open in a browser).

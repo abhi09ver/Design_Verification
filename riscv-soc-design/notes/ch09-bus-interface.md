@@ -282,7 +282,7 @@ That is 128 accesses × exactly 2 stall cycles (Adr + Data) with a zero-wait RAM
 
 **Interrupts really are deferred.** In `bus_irq.S`, 40 timer interrupts hit a loop of 400 RXFIFO reads, and an enabled interrupt had to wait for a committed transfer in 38 cycles. The animation is that simulation, cycle by cycle:
 
-&#91;image: Lab 6 waveform: a timer interrupt waits while a load from the RXFIFO is committed on the bus, then is taken on the next instruction\]
+![Lab 6 waveform: a timer interrupt waits while a load from the RXFIFO is committed on the bus, then is taken on the next instruction](../gifs/ch09-bus-committed-interrupt.gif)
 
 ### Bug hunt: which check finds which bug
 
@@ -401,3 +401,8 @@ The width of HADDR in Wally is PA\_BITS: 34 bits on RV32 (Sv32 physical addresse
 - The book suggests Mem2 and Mem3 *could* be merged, saving a cycle per bus load, at the risk of a longer cycle time. With a cache or TIM in front, the authors keep the faster clock.
 - `pmachecker` (Fig. 11.16) is the Fig. 9.11 address decoder extended to check access type and size. The decoder you verify in Chapter 9 becomes the PMA checker you verify in Chapter 11.
 - **Naming note (margin of 9.1.1).** Old documents say master/slave. ARM moved to manager/subordinate and requester/completer in 2021. SCSI uses initiator/target. The book uses controller/peripheral. Use the customer's terms in an interview; for ARM and NVIDIA, that is manager/subordinate.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch09-lab.html`](../companion-pages/ch09-lab.html) (download and open in a browser).

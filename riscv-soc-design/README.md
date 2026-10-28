@@ -31,6 +31,17 @@ widgets from the original doc appear as text placeholders.
 | 20 Peripherals | [ch20](notes/ch20-peripherals.md) | 11 |
 | Labs 1–3 walkthrough | [labs](notes/labs-build-a-cpu.md) | 1–3 |
 
+## Visuals and interactive pages
+
+- [`gifs/`](gifs/): one animation per chapter, most rendered from real simulations of `cpu-from-scratch`
+  (pipeline hazards, a trap through the pipeline, a bus-committed interrupt, a dirty cache miss, an Sv32 walk,
+  a branch mispredict, UART sampling and PLIC claim/complete). Each is embedded in its chapter's notes.
+- [`companion-pages/`](companion-pages/): the interactive lab page for each chapter (encoder/decoder, trap
+  walkthroughs, AHB stepper, cache and pLRU simulators, MMU walker, predictor playground, PLIC/UART calculators,
+  self-check quizzes). Download the `.html` and open it in a browser; no install needed.
+- [`diagrams/`](diagrams/): block diagrams and timing figures from the notes (SoC bus, busfsm, Sv32 translation,
+  TLB, HPTW, LSU, store-delay hazard, branch predictor, 2-bit counter, GPIO/PLIC/UART/SPI, uncore).
+
 ## Code: [`cpu-from-scratch/`](cpu-from-scratch/)
 
 An RV32I core built the way Wally is built (single-cycle → 5-stage pipeline → traps → AHB bus → D-cache → Sv32 MMU →

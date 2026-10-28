@@ -98,7 +98,7 @@ The assembler works on one file at a time. It cannot know where its code will en
 3. **Resolves** every symbol to its final address.
 4. **Patches** each relocation with real offsets, and writes one executable.
 
-&#91;image: The linker at work: two object files placed by link.ld, then relocations patched\]
+![The linker at work: two object files placed by link.ld, then relocations patched](../gifs/ch03-linker.gif)
 
 The numbers in the animation come from building the book's `sumtest` with GCC 13.2 against the `link.ld` in today's cvw repo. Before linking, `jal sum` in `sumtest.o` is `0xfe9ff0ef`, a jump to itself carrying an `R_RISCV_JAL` relocation. After linking it is `0x02c000ef`: sum sits 0x2C bytes past the jal. `la t0, N` becomes an auipc/addi pair, and the linker splits the PC-relative offset 0x3FF8 into a high and a low part:
 
@@ -763,3 +763,8 @@ Step 4 is the weakness to raise yourself in an interview, as the tab above notes
 - Sail is written in a functional language from the ML family; the book calls it OCaml. Sail models also exist for MIPS, ARM and IBM Power. The "holy grail" is proving an HDL implementation correct against Sail, which still can't be automated for complex cores. Run it with `sail_riscv_sim --config $WALLY/tests/riscof/sail_cSim/rv64gc.json …`; `--print-default-config` shows the defaults (RV64, chosen to match Spike).
 - QEMU monitor: QEMU appears to hang until you press Ctrl-a c. If it really locks up, use `killall qemu-system-riscv64`. Even under GDB without `-icount`, the second signature word is garbage (0x17658e47a8), which is the same counter lesson as the tab's 0x48470.
 - The authoritative GDB reference is Stallman's GDB manual, freely available.
+
+
+---
+
+Interactive companion page for this chapter: [`companion-pages/ch03-lab.html`](../companion-pages/ch03-lab.html) (download and open in a browser).
