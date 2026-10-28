@@ -42,7 +42,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | **Whole HPCA course** | [HPCA flash sheets (127)](hpca/sheets/INDEX.md) | [`hpca/html/flash-sheets/index.html`](hpca/html/flash-sheets/index.html), [my lecture notes](hpca/notes/README.md) | — |
 | **Caches, coherence, consistency** | [cache cheat sheet](cache-coherence/CHEATSHEET.md) | [32](32-cache-coherence-and-memory-consistency.md) | `cache-coherence/sv`, `python` |
 | **MMU / SMMUv3** | [cheat sheet](33-mmu-smmu/05-cheat-sheet.md) | [33 kit](33-mmu-smmu/README.md) | `33-mmu-smmu/code` |
-| **Interrupts (GIC)** | [35](35-gic-interrupt-controller.md) | [GIC study kit](35-gic/README.md) | `35-gic/code` |
+| **Interrupts (GIC)** | [35](35-gic-interrupt-controller.md), [beginner PDF](35-gic/printables/gic-from-zero.pdf) | [Field Guide PDF](35-gic/printables/gic-field-guide.pdf), [study kit](35-gic/README.md), [spec + page map](35-gic/docs/README.md) | `35-gic/code` |
 | **Debug & trace (CoreSight)** | [CoreSight cheat sheet](coresight/CHEATSHEET.md) | [34](34-coresight-debug-and-trace.md) | `coresight/code` |
 | **Accelerators** | [04 – Systolic arrays](04-systolic-array-underutilization.md) | — | — |
 
