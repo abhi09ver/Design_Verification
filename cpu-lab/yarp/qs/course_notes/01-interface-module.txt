@@ -1,0 +1,60 @@
+RISC-V Processor (YARP) Interface
+This module would cover the Yet Another RISC-V Processor (YARP) CPU RTL which will be verified by the testbench designed in the further modules. The DUT is an RV32I compliant RISC-V CPU which can process and execute instructions defined in the RV32I base integer set. The CPU is a designed as a single cycle implementation and is capable of executing all of the instructions defined in the RV32I specification. The design has certain interface properties which are defined below but essentially the goal of the testbench would be to verify the CPU operations and all of the different instructions specified in the ISA.
+
+The YARP CPU supports a valid ready based interface for accessing both the instruction and data memory. The complete interface is defined below and the describes the interface requirements as per the YARP CPU implementation.
+
+The top module would have the following interface definition:
+
+Instruction Memory interface
+
+instr_mem_req_o : Outgoing request to the instruction memory
+instr_mem_addr_o : Outgoing address from where the instruction should be fetched
+instr_mem_ready_i : Incoming ready signal from the instruction memory
+instr_mem_rd_data_i : Incoming read data from the instruction memory
+Data Memory interface
+
+data_mem_req_o: Request valid on this cycle
+data_mem_addr_o: 32-bit address for the data memory
+data_mem_byte_en_o: The 2-bit encoding for the access size
+2'b00 : Byte Access
+2'b01 : Half-word Access
+2'b10 : Reserved
+2'b11 : Word Access
+data_mem_wr_o: Whether it is a write request or a read request to memory
+data_mem_wr_data_o: 32-bit write data with the write request
+data_mem_ready_i : Incoming ready signal from the data memory
+data_mem_rd_data_i: 32-bit read data from the memory
+Just like any other valid/ready based interface, the payload signals (instr_mem_addr_o, data_mem_addr_o, data_mem_wr_data_o, etc.) are valid only when the request signal (instr_mem_req_o, data_mem_req_o) is asserted and they remain stable until the ready signal is asserted. Like shown in the waveform below:
+
+YARP_INTERFACE
+
+OK, now that we understand how the interface is supposed to work, let's take a look at the interface requirements for our design under test.
+
+Interface Requirements
+The instr_mem_req_o must remain asserted until ready is seen for the request
+The instr_mem_addr_o signal must remain stable until ready is seen for the request
+The data_mem_req_o must get asserted in the same cycle as when the instruction which needs to access the data memory interface is accepted on the instruction memory interface
+The data_mem_req_o must remain asserted until ready is seen for the request
+The data_mem_byte_en_o signal must remain stable until ready is seen for the request
+The data_mem_wr_o signal must remain stable until ready is seen for the request
+The data_mem_wr_data_o signal must remain stable until ready is seen for the request
+Back-to-back transfers are allowed. For example it is allowed to keep instr_mem_req_o asserted always
+The ready can come in back-to-back cycles as well and can toggle without any request
+The instr_mem_req_o must remain deasserted until the data memory transfer is complete and can only begin processing the next instruction from the next cycle
+Testbench Requirements
+OK, we now understand that we would be verifying a RV32I RISC-V CPU which communicates with the instruction and data memory using the valid/ready based interface defined above. Given, this understanding we would need to verify the following requirements for the YARP core:
+
+The YARP core should be able to fetch instructions from the instruction memory as per the protocol defined above
+The address for the transfer should start from the reset address and increment by 4 for each instruction unless the instruction is a jump or a taken branch instruction
+The YARP core should be able to decode and execute the instruction and write back the result to the register file or the data memory
+The YARP core should be able to handle the valid/ready based interface for both instruction and data memory
+In order to verify the above requirements we would need to implement a testbench which can drive the input signals and check not only the output signals but also the internal state of the YARP core. The testbench would essentially also require to model the RV32I instruction set apart from modeling the instruction and data memory. Modeling the instruction set would allow us to check the internal state of the YARP core and verify that the YARP core is executing the instructions correctly. This is important because the YARP core is a single cycle processor and hence the instruction execution is expected to happen in a single cycle where the end result of every instruction must be checked against the expected result from the instruction set model. As we would later discuss, the testbench would use a C-based instruction set model which would allow us to check the internal state of the YARP core.
+
+In the next few modules we would build different class based testbench components and also integrate the C-mode via the DPI calls to implement all of the above requirements and verify the YARP core.
+
+Coding Exercise
+The first thing we need is a way for our testbench to communicate with the design under test. As we now know, this is done by implementing the interface to the design. In this coding exercise you are required to implement the yarp_interface.sv file which would define the interface to the YARP core. You should also implement the different clocking blocks needed for the driver and monitor components. The interface should include all of the signals defined above and should also include the clock and reset signals.
+
+The video for this module would be released soon and would cover the implementation of the yarp_interface.sv file along with the the overview of the YARP core and the RV32I instruction set. As always, you could reach out to me via email or discord if you have any further doubts and I'd be happy to help!
+
+In the next module we would develop the transaction object for our testbench.

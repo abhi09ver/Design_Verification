@@ -1,6 +1,8 @@
 # Design_Verification
 
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
+
+> **New here? Open [`START-HERE.md`](START-HERE.md)**: the whole repo arranged by interview topic, a 90-minute night-before plan, and the numbers to quote.
 Each file takes one DV interview topic (often from a LinkedIn post), checks what the post got right and wrong, explains the topic from first principles, and ends with likely interviewer follow-ups and a 60-second answer pitch.
 
 > **Before an interview:** start at **[`axi-interview-prep/`](axi-interview-prep/)**. It has 15 one-page AXI and DV cheat sheets (PDF, PNG, HTML), runnable AXI slave code with a self-checking testbench, an SVA checker, and the bug-and-fix story for the AXI4-Lite UVM project. The all-in-one PDF is [`AXI_DV_Interview_Cheatsheets_ALL.pdf`](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf).
@@ -64,8 +66,9 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 37 | [YARP Single-Cycle Core Review](37-yarp-single-cycle-core-review.md) | 4 RTL bugs found vs ISS, valid/ready spec mismatch, reviewed interface with driver/monitor clocking blocks + protocol SVA |
 | 38 | [YARP Class-Based Testbench Review](38-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
 | 39 | [RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → single-cycle → pipeline → OOO/LSQ/caches → DV strategy, golden model, TB anatomy, random, SV timing, SVA, coverage, mutation, bug catalog, debug, rapid-fire drills |
+| 40 | [5-Stage Pipeline: The Six Questions](40-five-stage-pipeline-interview-answers.md) | Five stages, structural/data/control hazards, RAW/WAR/WAW, flush and stall implementation, verification, mutation table: all from pq5 with measured numbers |
 
-## CPU Lab (code for challenges 26–31 and 37–39)
+## CPU Lab (code for challenges 26–31 and 37–40)
 
 [`cpu-lab/`](cpu-lab/README.md) holds the runnable code: the uploaded 3-wide OOO core with all fixes and per-file patches, a commit-scoreboard testbench with an ISS, 20 directed bug hunts, a random generator, bind-based SVA, a 5-stage pipelined RV32I CPU (pq5), an 11-level beginner RTL ladder, the YARP single-cycle core with its class-based testbench (C++ ISS over DPI, coverage, protocol SVA, runtime mutation campaign), and four HTML study pages in [`cpu-lab/pages/`](cpu-lab/pages/), including the 27-plate **[RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html)** for a last-minute skim. Runs on free Verilator.
 
