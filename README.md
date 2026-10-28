@@ -69,6 +69,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | 38 | [YARP Class-Based Testbench Review](38-yarp-class-based-testbench-review.md) | Course TB fixed in place: 3 compile + 14 functional TB bugs, C++ DPI model, coverage closure, mutation table (9/9 bugs caught, 0 false alarms) |
 | 39 | [RISC-V Core & DV Atlas](cpu-lab/pages/riscv_dv_atlas.html) | 27 one-page infographics: ISA → single-cycle → pipeline → OOO/LSQ/caches → DV strategy, golden model, TB anatomy, random, SV timing, SVA, coverage, mutation, bug catalog, debug, rapid-fire drills |
 | 40 | [5-Stage Pipeline: The Six Questions](40-five-stage-pipeline-interview-answers.md) | Five stages, structural/data/control hazards, RAW/WAR/WAW, flush and stall implementation, verification, mutation table: all from pq5 with measured numbers |
+| 41 | [GPIO Core & Pinmux Verification](41-gpio-core-and-pinmux-verification.md) · [one-stop kit](41-gpio-core-pinmux/README.md) | Chipmunk GPIO v1.0, tristate pads, 2-FF sync & glitch filter, level vs. edge, enable vs. mask, W1C, APB 2/3-cycle timing, RAL access types, uncertainty-window scoreboard, white-box race SVA, bug injection, pinmux bugs, STAR story. Kit: HTML field guide, clean-room RTL, UVM TB, SVA, free-tool smoke test |
 
 ## CPU Lab (code for challenges 26–31 and 37–40)
 
@@ -103,6 +104,8 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | PCIe: "no TLP when credits = 0" | Credits are per type; an advertised 0 means infinite | 17 |
 | "The test passes, so the design works" | A hand-written checker on one program passed 33/33 while 15 bugs remained; an assertion fired on that same passing test | 27, 28 |
 | Out-of-order means results can be written to registers as soon as they're ready | Execution is out of order; commit to architectural state stays in program order (precise state) | 26, 30 |
+| Passing directed tests means the behaviour is checked | A one-cycle race (W1C vs. event) passed all 37 directed checks; only a white-box assertion caught it | 41 |
+| A status register listed "RO" is read-only | Read the text too: GPIO v1.0's status is W1C | 41 |
 
 ## How each file is structured
 

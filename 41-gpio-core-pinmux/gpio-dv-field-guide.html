@@ -1,0 +1,823 @@
+<title>GPIO Core DV Field Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a chip datasheet laid out as one long bench sheet. Each section is headed by a pin tag; diagrams sit on a solder-mask panel; copper marks the things to say out loud in an interview. */
+:root{
+  --bg:#EEF2EF;        /* board ground, faint green */
+  --panel:#FFFFFF;
+  --ink:#13201B;
+  --muted:#53635C;
+  --rule:#CBD6D0;
+  --mask:#1D6A50;      /* solder-mask green: structure */
+  --mask-soft:#DCEBE4;
+  --copper:#A9581F;    /* copper pad: say-this / emphasis */
+  --copper-soft:#F6E6D8;
+  --signal:#2C5BA6;    /* waveform / signal */
+  --warn:#9A3B2E;
+  --warn-soft:#F5E0DC;
+  --code-bg:#E4EBE7;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1613;--panel:#15201C;--ink:#E2EBE6;--muted:#9AABA3;--rule:#2A3A34;
+  --mask:#5CC39B;--mask-soft:#173229;--copper:#E39A62;--copper-soft:#3A2618;
+  --signal:#7FA7EE;--warn:#F08B7A;--warn-soft:#3A1E1A;--code-bg:#1B2924;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1613;--panel:#15201C;--ink:#E2EBE6;--muted:#9AABA3;--rule:#2A3A34;
+  --mask:#5CC39B;--mask-soft:#173229;--copper:#E39A62;--copper-soft:#3A2618;
+  --signal:#7FA7EE;--warn:#F08B7A;--warn-soft:#3A1E1A;--code-bg:#1B2924;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,60px);font-stretch:72%;font-weight:850;line-height:.98;letter-spacing:-.01em}
+h2{font-size:clamp(24px,3.4vw,32px);font-stretch:80%;font-weight:800;line-height:1.1}
+h3{font-size:18px;font-stretch:90%;font-weight:700}
+p{margin:0}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+code{background:var(--code-bg);padding:1px 5px;border-radius:3px}
+a{color:var(--signal)}
+:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--rule);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));}
+.nav-in{display:flex;gap:6px;overflow-x:auto;padding:9px max(16px,env(safe-area-inset-left,0px));scrollbar-width:thin}
+.nav a{flex:none;font-family:var(--f-mono);font-size:12px;text-decoration:none;color:var(--ink);border:1px solid var(--rule);padding:4px 9px;border-radius:2px;white-space:nowrap}
+.nav a span{color:var(--copper);margin-right:5px}
+.nav a:hover{border-color:var(--mask);color:var(--mask)}
+
+/* hero */
+.hero{padding-block:40px 28px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:32px;align-items:end}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mask)}
+.lede{margin-top:16px;font-size:17px;max-width:62ch;color:var(--muted)}
+.lede b{color:var(--ink)}
+.specs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);background:var(--panel)}
+.specs div{padding:12px 14px;border-bottom:1px solid var(--rule)}
+.specs div:nth-child(odd){border-right:1px solid var(--rule)}
+.specs div:nth-last-child(-n+2){border-bottom:0}
+.specs b{display:block;font-family:var(--f-display);font-stretch:75%;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--mask);line-height:1.1}
+.specs span{font-size:12.5px;color:var(--muted)}
+
+.notice{display:flex;gap:12px;align-items:flex-start;background:var(--copper-soft);border:1px solid var(--copper);padding:12px 14px;font-size:14px;margin-bottom:8px}
+.notice b{color:var(--copper)}
+
+/* sections */
+section{padding-top:44px;scroll-margin-top:60px}
+.sh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.pin{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--panel);background:var(--mask);padding:3px 8px;border-radius:2px;flex:none}
+.sub{color:var(--muted);max-width:75ch;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--rule);padding:16px 18px;min-width:0}
+.card h3{margin-bottom:8px}
+.card ul{margin:0;padding-left:18px}
+.card li{margin:3px 0}
+.say{border-left:3px solid var(--copper);background:var(--copper-soft);padding:10px 14px;margin-top:12px;font-size:14.5px}
+.say::before{content:"SAY IT";display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--copper);font-weight:600;margin-bottom:2px}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;padding:1px 6px;border-radius:2px;vertical-align:1px;font-weight:600}
+.t-ug{background:var(--mask-soft);color:var(--mask)}
+.t-inf{background:var(--copper-soft);color:var(--copper)}
+.t-gap{background:var(--warn-soft);color:var(--warn)}
+
+figure{margin:0;background:var(--panel);border:1px solid var(--rule);padding:16px}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:640px;color:var(--ink);font-family:var(--f-mono)}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:10px}
+svg .bx{fill:var(--panel);stroke:currentColor;stroke-width:1.3}
+svg .bxm{fill:var(--mask-soft);stroke:var(--mask);stroke-width:1.5}
+svg .bxc{fill:var(--copper-soft);stroke:var(--copper);stroke-width:1.5}
+svg .ln{fill:none;stroke:currentColor;stroke-width:1.3}
+svg .lnc{fill:none;stroke:var(--copper);stroke-width:1.8}
+svg .lns{fill:none;stroke:var(--signal);stroke-width:1.8}
+svg .dash{stroke-dasharray:4 3}
+svg text{fill:currentColor;font-size:12px}
+svg .tt{font-weight:600;font-size:13px}
+svg .sm{font-size:10.5px;fill:var(--muted)}
+svg .tc{fill:var(--copper)}
+svg .tm{fill:var(--mask)}
+svg .ts{fill:var(--signal)}
+
+/* tables */
+.tbl{overflow-x:auto;background:var(--panel);border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:720px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg);font-weight:600}
+td.off{font-family:var(--f-mono);color:var(--copper);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.nm{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+.acc{font-family:var(--f-mono);font-size:11px;font-weight:600;padding:1px 6px;border:1px solid currentColor;border-radius:2px;white-space:nowrap}
+.yes{color:var(--mask);font-weight:600}
+.no{color:var(--muted)}
+
+pre{margin:0;background:var(--code-bg);padding:12px 14px;overflow-x:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.5}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.file{background:var(--panel);border:1px solid var(--rule);padding:10px 12px;min-width:0}
+.file .fn{font-family:var(--f-mono);font-size:12.5px;font-weight:600;color:var(--mask);word-break:break-all}
+.file .sz{float:right;font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.file p{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* STAR */
+.star{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--rule);background:var(--panel)}
+.star > div{padding:16px;border-right:1px solid var(--rule);min-width:0}
+.star > div:last-child{border-right:0}
+.star .k{font-family:var(--f-display);font-stretch:70%;font-size:44px;font-weight:900;color:var(--copper);line-height:1}
+.star h3{margin:4px 0 8px}
+.star ul{margin:0;padding-left:18px;font-size:14px}
+.fill{background:var(--copper-soft);color:var(--copper);font-family:var(--f-mono);font-size:.82em;padding:0 4px;border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.script{background:var(--panel);border:1px solid var(--rule);padding:18px 20px;margin-top:16px;font-size:15.5px;max-width:none}
+.script p+p{margin-top:10px}
+
+/* Q&A */
+.qa-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button{font-family:var(--f-mono);font-size:12px;background:var(--panel);color:var(--ink);border:1px solid var(--rule);padding:6px 11px;border-radius:2px;cursor:pointer}
+button:hover{border-color:var(--mask);color:var(--mask)}
+button[aria-pressed="true"]{background:var(--mask);color:var(--panel);border-color:var(--mask)}
+.qa{display:grid;gap:8px}
+details{background:var(--panel);border:1px solid var(--rule)}
+summary{cursor:pointer;padding:12px 16px;list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+summary::-webkit-details-marker{display:none}
+summary .qn{font-family:var(--f-mono);font-size:12px;color:var(--copper);font-weight:600;padding-top:2px;grid-row:span 2}
+summary .q{font-weight:600}
+summary .one{color:var(--muted);font-size:14px}
+.quiz summary .one{filter:blur(5px);transition:filter .15s}
+.quiz summary:hover .one{filter:none}
+details[open] summary{border-bottom:1px solid var(--rule)}
+.ans{padding:12px 16px 16px 16px;display:grid;gap:10px;font-size:14.5px}
+.ans ul{margin:0;padding-left:18px}
+.fu{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:var(--mask);font-weight:600;text-transform:uppercase}
+
+.hot{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.hot div{background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--warn);padding:12px 14px;font-size:14px;min-width:0}
+.hot b{display:block;margin-bottom:3px}
+
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .star{grid-template-columns:1fr 1fr}
+  .star > div:nth-child(2){border-right:0}
+  .star > div:nth-child(-n+2){border-bottom:1px solid var(--rule)}
+}
+@media (max-width:520px){
+  .star{grid-template-columns:1fr}
+  .star > div{border-right:0;border-bottom:1px solid var(--rule)}
+  .specs b{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<nav class="nav" aria-label="Sections"><div class="nav-in">
+  <a href="#arch"><span>01</span>Architecture</a>
+  <a href="#modes"><span>02</span>Modes &amp; params</a>
+  <a href="#regs"><span>03</span>Register map</a>
+  <a href="#intr"><span>04</span>Interrupt path</a>
+  <a href="#io"><span>05</span>Tristate · CDC · reset</a>
+  <a href="#apb"><span>06</span>APB timing</a>
+  <a href="#pkg"><span>07</span>IP package</a>
+  <a href="#tb"><span>08</span>UVM plan</a>
+  <a href="#cov"><span>09</span>Coverage &amp; SVA</a>
+  <a href="#gaps"><span>10</span>Spec gaps</a>
+  <a href="#pinmux"><span>11</span>Pinmux story</a>
+  <a href="#qa"><span>12</span>Interview Q&amp;A</a>
+</div></nav>
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">Chipmunk Logic · GPIO v1.0 · APB peripheral</div>
+    <h1>GPIO Core DV Field Guide</h1>
+    <p class="lede">Everything in the GPIO v1.0 IP and the "Design of GPIO core in RTL" post, laid out for a design-verification interview. <b>Copper boxes are lines to say out loud.</b> Tags show where each fact comes from: <span class="tag t-ug">UG</span> the user guide or blog, <span class="tag t-inf">INFERRED</span> my reading of the design (check it against the RTL), and <span class="tag t-gap">SPEC GAP</span> something the docs leave open.</p>
+  </div>
+  <div class="specs" aria-label="Key numbers">
+    <div><b>1–32</b><span>GPIO_WIDTH pins (default 6)</span></div>
+    <div><b>11</b><span>32-bit CSRs, 0x00 to 0x28</span></div>
+    <div><b>2 / 3</b><span>APB write / read cycles</span></div>
+    <div><b>4</b><span>channel modes: tristate, in, out, dual</span></div>
+    <div><b>89 / 132</b><span>LUTs / FFs, 8-bit, Artix-7</span></div>
+    <div><b>100 MHz</b><span>core clock tested on Basys-3</span></div>
+  </div>
+</header>
+
+<div class="notice" role="note"><div><b>About the source files.</b> The RTL and testbench inside the .rar are password-protected (subscriber password from chipmunklogic.com). The public user guide, the IP overview and the package's file list are covered in full. Notes on module internals are marked <span class="tag t-inf">INFERRED</span>. Send me the password and I'll check them against the real RTL.</div></div>
+
+<!-- 01 ARCH -->
+<section id="arch">
+  <div class="sh"><span class="pin">01</span><h2>Architecture: CSR file to pad and back</h2></div>
+  <p class="sub">GPIO is a memory-mapped peripheral. The CPU writes CSRs over APB. The CSRs drive the tristate buffers on the way out. On the way in, pin levels pass through optional synchronizers into the input register and the interrupt logic, which raises one level-type <code>o_intr</code>.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 470" role="img" aria-label="Block diagram: APB master writes the CSR file; CSRs drive data and direction into the tristate buffer and pad; the pad feeds a 2-FF synchronizer and glitch filter into the input data register and into the interrupt gateway, whose raw status goes to the interrupt generator that drives o_intr back to the CPU.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+        <marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--copper)"/></marker>
+      </defs>
+      <!-- CPU -->
+      <rect class="bx" x="20" y="170" width="130" height="90" rx="3"/>
+      <text class="tt" x="85" y="205" text-anchor="middle">CPU / APB</text>
+      <text class="tt" x="85" y="222" text-anchor="middle">master</text>
+      <text class="sm" x="85" y="242" text-anchor="middle">runs the ISR</text>
+      <!-- CSR -->
+      <rect class="bxm" x="200" y="40" width="210" height="380" rx="3"/>
+      <text class="tt tm" x="305" y="64" text-anchor="middle">APB slave + CSR file</text>
+      <text x="216" y="94">0x00 i_data      RO</text>
+      <text x="216" y="118">0x04 o_data      RW</text>
+      <text x="216" y="142">0x08 io_dir      RW</text>
+      <text x="216" y="166">0x0C glb_ctrl GIE/GME</text>
+      <text x="216" y="190">0x10 intr_en     RW</text>
+      <text x="216" y="214">0x14 intr_mask   RW</text>
+      <text x="216" y="238">0x18 intr_type   RW</text>
+      <text x="216" y="262">0x1C intr_evnt   RW</text>
+      <text x="216" y="286">0x20 intr_sts   W1C</text>
+      <text x="216" y="310">0x24 sts_raw     RO</text>
+      <text x="216" y="334">0x28 intr_set    WO</text>
+      <text class="sm" x="216" y="364">bits [31:GPIO_WIDTH] read 0</text>
+      <text class="sm" x="216" y="382">paddr 8-bit · data 32-bit</text>
+      <!-- tristate -->
+      <rect class="bx" x="480" y="40" width="170" height="90" rx="3"/>
+      <text class="tt" x="565" y="70" text-anchor="middle">tristate_buff</text>
+      <text class="sm" x="565" y="90" text-anchor="middle">OE = 1 when dir bit = 0</text>
+      <text class="sm" x="565" y="108" text-anchor="middle">FPGA: maps to IOB</text>
+      <!-- pad -->
+      <rect class="bxc" x="760" y="55" width="150" height="60" rx="3"/>
+      <text class="tt tc" x="835" y="82" text-anchor="middle">io_gpio[i] pad</text>
+      <text class="sm" x="835" y="100" text-anchor="middle">button / LED / sensor</text>
+      <!-- sync -->
+      <rect class="bx" x="480" y="170" width="170" height="80" rx="3"/>
+      <text class="tt" x="565" y="196" text-anchor="middle">irq_sync</text>
+      <text class="sm" x="565" y="215" text-anchor="middle">2-FF sync  (EN_SYNC)</text>
+      <text class="sm" x="565" y="232" text-anchor="middle">glitch filter (EN_GLF)</text>
+      <!-- reset -->
+      <rect class="bx dash" x="760" y="170" width="150" height="80" rx="3"/>
+      <text class="tt" x="835" y="196" text-anchor="middle">areset_sync</text>
+      <text class="sm" x="835" y="215" text-anchor="middle">resetn: async assert</text>
+      <text class="sm" x="835" y="232" text-anchor="middle">sync release, ≥8 clk</text>
+      <!-- gateway -->
+      <rect class="bx" x="480" y="290" width="170" height="80" rx="3"/>
+      <text class="tt" x="565" y="316" text-anchor="middle">intr_gateway</text>
+      <text class="sm" x="565" y="335" text-anchor="middle">level / edge detect</text>
+      <text class="sm" x="565" y="352" text-anchor="middle">IE gate · raw status</text>
+      <!-- gen -->
+      <rect class="bx" x="760" y="290" width="150" height="80" rx="3"/>
+      <text class="tt" x="835" y="316" text-anchor="middle">intr_gen</text>
+      <text class="sm" x="835" y="335" text-anchor="middle">mask · OR-reduce</text>
+      <text class="sm" x="835" y="352" text-anchor="middle">GIE gate → o_intr</text>
+      <!-- arrows -->
+      <line class="ln" x1="150" y1="200" x2="198" y2="200" marker-end="url(#ar)"/><text class="sm" x="174" y="193" text-anchor="middle">APB</text>
+      <line class="ln" x1="198" y1="232" x2="152" y2="232" marker-end="url(#ar)"/><text class="sm" x="174" y="248" text-anchor="middle">prdata</text>
+      <line class="ln" x1="410" y1="72" x2="478" y2="72" marker-end="url(#ar)"/><text class="sm" x="444" y="66" text-anchor="middle">o_data</text>
+      <line class="ln" x1="410" y1="110" x2="478" y2="110" marker-end="url(#ar)"/><text class="sm" x="444" y="104" text-anchor="middle">dir→OE</text>
+      <line class="lnc" x1="650" y1="85" x2="758" y2="85" marker-end="url(#arc)"/><text class="sm" x="704" y="78" text-anchor="middle">drive / Hi-Z</text>
+      <path class="lnc" d="M835 115V140H700V200H652" marker-end="url(#arc)"/><text class="sm" x="745" y="134" text-anchor="middle">pin level (async)</text>
+      <line class="ln" x1="480" y1="210" x2="412" y2="210" marker-end="url(#ar)"/><text class="sm" x="446" y="204" text-anchor="middle">i_data</text>
+      <line class="ln" x1="565" y1="250" x2="565" y2="288" marker-end="url(#ar)"/><text class="sm" x="572" y="273">synced</text>
+      <line class="ln" x1="410" y1="330" x2="478" y2="330" marker-end="url(#ar)"/><text class="sm" x="444" y="324" text-anchor="middle">IE·cfg</text>
+      <line class="ln" x1="650" y1="330" x2="758" y2="330" marker-end="url(#ar)"/><text class="sm" x="704" y="324" text-anchor="middle">raw sts[i]</text>
+      <path class="ln" d="M410 400H835V372" marker-end="url(#ar)"/><text class="sm" x="620" y="394" text-anchor="middle">mask · GIE/GME · W1C clear · sw set</text>
+      <path class="lnc" d="M910 330H950V450H85V262" marker-end="url(#arc)"/><text class="tc" x="520" y="444" text-anchor="middle" font-size="12">o_intr (level, active-high) → CPU interrupt</text>
+    </svg>
+    </div>
+    <figcaption>The output path is CSR → tristate buffer → pad. The input path is pad → sync and filter → i_data and the interrupt gateway → intr_gen → o_intr. Module names come from the package's <code>src/</code> folder. <span class="tag t-inf">INFERRED</span> wiring between modules.</figcaption>
+  </figure>
+  <div class="say">It's a memory-mapped APB slave. The direction register drives each pad's output enable and the data register drives its value. Inputs come back through an optional 2-flop synchronizer and glitch filter, into a per-pin level/edge detector. That detector feeds sticky, write-1-to-clear status, which is masked and OR-reduced into one level interrupt.</div>
+</section>
+
+<!-- 02 MODES -->
+<section id="modes">
+  <div class="sh"><span class="pin">02</span><h2>Build-time modes and parameters</h2><span class="tag t-ug">UG §4–5</span></div>
+  <p class="sub">The ports themselves change with these macros, so each mode needs its own compile. That makes the regression a build matrix, not just a seed sweep.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mode</th><th>Macros</th><th>Ports present</th><th>Interrupts?</th><th>What changes for DV</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tristate</b></td><td class="nm">EN_TRISTATE_BUFF</td><td class="nm">io_gpio[W-1:0]</td><td class="yes">with EN_INTR_IF</td><td>Bidirectional agent, per-pin dynamic direction, contention checks. <code>gpio_io_dir</code> is only meaningful here.</td></tr>
+      <tr><td><b>Input</b></td><td class="nm">EN_IPORTS</td><td class="nm">i_gpio</td><td class="yes">with EN_INTR_IF</td><td><code>o_data</code> reads back <code>DEF_O_VAL</code>, and there are no output checks.</td></tr>
+      <tr><td><b>Output</b></td><td class="nm">EN_OPORTS</td><td class="nm">o_gpio</td><td class="no">not available</td><td><code>i_data</code> reads 0, there is no <code>o_intr</code> port, and the interrupt CSRs have no effect.</td></tr>
+      <tr><td><b>Dual</b></td><td class="nm">EN_IPORTS + EN_OPORTS</td><td class="nm">i_gpio + o_gpio</td><td class="yes">with EN_INTR_IF</td><td>Separate in/out ports, so you can loop o→i in the TB to check both paths.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid3" style="margin-top:16px">
+    <div class="card"><h3>GPIO_WIDTH <span class="mono" style="color:var(--muted)">[1–32], default 6</span></h3><p>Test the edges: <b>1</b> (degenerate OR-reduce), <b>31</b>, <b>32</b> (no reserved bits left). Check that bits [31:W] read 0 in every register.</p></div>
+    <div class="card"><h3>DEF_O_VAL · DEF_IO_DIR</h3><p>Per-bit reset values. <b>DEF_IO_DIR: 1 = input, 0 = output.</b> Many MCUs use the opposite polarity, so call it out. Default-input is the safe power-up state because no pin drives.</p></div>
+    <div class="card"><h3>EN_SYNC · EN_GLF</h3><p>Per-pin bitmasks. A glitch filter exists only on pins that also have a sync. Randomize the masks per build, and the TB must know each pin's latency and filtering.</p></div>
+  </div>
+</section>
+
+<!-- 03 REGS -->
+<section id="regs">
+  <div class="sh"><span class="pin">03</span><h2>Register map with a DV check per register</h2><span class="tag t-ug">UG Table 6.1</span></div>
+  <p class="sub">All registers are 32-bit, and per-pin fields use bits [GPIO_WIDTH-1:0]. The last column is what you'd put in the RAL model and the testplan.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Off</th><th>Register</th><th>Access</th><th>Reset</th><th>Meaning</th><th>DV check</th></tr></thead>
+    <tbody>
+      <tr><td class="off">0x00</td><td class="nm">gpio_i_data_reg</td><td><span class="acc">RO</span></td><td class="mono">—</td><td>Pin state after sync/filter. Reads 0 in output mode.</td><td>Volatile: predict from the pin monitor after the sync latency. Writes are ignored.</td></tr>
+      <tr><td class="off">0x04</td><td class="nm">gpio_o_data_reg</td><td><span class="acc">RW</span></td><td class="mono">DEF_O_VAL</td><td>Drives output pins.</td><td>Pin follows the write on output pins, and readback works. No atomic set/clear, so firmware has to read-modify-write.</td></tr>
+      <tr><td class="off">0x08</td><td class="nm">gpio_io_dir</td><td><span class="acc">RW</span></td><td class="mono">DEF_IO_DIR</td><td>0 = out, 1 = in (tristate only).</td><td>Flip the direction while traffic is running: no glitch, no X, and Hi-Z within a cycle.</td></tr>
+      <tr><td class="off">0x0C</td><td class="nm">gpio_glb_intr_ctrl_reg</td><td><span class="acc">RW</span></td><td class="mono">0x0</td><td>[0] GIE global enable · [1] GME global mask enable.</td><td>GIE=0 holds o_intr low while status still latches. How GME interacts with per-pin ME is a <span class="tag t-gap">SPEC GAP</span>.</td></tr>
+      <tr><td class="off">0x10</td><td class="nm">gpio_intr_en_reg</td><td><span class="acc">RW</span></td><td class="mono">0x0</td><td>Per-pin IE.</td><td><b>Clearing IE also clears that pin's status</b> and ignores new events.</td></tr>
+      <tr><td class="off">0x14</td><td class="nm">gpio_intr_mask_reg</td><td><span class="acc">RW</span></td><td class="mono">0x0</td><td>Per-pin ME, 1 = masked.</td><td>A masked pin still latches raw status. Unmasking it raises o_intr at once (the pending-while-masked case).</td></tr>
+      <tr><td class="off">0x18</td><td class="nm">gpio_intr_type_reg</td><td><span class="acc">RW</span></td><td class="mono">0x0</td><td>0 = level, 1 = edge.</td><td>Cross with evnt to cover four triggers. Changing type while enabled can cause false triggers.</td></tr>
+      <tr><td class="off">0x1C</td><td class="nm">gpio_intr_evnt_reg</td><td><span class="acc">RW</span></td><td class="mono">0x0</td><td>0 = low/falling, 1 = high/rising.</td><td>Reset is level-low. If a pin idles low and IE is set before the type is configured, you get an immediate interrupt. That's a firmware ordering trap.</td></tr>
+      <tr><td class="off">0x20</td><td class="nm">gpio_intr_sts_reg</td><td><span class="acc">W1C</span></td><td class="mono">0x0</td><td>Masked status. Write 1 to clear.</td><td>Write 0 has no effect. Set and clear in the same cycle needs a defined priority. For level type, the bit re-sets if the source is still active.</td></tr>
+      <tr><td class="off">0x24</td><td class="nm">gpio_intr_sts_raw_reg</td><td><span class="acc">RO</span></td><td class="mono">0x0</td><td>Unmasked status.</td><td>Cleared through the W1C at 0x20. Check that raw ⊇ masked at all times.</td></tr>
+      <tr><td class="off">0x28</td><td class="nm">gpio_intr_set_rg</td><td><span class="acc">WO</span></td><td class="mono">0x0</td><td>Write 1 to force status (software interrupt).</td><td>Only takes effect where IE=1. Reads should return 0. Use it to test the ISR path with no pin stimulus.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="say">For the RAL model I'd mark i_data, sts and sts_raw as volatile and let a reference model predict them. A plain mirror check fails on any field the hardware updates by itself. The W1C field also needs its set-versus-clear priority pinned down with the designer before I write the checker.</div>
+</section>
+
+<!-- 04 INTR -->
+<section id="intr">
+  <div class="sh"><span class="pin">04</span><h2>Interrupt pipeline, one pin, end to end</h2></div>
+  <p class="sub">Most of the bugs in this block are in this path. Each stage is a place where an event can be lost, duplicated or delayed.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 250" role="img" aria-label="Interrupt pipeline: pin, 2-FF synchronizer, glitch filter, level or edge detector selected by type and event, AND with IE, sticky raw status set also by software set register and cleared by W1C or IE=0, AND with not-mask, OR across all pins, AND with GIE, o_intr.">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+      <rect class="bxc" x="10" y="80" width="70" height="50" rx="3"/><text class="tt tc" x="45" y="110" text-anchor="middle">pin</text>
+      <rect class="bx" x="105" y="80" width="80" height="50" rx="3"/><text class="tt" x="145" y="103" text-anchor="middle">2-FF</text><text class="sm" x="145" y="120" text-anchor="middle">~2 clk</text>
+      <rect class="bx" x="210" y="80" width="80" height="50" rx="3"/><text class="tt" x="250" y="103" text-anchor="middle">GLF</text><text class="sm" x="250" y="120" text-anchor="middle">N clk</text>
+      <rect class="bx" x="315" y="80" width="110" height="50" rx="3"/><text class="tt" x="370" y="103" text-anchor="middle">detect</text><text class="sm" x="370" y="120" text-anchor="middle">type × evnt</text>
+      <rect class="bx" x="450" y="80" width="60" height="50" rx="3"/><text class="tt" x="480" y="110" text-anchor="middle">&amp; IE</text>
+      <rect class="bxm" x="535" y="70" width="120" height="70" rx="3"/><text class="tt tm" x="595" y="98" text-anchor="middle">raw sts</text><text class="sm" x="595" y="116" text-anchor="middle">sticky flop</text>
+      <rect class="bx" x="680" y="80" width="70" height="50" rx="3"/><text class="tt" x="715" y="103" text-anchor="middle">&amp; ~ME</text><text class="sm" x="715" y="120" text-anchor="middle">GME?</text>
+      <rect class="bx" x="775" y="80" width="70" height="50" rx="3"/><text class="tt" x="810" y="103" text-anchor="middle">OR</text><text class="sm" x="810" y="120" text-anchor="middle">all pins</text>
+      <rect class="bxc" x="870" y="80" width="100" height="50" rx="3"/><text class="tt tc" x="920" y="103" text-anchor="middle">&amp; GIE</text><text class="sm" x="920" y="120" text-anchor="middle">→ o_intr</text>
+      <g class="ln">
+        <line x1="80" y1="105" x2="103" y2="105" marker-end="url(#ar2)"/>
+        <line x1="185" y1="105" x2="208" y2="105" marker-end="url(#ar2)"/>
+        <line x1="290" y1="105" x2="313" y2="105" marker-end="url(#ar2)"/>
+        <line x1="425" y1="105" x2="448" y2="105" marker-end="url(#ar2)"/>
+        <line x1="510" y1="105" x2="533" y2="105" marker-end="url(#ar2)"/>
+        <line x1="655" y1="105" x2="678" y2="105" marker-end="url(#ar2)"/>
+        <line x1="750" y1="105" x2="773" y2="105" marker-end="url(#ar2)"/>
+        <line x1="845" y1="105" x2="868" y2="105" marker-end="url(#ar2)"/>
+      </g>
+      <!-- side inputs -->
+      <line class="ln dash" x1="560" y1="30" x2="560" y2="68" marker-end="url(#ar2)"/><text class="sm" x="560" y="22" text-anchor="middle">set_rg write 1 (if IE)</text>
+      <line class="ln dash" x1="630" y1="182" x2="630" y2="142" marker-end="url(#ar2)"/><text class="sm" x="630" y="198" text-anchor="middle">clear: W1C @0x20, or IE→0</text>
+      <line class="ln dash" x1="595" y1="140" x2="595" y2="160"/><line class="ln dash" x1="595" y1="160" x2="470" y2="160"/><text class="sm" x="470" y="176" text-anchor="middle">read @0x24 (raw)</text>
+      <line class="ln dash" x1="750" y1="140" x2="750" y2="160"/><line class="ln dash" x1="750" y1="160" x2="790" y2="160"/><text class="sm" x="790" y="176" text-anchor="middle">read @0x20</text>
+      <text class="sm" x="250" y="160" text-anchor="middle">both optional per pin</text>
+      <text class="ts" x="20" y="235" font-size="12">Pin → o_intr latency ≈ sync(2) + GLF(N) + detect/status(1–2) clk. Check it with a window, not a fixed cycle count.</text>
+    </svg>
+    </div>
+    <figcaption>Order of operations for one pin. The stages come from the UG. The cycle counts and where GME sits are <span class="tag t-inf">INFERRED</span>.</figcaption>
+  </figure>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Level vs edge, behaviour to verify</h3>
+      <ul>
+        <li><b>Edge:</b> latches on the transition and stays set until W1C. Check: one edge gives one status set. Two edges before the clear still give one bit (events merge, and the bit doesn't count them).</li>
+        <li><b>Level:</b> sets while the pin is at the active level. If the pin is still active when the ISR clears the bit, it <b>re-sets next cycle</b>, so the ISR has to remove the source first or you get an interrupt storm.</li>
+        <li>Polarity comes from evnt: 1 = high/rising, 0 = low/falling.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>Enable vs mask, the classic trick question</h3>
+      <ul>
+        <li><b>IE = 0</b> clears status and drops future events. The event is gone.</li>
+        <li><b>ME = 1</b> keeps latching but hides the bit from o_intr. The event waits.</li>
+        <li><b>GIE = 0</b> holds o_intr low, but status still latches underneath.</li>
+        <li>Test: event while masked → read raw (1) and masked (0) → unmask → o_intr rises with no new event.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="say">Enable decides whether an event is recorded. Mask decides whether a recorded event is reported. I always run the masked-pending-then-unmask test, because that's where designs either lose an event or fire a stale one.</div>
+</section>
+
+<!-- 05 IO / CDC / RESET -->
+<section id="io">
+  <div class="sh"><span class="pin">05</span><h2>Tristate, CDC and reset</h2></div>
+  <div class="grid3">
+    <div class="card"><h3>Tristate buffer <span class="tag t-ug">UG §8</span></h3>
+      <p>OE=1 drives the pad with o_data. OE=0 releases it to Hi-Z so an external driver controls it.</p>
+      <ul>
+        <li><b>FPGA:</b> the buffer stays inside the core so it maps onto IOBs.</li>
+        <li><b>ASIC:</b> remove the wrapper and expose OE and data, or put in library pad cells. This is exactly the interface a <b>pinmux</b> consumes.</li>
+        <li>TB checks: no contention (DUT OE=1 while TB drives gives X), Hi-Z when input, and a pull resistor in the TB so a floating pin is caught.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>CDC: 2-FF sync and glitch filter <span class="tag t-ug">UG §5</span></h3>
+      <ul>
+        <li>Pins are asynchronous to <code>clk</code>. Without a sync, metastability reaches the edge detector and can cause double or missed edges.</li>
+        <li>RTL sim never shows metastability. Use a <b>CDC tool</b> structurally, and inject a random 0/1-cycle delay on sync outputs in sim.</li>
+        <li>Pulses shorter than about 2 clk (or the filter window) can vanish. Test pulse widths of 1, 2, N−1, N, N+1 clk at random phase.</li>
+        <li>Where EN_SYNC=0, the pin must already be synchronous. The UG says to enable sync for async interrupt sources.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>Reset <span class="tag t-ug">UG §7</span></h3>
+      <ul>
+        <li><code>resetn</code> is asynchronous active-low. Assertion is async, and <b>release must be synchronized</b> to clk.</li>
+        <li>Sequence: assert reset → start clk → hold <b>≥ 8 clk</b> → release.</li>
+        <li><code>areset_sync.sv</code> ships in <code>src/</code>. The UG says to synchronize release externally, so check whether the core or only the board top uses it. <span class="tag t-inf">INFERRED</span></li>
+        <li>Tests: reset values per parameter, reset in the middle of an APB transfer, reset while pins drive, and no pad glitch through reset.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 06 APB -->
+<section id="apb">
+  <div class="sh"><span class="pin">06</span><h2>APB timing: write 2 cycles, read 3</h2><span class="tag t-ug">UG §7</span></div>
+  <figure>
+    <div class="scroll">
+    <svg style="max-width:760px;margin:0 auto" viewBox="0 0 700 270" role="img" aria-label="APB waveform: a write takes setup plus one access cycle with pready high; a read takes setup plus two access cycles, pready low then high, with rdata valid on the last cycle.">
+      <g class="sm" text-anchor="end">
+        <text x="98" y="44">PCLK</text><text x="98" y="84">PSEL</text><text x="98" y="119">PENABLE</text><text x="98" y="154">PWRITE</text><text x="98" y="189">PREADY</text><text x="98" y="224">PRDATA</text>
+      </g>
+      <g class="sm" text-anchor="middle">
+        <text x="215" y="14">SETUP</text><text x="285" y="14">ACCESS</text>
+        <text x="425" y="14">SETUP</text><text x="495" y="14">wait</text><text x="565" y="14">ready</text>
+      </g>
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="180" y1="20" x2="180" y2="236"/><line x1="250" y1="20" x2="250" y2="236"/><line x1="320" y1="20" x2="320" y2="236"/>
+        <line x1="390" y1="20" x2="390" y2="236"/><line x1="460" y1="20" x2="460" y2="236"/><line x1="530" y1="20" x2="530" y2="236"/><line x1="600" y1="20" x2="600" y2="236"/>
+      </g>
+      <path class="ln" d="M110 52V28H145V52H180V28H215V52H250V28H285V52H320V28H355V52H390V28H425V52H460V28H495V52H530V28H565V52H600V28H635V52H670"/>
+      <path class="lns" d="M110 92H180V68H320V92H390V68H600V92H670"/>
+      <path class="lns" d="M110 127H250V103H320V127H460V103H600V127H670"/>
+      <path class="lns" d="M110 162H180V138H320V162H670"/>
+      <path class="lnc" d="M110 197H250V173H320V197H530V173H600V197H670"/>
+      <path class="ln" d="M110 220H530L538 208H592L600 220H670M530 220L538 232H592L600 220"/>
+      <text x="565" y="224" text-anchor="middle" font-size="10.5">RDATA</text>
+      <text class="ts" x="285" y="252" text-anchor="middle">WRITE = 2 clk</text>
+      <text class="ts" x="495" y="252" text-anchor="middle">READ = 3 clk</text>
+      <text class="sm" x="285" y="268" text-anchor="middle">PWDATA sampled when PREADY=1</text>
+    </svg>
+    </div>
+    <figcaption>The UG gives only the cycle counts. Showing the read's extra cycle as one PREADY wait state (for a registered PRDATA) is <span class="tag t-inf">INFERRED</span>. There is no PSLVERR port, and no PPROT or PSTRB either.</figcaption>
+  </figure>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Protocol assertions to bind</h3>
+<pre>// setup then access
+a_setup: assert property (@(posedge clk) disable iff(!resetn)
+  $rose(i_psel) |-> !i_penable ##1 i_penable);
+// hold everything stable until ready
+a_stable: assert property (@(posedge clk) disable iff(!resetn)
+  (i_psel && i_penable && !o_pready) |=>
+  $stable({i_paddr,i_pwrite,i_pwdata}));
+// read data never X on completion
+a_rd_known: assert property (@(posedge clk) disable iff(!resetn)
+  (i_psel && i_penable && o_pready && !i_pwrite) |-> !$isunknown(o_prdata));</pre>
+    </div>
+    <div class="card"><h3>APB tests</h3>
+      <ul>
+        <li>Back-to-back transfers with no IDLE in between, and random IDLE gaps.</li>
+        <li>Unmapped offsets 0x2C–0xFC: no side effects, and the read returns 0. With no PSLVERR, error reporting is a <span class="tag t-gap">SPEC GAP</span>.</li>
+        <li>Unaligned addresses (paddr[1:0] ≠ 0): does it alias or ignore? Find out and write it down.</li>
+        <li>Writes to RO regs, reads of WO <code>set_rg</code>.</li>
+        <li>Write to sts (W1C) in the same cycle as a pin event.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 07 PKG -->
+<section id="pkg">
+  <div class="sh"><span class="pin">07</span><h2>What's inside gpio_v1_0.rar</h2></div>
+  <p class="sub">The file list and sizes come from the archive itself. The role of each file is my reading of its name plus the UG. <span class="tag t-inf">INFERRED</span> until the sources are unlocked.</p>
+  <div class="files">
+    <div class="file"><span class="sz">19.8 KB</span><div class="fn">src/gpio_top.sv</div><p>Top level: APB CSR decode, register file, mode generate blocks, instantiates everything below.</p></div>
+    <div class="file"><span class="sz">4.4 KB</span><div class="fn">src/gpio_cfg_macros.svh</div><p>`define switches: EN_TRISTATE_BUFF, EN_IPORTS, EN_OPORTS, EN_INTR_IF.</p></div>
+    <div class="file"><span class="sz">7.8 KB</span><div class="fn">src/intr_gateway.sv</div><p>Per-pin event detection (level/edge × polarity), IE gating, sticky raw status, W1C and software set.</p></div>
+    <div class="file"><span class="sz">7.6 KB</span><div class="fn">src/intr_gen.sv</div><p>Accumulates IRQs: mask, OR-reduce, GIE, and drives o_intr.</p></div>
+    <div class="file"><span class="sz">6.0 KB</span><div class="fn">src/irq_sync.sv</div><p>2-FF synchronizer and optional glitch filter per input, controlled by EN_SYNC and EN_GLF.</p></div>
+    <div class="file"><span class="sz">4.6 KB</span><div class="fn">src/areset_sync.sv</div><p>Reset synchronizer: async assert, sync deassert.</p></div>
+    <div class="file"><span class="sz">4.1 KB</span><div class="fn">src/tristate_buff.sv</div><p>Wrapper for the bidirectional pad. Swap or remove it for an ASIC.</p></div>
+    <div class="file"><span class="sz">8.1 KB</span><div class="fn">src/apb_transactor.sv</div><p>Synthesizable APB master used by the board test as a stand-in CPU.</p></div>
+    <div class="file"><span class="sz">18.3 KB</span><div class="fn">src/tb_gpio.sv</div><p>Directed TB, 4-bit tristate. io[3] edge IRQ toggles io[1], io[2] level IRQ toggles io[0]. Has sim and synth modes.</p></div>
+    <div class="file"><span class="sz">3.4 KB</span><div class="fn">Makefile · scripts/run.do</div><p>Compile, build and simulate flow. A .do file means a ModelSim/Questa script.</p></div>
+    <div class="file"><span class="sz">0.9 MB</span><div class="fn">doc/ug.pdf · IP_overview.pdf</div><p>User guide v1.0 (Apr 2025) and the one-page overview. Used for this guide.</p></div>
+    <div class="file"><span class="sz">6.2 KB</span><div class="fn">LICENSE · readme · release_notes</div><p>Open source, "as is", no warranty.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>What the shipped testbench proves</h3>
+      <ul>
+        <li>The happy-path ISR loop works in one configuration (4-bit tristate, interrupts on).</li>
+        <li>On a Basys-3 at 100 MHz, the UG test summary lists every mode with and without interrupts, and level and edge at both polarities: "successfully passed".</li>
+      </ul>
+    </div>
+    <div class="card"><h3>What it doesn't prove, and where you come in</h3>
+      <ul>
+        <li>No constrained-random stimulus, no scoreboard or reference model, and no functional coverage.</li>
+        <li>Untested: race conditions (W1C vs event, IE toggling), widths 1/32, mixed EN_SYNC masks, glitch thresholds, unmapped accesses.</li>
+        <li>A board test only shows what a human could see on LEDs. It can't show a one-cycle spurious interrupt.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 08 TB -->
+<section id="tb">
+  <div class="sh"><span class="pin">08</span><h2>UVM testbench and testplan</h2></div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 400" role="img" aria-label="UVM environment: virtual sequencer coordinates an APB agent and a GPIO pin agent; monitors feed a RAL predictor, an interrupt reference model, a scoreboard and coverage; an IRQ monitor watches o_intr; the DUT sits between the APB and pin interfaces.">
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+      <rect class="bx dash" x="10" y="10" width="960" height="270" rx="4"/>
+      <text class="sm" x="22" y="28">gpio_env · config object carries GPIO_WIDTH, mode, EN_SYNC/EN_GLF masks, filter length</text>
+      <rect class="bxm" x="380" y="40" width="220" height="44" rx="3"/><text class="tt tm" x="490" y="67" text-anchor="middle">virtual sequencer</text>
+      <rect class="bx" x="40" y="110" width="220" height="100" rx="3"/><text class="tt" x="150" y="134" text-anchor="middle">APB agent (active)</text><text class="sm" x="150" y="154" text-anchor="middle">seqr · driver · monitor</text><text class="sm" x="150" y="172" text-anchor="middle">RAL adapter (reg2bus)</text><text class="sm" x="150" y="190" text-anchor="middle">random IDLE / back-to-back</text>
+      <rect class="bx" x="720" y="110" width="220" height="100" rx="3"/><text class="tt" x="830" y="134" text-anchor="middle">GPIO pin agent</text><text class="sm" x="830" y="154" text-anchor="middle">drive when dir=in, else Z</text><text class="sm" x="830" y="172" text-anchor="middle">pulse/glitch/async-phase seqs</text><text class="sm" x="830" y="190" text-anchor="middle">monitor: resolved pin values</text>
+      <rect class="bx" x="300" y="110" width="170" height="70" rx="3"/><text class="tt" x="385" y="138" text-anchor="middle">RAL model</text><text class="sm" x="385" y="158" text-anchor="middle">W1C · RO · WO · volatile</text>
+      <rect class="bxc" x="510" y="110" width="170" height="70" rx="3"/><text class="tt tc" x="595" y="138" text-anchor="middle">intr ref model</text><text class="sm" x="595" y="158" text-anchor="middle">predicts sts, raw, o_intr</text>
+      <rect class="bx" x="300" y="200" width="170" height="60" rx="3"/><text class="tt" x="385" y="226" text-anchor="middle">scoreboard</text><text class="sm" x="385" y="244" text-anchor="middle">pins · reads · o_intr window</text>
+      <rect class="bx" x="510" y="200" width="170" height="60" rx="3"/><text class="tt" x="595" y="226" text-anchor="middle">coverage</text><text class="sm" x="595" y="244" text-anchor="middle">cfg × event × outcome</text>
+      <rect class="bx" x="40" y="225" width="220" height="40" rx="3"/><text class="tt" x="150" y="250" text-anchor="middle">IRQ monitor (o_intr)</text>
+      <rect class="bxc" x="300" y="315" width="380" height="65" rx="3"/><text class="tt tc" x="490" y="342" text-anchor="middle">DUT: gpio_top</text><text class="sm" x="490" y="362" text-anchor="middle">+ bound SVA: APB, OE/Z, intr = GIE &amp; |sts</text>
+      <g class="ln">
+        <path d="M380 62H150V108" marker-end="url(#ar3)"/>
+        <path d="M600 62H830V108" marker-end="url(#ar3)"/>
+        <path d="M150 265V348H298" marker-end="url(#ar3)"/>
+        <path d="M830 210V348H682" marker-end="url(#ar3)"/>
+        <line x1="260" y1="140" x2="298" y2="140" marker-end="url(#ar3)"/>
+        <line x1="720" y1="150" x2="682" y2="150" marker-end="url(#ar3)"/>
+        <line x1="470" y1="145" x2="508" y2="145" marker-end="url(#ar3)"/>
+        <line x1="595" y1="180" x2="595" y2="198" marker-end="url(#ar3)"/>
+        <line x1="510" y1="230" x2="472" y2="230" marker-end="url(#ar3)"/>
+      </g>
+      <g class="sm">
+        <text x="265" y="56">start seqs</text><text x="640" y="56">start seqs</text>
+        <text x="160" y="300">APB if</text><text x="760" y="300">io_gpio if</text>
+        <text x="476" y="137">cfg</text><text x="686" y="143">events</text>
+        <text x="602" y="193">exp</text><text x="474" y="224">exp</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>The reference model owns the volatile registers, so the RAL mirror isn't asked to guess what the hardware will do. The scoreboard checks o_intr inside a latency window, which keeps it valid across different EN_SYNC/EN_GLF builds.</figcaption>
+  </figure>
+  <div class="tbl" style="margin-top:16px"><table>
+    <thead><tr><th>#</th><th>Test</th><th>Stimulus</th><th>Checks</th></tr></thead>
+    <tbody>
+      <tr><td class="off">T1</td><td>reset_values</td><td>Random DEF_O_VAL / DEF_IO_DIR builds</td><td>All CSRs, pin drive state, o_intr=0. Upper bits 0.</td></tr>
+      <tr><td class="off">T2</td><td>reg_access</td><td>uvm_reg_hw_reset, bit_bash (excluding volatile fields), access_seq</td><td>RW/RO/WO/W1C behaviour, no aliasing</td></tr>
+      <tr><td class="off">T3</td><td>out_drive / dir_toggle</td><td>Random o_data and dir writes while pins toggle</td><td>Pad follows, Hi-Z on input, no X or contention</td></tr>
+      <tr><td class="off">T4</td><td>in_sample</td><td>Random pin values at random phase</td><td>i_data after sync latency</td></tr>
+      <tr><td class="off">T5</td><td>intr_matrix</td><td>4 triggers × IE × ME × GIE × GME per pin</td><td>raw / masked / o_intr predicted by the ref model</td></tr>
+      <tr><td class="off">T6</td><td>level_storm</td><td>Hold a level source active, ISR clears without removing it</td><td>Status re-asserts and o_intr stays high</td></tr>
+      <tr><td class="off">T7</td><td>w1c_race</td><td>W1C in the same cycle as a new edge</td><td>Agreed priority (no lost event)</td></tr>
+      <tr><td class="off">T8</td><td>mask_pending</td><td>Event while masked, then unmask</td><td>o_intr rises with no new event</td></tr>
+      <tr><td class="off">T9</td><td>ie_clear</td><td>Event, then IE→0</td><td>Status cleared, later events dropped</td></tr>
+      <tr><td class="off">T10</td><td>sw_set</td><td>Write set_rg with IE on and off</td><td>Gated by IE, set_rg reads 0</td></tr>
+      <tr><td class="off">T11</td><td>glitch_pulse</td><td>Pulse widths 1…N+1 clk at async phase</td><td>Filtered pulses never reach i_data or status</td></tr>
+      <tr><td class="off">T12</td><td>multi_pin</td><td>All pins fire in the same cycle and on random cycles</td><td>Every bit is logged, one o_intr</td></tr>
+      <tr><td class="off">T13</td><td>reconfig_live</td><td>Change type/evnt/dir while IE=1</td><td>No spurious status, or behaviour documented</td></tr>
+      <tr><td class="off">T14</td><td>apb_robust</td><td>Unmapped, unaligned, back-to-back, mid-transfer reset</td><td>No side effects, recovers cleanly</td></tr>
+      <tr><td class="off">T15</td><td>build_matrix</td><td>4 modes × widths {1,6,31,32} × random sync masks</td><td>All of the above, per build</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 09 COV -->
+<section id="cov">
+  <div class="sh"><span class="pin">09</span><h2>Coverage model and key assertions</h2></div>
+  <div class="grid2">
+    <div class="card"><h3>Covergroups</h3>
+<pre>covergroup cg_pin_cfg with function sample(int i);
+  dir  : coverpoint io_dir[i];
+  ie   : coverpoint intr_en[i];
+  me   : coverpoint intr_mask[i];
+  typ  : coverpoint intr_type[i];   // level/edge
+  evt  : coverpoint intr_evnt[i];   // low-fall/high-rise
+  gie  : coverpoint glb[0];  gme : coverpoint glb[1];
+  trig : cross typ, evt;                 // 4 triggers
+  gate : cross ie, me, gie, gme;         // 16 gating combos
+endgroup
+
+covergroup cg_event;  // per observed pin event
+  kind    : coverpoint ev {bins rise, fall, hi, lo;}
+  outcome : coverpoint res {bins set, masked, dropped;}
+  x_kind_out : cross kind, outcome;
+  pw : coverpoint pulse_clks {bins b1={1}; bins b2={2};
+       bins thr[]={[GLF-1:GLF+1]}; bins long={[GLF+2:$]};}
+endgroup
+
+covergroup cg_races;
+  w1c_same_cycle_event : coverpoint race1;
+  clear_while_level_on : coverpoint race2;
+  unmask_with_pending  : coverpoint race3;
+  ie_off_with_pending  : coverpoint race4;
+  pins_firing          : coverpoint $countones(evt_vec)
+                         {bins one={1}; bins many={[2:$]};}
+endgroup</pre>
+    </div>
+    <div class="card"><h3>Assertions bound to the DUT</h3>
+<pre>// interrupt output is purely status + GIE (allow 1-clk reg)
+a_intr: assert property (@(posedge clk) disable iff(!resetn)
+  o_intr == $past(glb[0] && |(sts_masked)) );
+
+// status can't rise on a pin whose IE is 0
+a_ie: assert property (@(posedge clk) disable iff(!resetn)
+  !intr_en[i] |-> !sts_raw[i]);
+
+// W1C clears (edge type, no new event that cycle)
+a_w1c: assert property (@(posedge clk) disable iff(!resetn)
+  (wr_sts && pwdata[i] && intr_type[i] && !evt[i])
+   |=> !sts_raw[i]);
+
+// tristate: release pad when input, drive when output
+a_z:   assert property (@(posedge clk)
+  io_dir[i] |-> ##[0:1] (dut_oe[i] == 1'b0));
+a_drv: assert property (@(posedge clk)
+  !io_dir[i] |-> io_gpio[i] === o_data[i]);
+
+// reserved bits always read 0
+a_rsvd: assert property (@(posedge clk)
+  rd_done |-> (o_prdata >> GPIO_WIDTH) == 0);</pre>
+      <p style="margin-top:10px;font-size:13.5px;color:var(--muted)">Internal names like <code>sts_masked</code> and <code>dut_oe</code> are placeholders. Map them to the real RTL signals once it's unlocked. Use <code>generate</code> to loop <code>i</code> over the pins.</p>
+    </div>
+  </div>
+  <div class="say">Code coverage tells you every line ran. It doesn't tell you a W1C landed on the same cycle as an edge. That's why the race cases get their own covergroup, and why I close on functional coverage first.</div>
+</section>
+
+<!-- 10 GAPS -->
+<section id="gaps">
+  <div class="sh"><span class="pin">10</span><h2>Spec gaps found by reading the UG</h2><span class="tag t-gap">SPEC GAP</span></div>
+  <p class="sub">Interviewers like hearing that you read the spec critically. Each of these would become a clarification ticket and a test.</p>
+  <div class="hot">
+    <div><b>sts_reg listed RO, but it's W1C</b>Table 6.1 says RO, and the text says to write 1 to clear. The RAL access type must be W1C, or bit-bash will flag it.</div>
+    <div><b>How GIE and GME interact</b>GME ("global mask enable") isn't defined against per-pin ME. Is the mask ignored when GME=0? Every assumption here goes into the ref model, so get it in writing.</div>
+    <div><b>Raw status has no clear of its own</b>The raw register is cleared through the masked register's W1C. Can you clear a raw bit that is currently masked? Test it both ways.</div>
+    <div><b>"32-bit address space", 8-bit paddr</b>The map ends at 0x28. What do 0x2C–0xFF return, and do unaligned addresses alias?</div>
+    <div><b>No PSLVERR</b>Bad accesses can't be reported. Confirm they complete silently with no side effects.</div>
+    <div><b>Set/clear priority</b>W1C and a hardware set in the same cycle, and set_rg with a W1C in the same cycle, aren't specified. The usual safe choice is that set wins.</div>
+    <div><b>Latency and filter length</b>No sync or glitch-filter cycle counts and no minimum pulse width. Needed for the checker window and for the firmware spec.</div>
+    <div><b>No atomic set/clear for o_data</b>Firmware has to read-modify-write, which races between ISR and main loop. It's a design critique point, since many MCUs add SET/CLR registers.</div>
+    <div><b>Typo: gpio_intr_set_rg</b>The table name doesn't match the convention. Small, but it breaks generated RAL and header names.</div>
+    <div><b>Reset: external sync vs areset_sync.sv</b>The doc says release must be synchronized externally, yet a synchronizer ships in the package. Which one is it?</div>
+  </div>
+</section>
+
+<!-- 11 PINMUX -->
+<section id="pinmux">
+  <div class="sh"><span class="pin">11</span><h2>Your story: from GPIO core to pinmux</h2></div>
+  <p class="sub">The bridge is the ASIC note in the UG: remove the tristate buffer and expose OE and data. In an SoC those signals go into the pinmux, alongside UART, SPI, I²C and PWM, before reaching the pad cell. Your pinmux work is the system-level version of this IP.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 300" role="img" aria-label="SoC pin path: GPIO core and peripheral functions each provide output, output enable and take input; the pinmux selects one function per pad via a select CSR and drives the pad cell, whose input fans back to all functions and to the GPIO synchronizer.">
+      <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+      <rect class="bxm" x="20" y="30" width="170" height="60" rx="3"/><text class="tt tm" x="105" y="56" text-anchor="middle">GPIO core</text><text class="sm" x="105" y="74" text-anchor="middle">o_data · oe · i_data · irq</text>
+      <rect class="bx" x="20" y="105" width="170" height="40" rx="3"/><text class="tt" x="105" y="130" text-anchor="middle">UART tx/rx</text>
+      <rect class="bx" x="20" y="155" width="170" height="40" rx="3"/><text class="tt" x="105" y="180" text-anchor="middle">SPI · I²C (open-drain)</text>
+      <rect class="bx" x="20" y="205" width="170" height="40" rx="3"/><text class="tt" x="105" y="230" text-anchor="middle">PWM / timer</text>
+      <path class="bxc" d="M330 30L430 60V230L330 260Z"/>
+      <text class="tt tc" x="380" y="140" text-anchor="middle">PINMUX</text>
+      <text class="sm" x="380" y="158" text-anchor="middle">per-pad select</text>
+      <rect class="bx" x="530" y="95" width="170" height="100" rx="3"/><text class="tt" x="615" y="122" text-anchor="middle">pad cell</text><text class="sm" x="615" y="142" text-anchor="middle">A · OE · Y · IE</text><text class="sm" x="615" y="160" text-anchor="middle">PU/PD · drive strength</text><text class="sm" x="615" y="178" text-anchor="middle">schmitt / slew</text>
+      <rect class="bxc" x="800" y="120" width="150" height="50" rx="3"/><text class="tt tc" x="875" y="150" text-anchor="middle">PIN[k]</text>
+      <g class="ln">
+        <line x1="190" y1="55" x2="328" y2="60" marker-end="url(#ar4)"/>
+        <line x1="190" y1="125" x2="328" y2="115" marker-end="url(#ar4)"/>
+        <line x1="190" y1="175" x2="328" y2="170" marker-end="url(#ar4)"/>
+        <line x1="190" y1="225" x2="328" y2="225" marker-end="url(#ar4)"/>
+        <line x1="430" y1="130" x2="528" y2="130" marker-end="url(#ar4)"/>
+        <line x1="700" y1="145" x2="798" y2="145" marker-end="url(#ar4)"/>
+        <path class="dash" d="M615 195V280H240V80H192" marker-end="url(#ar4)"/>
+      </g>
+      <line class="ln dash" x1="380" y1="0" x2="380" y2="40" marker-end="url(#ar4)"/>
+      <text class="sm" x="390" y="14">mux_sel CSR (reset = default function)</text>
+      <text class="sm" x="479" y="122" text-anchor="middle">A, OE</text>
+      <text class="sm" x="430" y="292" text-anchor="middle">Y fans back to every function's input + GPIO irq_sync</text>
+      <text class="ts" x="750" y="215" font-size="11.5">Bug zone: switching sel</text>
+      <text class="ts" x="750" y="231" font-size="11.5">can make an edge that GPIO</text>
+      <text class="ts" x="750" y="247" font-size="11.5">sees as a real interrupt</text>
+    </svg>
+    </div>
+    <figcaption>Where pinmux sits relative to this GPIO IP. The pad-cell pins (A, OE, Y, IE, PU/PD) are generic names. Use the ones from your own pad library.</figcaption>
+  </figure>
+
+  <h3 style="margin:22px 0 10px">STAR outline. Swap the <span class="fill">[brackets]</span> for your real numbers.</h3>
+  <div class="star">
+    <div><div class="k">S</div><h3>Situation</h3><ul>
+      <li>SoC with <span class="fill">[N]</span> multiplexed pads. Each pad selects GPIO or one of <span class="fill">[k]</span> alternate functions (UART, SPI, I²C, PWM…) through pinmux CSRs.</li>
+      <li>Pad attributes: pull-up/down, drive strength, input enable.</li>
+      <li>The GPIO block was APB-mapped with level/edge interrupts, like this IP.</li>
+    </ul></div>
+    <div><div class="k">T</div><h3>Task</h3><ul>
+      <li>I owned verification of the pinmux and GPIO pad path: every pad×function route, direction, reset defaults and pad attributes.</li>
+      <li>Plus GPIO interrupt routing through the mux.</li>
+      <li>Goal: <span class="fill">[100% cross pad×func]</span> before <span class="fill">[tape-out / milestone]</span>.</li>
+    </ul></div>
+    <div><div class="k">A</div><h3>Action</h3><ul>
+      <li>Built a pad agent with per-pin drive/Z and a pull model, and a reference table mapping (pad, sel) → expected source and sink.</li>
+      <li>Random mux configs through RAL, including live re-muxing during traffic.</li>
+      <li>Assertions: only the selected function's OE reaches the pad, and unselected inputs are gated.</li>
+      <li><span class="fill">[Formal connectivity / scripts generated from the pin spreadsheet]</span>.</li>
+      <li>Coverage: pad × func × dir × pull, plus mux switches.</li>
+    </ul></div>
+    <div><div class="k">R</div><h3>Result</h3><ul>
+      <li><span class="fill">[X]</span> bugs found, e.g. <span class="fill">[your best one]</span>.</li>
+      <li>Coverage closed at <span class="fill">[Y%]</span> with waivers reviewed.</li>
+      <li>The pin-spreadsheet-driven checks were reused on <span class="fill">[next project]</span>.</li>
+      <li>What I'd do differently: <span class="fill">[e.g. start formal connectivity earlier]</span>.</li>
+    </ul></div>
+  </div>
+
+  <div class="script">
+    <p class="eyebrow" style="margin-bottom:8px">90-second spoken version</p>
+    <p>"On my last project I owned pinmux and GPIO verification for a <span class="fill">[N]</span>-pad SoC. Each pad could be GPIO or one of <span class="fill">[k]</span> peripheral functions, picked by mux-select registers, and the GPIO itself was an APB block with per-pin direction and level or edge interrupts.</p>
+    <p>I wrote the testplan from the pin spreadsheet, so every pad and function pair became a coverage bin. I built a pad agent that drives or releases each pin and models pulls, so a floating pin shows up instead of reading as a quiet zero. A reference model predicted which function owned each pad. I ran random mux configurations through the register model, including re-muxing while traffic was running.</p>
+    <p>The bug I'm proudest of was <span class="fill">[your bug]</span>. <span class="fill">[If true for you: when a pad switched from UART to GPIO input, the line went from idle-high to the pad's pull-down and the GPIO edge detector logged a falling edge, which was a spurious interrupt. We fixed it by <span class="fill">[gating IE during reconfig / documenting a firmware sequence]</span>.]</span></p>
+    <p>We closed at <span class="fill">[Y%]</span> functional coverage with <span class="fill">[X]</span> bugs filed. If I did it again, I'd generate the connectivity checks straight from the spreadsheet and run formal connectivity on day one, because simulation is slow at covering N×k routes."</p>
+  </div>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Pinmux bug patterns to draw on</h3>
+      <ul>
+        <li>Spurious GPIO edge interrupt when a pad's function or pull changes.</li>
+        <li>OE from an unselected function leaking to the pad, causing contention.</li>
+        <li>Wrong reset-default function, so a pad drives at power-up.</li>
+        <li>Input not gated for unselected functions, so a UART sees GPIO toggling.</li>
+        <li>Open-drain (I²C) pads driven push-pull high.</li>
+        <li>Mux-select index off by one, or swapped pads between spreadsheet and RTL.</li>
+        <li>Interrupt still enabled on a pad now owned by another function.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>Follow-ups they'll ask about your story</h3>
+      <ul>
+        <li>How did you scale to N×k combos? (Coverage cross with ignore_bins for illegal combos, plus formal connectivity.)</li>
+        <li>How did you model the pad? (wire with strengths, pullup/pulldown, Z detection.)</li>
+        <li>Who owned the pin spreadsheet, and how did you catch it drifting from RTL? (Generate the checks from it.)</li>
+        <li>Did you verify pads at gate level or with the real pad library? (Behavioural vs library models.)</li>
+        <li>What did you <em>not</em> verify, and why? (Analog pad behaviour, slew, ESD: out of scope.)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="say">Put "I" on your own work: "I built the pad agent", "I found…". Only claim the spurious-edge bug if it really happened on your project. Otherwise present it as "a case I made sure to cover".</div>
+</section>
+
+<!-- 12 QA -->
+<section id="qa">
+  <div class="sh"><span class="pin">12</span><h2>Interview Q&amp;A with likely follow-ups</h2></div>
+  <p class="sub">The grey line is the short answer to give first. Open a question for depth and the follow-ups an interviewer will push on. Quiz mode blurs the short answers until you hover over them.</p>
+  <div class="qa-tools">
+    <button type="button" id="btn-open">Expand all</button>
+    <button type="button" id="btn-close">Collapse all</button>
+    <button type="button" id="btn-quiz" aria-pressed="false">Quiz mode</button>
+  </div>
+  <div class="qa" id="qa-list">
+    <details><summary><span class="qn">Q01</span><span class="q">Walk me through the architecture of a GPIO core.</span><span class="one">APB CSRs → data/dir → tristate pad. Pad → 2-FF/glitch filter → i_data and per-pin level/edge detector → sticky W1C status → mask → OR → GIE → one level IRQ.</span></summary>
+      <div class="ans"><p>Mention the four build modes and that the ASIC version exposes OE/data instead of a tristate.</p><div class="fu">Follow-ups</div><ul><li>Why a level output rather than a pulse? An interrupt controller in another domain can miss a pulse, and a level holds until software acknowledges it.</li><li>Why is status sticky? So an edge isn't lost while the CPU is busy.</li><li>Two pins in one cycle? Both bits are set, there's one o_intr, and the ISR scans the status.</li></ul></div></details>
+    <details><summary><span class="qn">Q02</span><span class="q">How do you verify a W1C status register that hardware also sets?</span><span class="one">RAL W1C access, volatile, predicted by a reference model. Test write-0 no-op, write-1 clear, and clear in the same cycle as a set (agreed priority).</span></summary>
+      <div class="ans"><ul><li>Exclude the field from bit_bash, or bit_bash it with no events pending.</li><li>For level type, expect re-assertion next cycle if the source is still active. The check is "clears, then re-sets", not "stays 0".</li></ul><div class="fu">Follow-ups</div><ul><li>How does the predictor handle HW updates? Turn off the mirror compare for the field, or update it from the ref model with <code>predict()</code>.</li><li>The UG says RO but the text says W1C: what do you do? Raise a spec ticket and code to the clarified behaviour.</li></ul></div></details>
+    <details><summary><span class="qn">Q03</span><span class="q">Interrupt enable vs mask: what's the difference and how do you test it?</span><span class="one">IE=0 drops and clears events. ME=1 keeps latching but hides them. Test: event while masked, then unmask → o_intr with no new event.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>What does GIE add? A global gate on the output only, so status keeps latching.</li><li>When would firmware use mask rather than enable? A critical section where events must not be lost.</li></ul></div></details>
+    <details><summary><span class="qn">Q04</span><span class="q">Level vs edge interrupts: which bugs do you hunt in each?</span><span class="one">Edge: lost or double edges, merging, edges at sync boundaries. Level: storms when cleared while active, stale status after the source goes away.</span></summary>
+      <div class="ans"><ul><li>Edge with no sync: metastability can produce a double edge.</li><li>Reconfiguring type or polarity while IE=1 can create a fake edge out of the detector's history flop.</li></ul><div class="fu">Follow-ups</div><ul><li>How many edges do two pulses before the ISR give? One bit, because the bit doesn't count. If counting matters, that's a feature request.</li></ul></div></details>
+    <details><summary><span class="qn">Q05</span><span class="q">Why a 2-FF synchronizer, and can simulation verify CDC?</span><span class="one">Pins are async, so the first flop can go metastable and the second gives it time to settle. RTL sim can't show metastability: use a CDC tool and delay injection.</span></summary>
+      <div class="ans"><ul><li>MTBF depends on clock frequency, data rate and the flop's resolution time.</li><li>In sim, randomize a 0/1-cycle extra delay on synchronizer outputs (metastability modelling) and make sure the checks tolerate it.</li><li>Multi-bit buses can't go through per-bit 2-FF syncs coherently. GPIO is fine because each pin is independent.</li></ul><div class="fu">Follow-ups</div><ul><li>Why can EN_SYNC be turned off? To save latency and flops when the source is already synchronous.</li><li>What's the minimum pulse width? About 2 clk plus the filter window. Pulses shorter than that are lost.</li></ul></div></details>
+    <details><summary><span class="qn">Q06</span><span class="q">How do you verify the glitch filter?</span><span class="one">Sweep pulse widths 1…N+1 clk at random phase. Below threshold: no change in i_data or status. At or above: exactly one event.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>Why random phase? The clock-to-pulse alignment decides whether a pulse just short of threshold gets counted as N or N−1 cycles.</li><li>A filter on a pin with no sync? The UG doesn't allow it (GLF needs SYNC). Assert on the config.</li></ul></div></details>
+    <details><summary><span class="qn">Q07</span><span class="q">How do you model a bidirectional pin in a UVM testbench?</span><span class="one">Interface with a wire. The TB drives through <code>assign io = en ? val : 'z</code>, only when the DUT dir=input. Add a pull to catch floating, and check for X to catch contention.</span></summary>
+      <div class="ans"><pre>interface gpio_if(inout wire [W-1:0] io);
+  logic [W-1:0] tb_en, tb_val;
+  for (genvar i=0;i&lt;W;i++)
+    assign io[i] = tb_en[i] ? tb_val[i] : 1'bz;
+  // pullup/pulldown in top to expose Z
+endinterface</pre><div class="fu">Follow-ups</div><ul><li>Why not drive a logic net? A logic net can't resolve multiple drivers. Use a wire with strengths.</li><li>In the ASIC version with no tristate, check OE and data at the ports instead.</li></ul></div></details>
+    <details><summary><span class="qn">Q08</span><span class="q">The IP is parameterized (width, modes, sync masks). How do you verify all of it?</span><span class="one">A build matrix: 4 modes × widths {1, 6, 31, 32} × random per-pin masks. A config object drives the TB, and tests skip features a build doesn't have.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>You can't run every combination, so how do you choose? Edge values plus pairwise coverage on the macros, with random masks per nightly run.</li><li>How do you avoid one TB per build? A parameterized interface plus a config DB, with `ifdef only at the top level.</li></ul></div></details>
+    <details><summary><span class="qn">Q09</span><span class="q">What do you check around reset?</span><span class="one">Reset values per parameter, pins Hi-Z or DEF_O_VAL during and after reset, async assert/sync release, ≥8 clk hold, reset in the middle of a transfer.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>Why is default input the safe direction? Nothing drives at power-up, so there's no contention with the board.</li><li>What breaks if reset release isn't synchronized? Flops leave reset in different cycles, and the CSR or FSM can come up in an inconsistent state.</li></ul></div></details>
+    <details><summary><span class="qn">Q10</span><span class="q">What happens on an access to an unmapped address?</span><span class="one">The UG doesn't say and there's no PSLVERR. I'd confirm it completes, reads 0 and has no side effects, then get that documented.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>Unaligned addresses? Check whether the decode uses paddr[7:2] (aliasing) or the full address.</li><li>Would you ask for PSLVERR? For safety-related SoCs, yes, because silent failures hide firmware bugs.</li></ul></div></details>
+    <details><summary><span class="qn">Q11</span><span class="q">How does your scoreboard check o_intr timing when latency depends on the build?</span><span class="one">The ref model predicts when status sets. The scoreboard accepts o_intr within a [min,max] window computed from the config. SVA uses ##[min:max].</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>Why not cycle-accurate? It's brittle across EN_SYNC/GLF builds and metastability injection. A window plus ordering checks is enough.</li><li>How do you catch a spurious interrupt? Any o_intr rise without a predicted status bit is an error.</li></ul></div></details>
+    <details><summary><span class="qn">Q12</span><span class="q">You hit 100% code coverage. Are you done?</span><span class="one">No. Code coverage misses the races: W1C with an event, unmask with pending, IE-off with pending, multi-pin same cycle. Those are functional crosses.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>What if coverage plateaus? Look at the holes. Usually a sequence can't line up timing, so write a directed-random sequence that times the W1C against the pin edge.</li></ul></div></details>
+    <details><summary><span class="qn">Q13</span><span class="q">Critique this GPIO design.</span><span class="one">Missing: atomic SET/CLR for o_data, PSLVERR, a defined GIE/GME relationship, configurable filter length in a CSR, pull/drive control. Good: per-pin sync/filter masks, sticky status, software set.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>Why does atomic SET/CLR matter? A read-modify-write in the main loop can be interrupted by an ISR that writes the same register, and that loses the ISR's write.</li></ul></div></details>
+    <details><summary><span class="qn">Q14</span><span class="q">Why have a software interrupt-set register?</span><span class="one">To exercise the ISR and interrupt-controller path without pin stimulus, for firmware bring-up, self-test and DV of the downstream path. It's gated by IE.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>What does a read return? It's WO, so expect 0. Verify that it isn't a readable register in disguise.</li></ul></div></details>
+    <details><summary><span class="qn">Q15</span><span class="q">The shipped TB passes on the FPGA. Why isn't that enough?</span><span class="one">It's directed and single-config, with no checker. LEDs only show slow, human-visible behaviour. A one-cycle spurious IRQ or a race goes unseen.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>What is board testing good for? Real I/O timing, the IOB mapping, and real async inputs (true metastability).</li></ul></div></details>
+    <details><summary><span class="qn">Q16</span><span class="q">How does GPIO interact with a pinmux, and what bugs live there?</span><span class="one">GPIO's OE/data/input go through the pinmux to the pad. Bugs: spurious edges on re-mux, OE leaking from unselected functions, wrong reset function, ungated inputs, open-drain misuse.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>How do you verify N pads × k functions efficiently? Generate the checks from the pin spreadsheet, use formal connectivity, and use sim for dynamic behaviour (re-mux, interrupts).</li><li>What's the right firmware sequence to change a pad's function? Disable the pad's IE, switch, clear status, re-enable.</li></ul></div></details>
+    <details><summary><span class="qn">Q17</span><span class="q">The level interrupt keeps firing after the ISR clears it. Bug or not?</span><span class="one">Expected if the source is still active, because level status re-sets. The ISR has to service the source first. Show it in a waveform and document it for firmware.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>How would you tell it apart from a real bug? Check the synchronized pin value at the cycle the bit re-sets. If the pin is inactive, it's an RTL bug.</li></ul></div></details>
+    <details><summary><span class="qn">Q18</span><span class="q">Debug: o_intr is high but the status register reads 0.</span><span class="one">Check GIE/GME and the mask path, a 1-cycle registered o_intr after the clear (timing), stale prdata from a read wait state, or masked vs raw confusion. Read 0x24.</span></summary>
+      <div class="ans"><div class="fu">Follow-ups</div><ul><li>What if it's only intermittent? Suspect the W1C vs event race, so look for a same-cycle event in the waveform at the clear.</li></ul></div></details>
+  </div>
+</section>
+
+<footer>
+  Sources: <a href="https://chipmunklogic.com/ip-cores/design-of-gpio-core-in-rtl/">Design of GPIO core in RTL</a> · <a href="https://chipmunklogic.com/wp-content/uploads/ip_cores/pdfs/gpio_v1_0_ug.pdf">GPIO v1.0 User Guide</a> · <a href="https://chipmunklogic.com/wp-content/uploads/ip_cores/pdfs/ip_overview/gpio_v1_0_IP_overview.pdf">GPIO v1.0 IP overview</a> · package file list from gpio_v1_0.rar. GPIO v1.0 is by Mitu Raj, Chipmunk Logic. This guide is study material.
+</footer>
+</div>
+
+<script>
+(function(){
+  var list=document.getElementById('qa-list');
+  var all=function(){return list.querySelectorAll('details');};
+  document.getElementById('btn-open').addEventListener('click',function(){all().forEach(function(d){d.open=true;});});
+  document.getElementById('btn-close').addEventListener('click',function(){all().forEach(function(d){d.open=false;});});
+  var q=document.getElementById('btn-quiz');
+  function setQuiz(on){list.classList.toggle('quiz',on);q.setAttribute('aria-pressed',on?'true':'false');try{localStorage.setItem('gpio-quiz',on?'1':'0');}catch(e){}}
+  q.addEventListener('click',function(){setQuiz(q.getAttribute('aria-pressed')!=='true');});
+  try{if(localStorage.getItem('gpio-quiz')==='1')setQuiz(true);}catch(e){}
+})();
+</script>
