@@ -1,0 +1,444 @@
+<title>Bus Protocol Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–8 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
+.chk input { accent-color: var(--copper); }
+.wave { overflow-x: auto; }
+.wave table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.wave th, .wave td { border: 1px solid var(--line); padding: 3px 5px; text-align: center; min-width: 46px; white-space: nowrap; }
+.wave th { color: var(--muted); font-weight: 600; }
+.wave td.nm { text-align: left; color: var(--ink); font-weight: 600; min-width: 112px; background: var(--panel); position: sticky; left: 0; }
+.wave td.hi { background: var(--ok); }
+.wave td.lo { background: var(--bad); color: var(--hot); }
+.wave td.adr { background: color-mix(in srgb, var(--signal) 16%, transparent); }
+.wave td.dat { background: var(--tint); }
+.wave td.hold { background: color-mix(in srgb, var(--signal) 8%, transparent); color: var(--muted); }
+.wave td.wt { color: var(--muted); }
+.wave td.err { background: var(--bad); color: var(--hot); font-weight: 700; }
+.wave td.cl { cursor: pointer; user-select: none; }
+.wave td.cl:hover { outline: 2px solid var(--copper); outline-offset: -2px; }
+.wave td.xfer { box-shadow: inset 0 -3px 0 var(--good); font-weight: 700; }
+.out { font-size: 14px; display: grid; gap: 6px; }
+.out .bad { color: var(--hot); font-weight: 600; }
+.out .good { color: var(--good); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 9 companion</div>
+    <h1>Bus Protocol Lab</h1>
+    <p class="lede">Step an AHB bus cycle by cycle and break it the way real interconnects break. Then draw AXI VALID/READY handshakes and let the page check the rules, watch Wally's EBU replay a fetch, and price a bus access in CPI. A self-check closes the page.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#ahb">1 · AHB pipeline</a>
+      <a href="#axi">2 · AXI handshake</a>
+      <a href="#ebu">3 · EBU arbitration</a>
+      <a href="#cost">4 · Cost of a bus</a>
+      <a href="#quiz">5 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="ahb" aria-labelledby="h-ahb">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 9.2.2 and 9.5.3</div>
+      <h2 id="h-ahb">Address now, data next: who owns the Data phase decides HREADY</h2>
+      <p class="principle">Model rules. Each transfer spends one or more cycles in its <b>Address</b> phase, accepted on an edge where <b>HREADY = 1</b>, then a <b>Data</b> phase that lasts until its subordinate raises HREADYOUT. HSEL decodes the live address; <b>HSELD</b> is HSEL captured when HREADY is high, and it selects the HREADY/HRDATA mux. The single-port SRAM adds one wait state when a write is directly followed by a read.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="scn">Scenario</label>
+        <select id="scn">
+          <option value="fig">Book Fig. 9.10: write A1, read A2, read A3 with a wait</option>
+          <option value="ex92">Book Example 9.2: ROM (2 waits) then RAM (1 wait)</option>
+          <option value="raw">SRAM: write then read back-to-back</option>
+          <option value="apb">APB peripherals behind the bridge, then RAM</option>
+          <option value="unm">Unmapped address, then RAM</option>
+        </select>
+      </div>
+      <div class="controls">
+        <label class="chk"><input type="checkbox" id="bugSel"> BUG: mux by HSEL, not HSELD</label>
+        <label class="chk"><input type="checkbox" id="bugRaw"> BUG: SRAM without the write→read wait</label>
+        <label class="chk"><input type="checkbox" id="bugDef"> BUG: default subordinate never answers</label>
+      </div>
+      <div class="wave" id="ahbWave"></div>
+      <div class="legend"><span><b style="background:color-mix(in srgb, var(--signal) 16%, transparent)"></b>Address phase</span><span><b style="background:color-mix(in srgb, var(--signal) 8%, transparent)"></b>Address held (HREADY low)</span><span><b style="background:var(--tint)"></b>Data phase</span><span><b style="background:var(--bad)"></b>wrong</span></div>
+      <div class="kpis">
+        <div class="kv"><span class="k">Transfers</span><span class="v" id="aN"></span></div>
+        <div class="kv"><span class="k">Cycles</span><span class="v" id="aC"></span></div>
+        <div class="kv"><span class="k">Wait cycles</span><span class="v" id="aW"></span></div>
+        <div class="kv"><span class="k">Scoreboard</span><span class="v" id="aS"></span></div>
+      </div>
+      <div class="narr" id="aNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="axi" aria-labelledby="h-axi">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Section 9.2.3</div>
+      <h2 id="h-axi">A beat moves only on VALID and READY together</h2>
+      <p class="principle">Click the cells to draw one AXI channel. A transfer happens on every cycle where <b>VALID = 1 and READY = 1</b>. The source must keep VALID high and the payload <b>stable</b> until that happens. The destination may raise READY before or after VALID. Click a DATA cell to change the payload.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">Preset</span>
+        <button class="btn chip" data-axi="stream">streaming, READY always high</button>
+        <button class="btn chip" data-axi="bp">backpressure, legal</button>
+        <button class="btn chip" data-axi="drop">VALID dropped early</button>
+        <button class="btn chip" data-axi="chg">payload changed while waiting</button>
+      </div>
+      <div class="wave" id="axiWave"></div>
+      <div class="out" id="axiOut"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="ebu" aria-labelledby="h-ebu">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Section 9.5.2</div>
+      <h2 id="h-ebu">The LSU wins; the IFU's address is saved and replayed</h2>
+      <p class="principle">The IFU fetches every cycle. Tick the cycles where the LSU also requests (zero-wait devices). On a collision the EBU grants the LSU. The IFU saw HREADY = 1 and moved on, so the EBU <b>saves</b> its Address-phase signals and <b>replays</b> them next cycle while holding IFUHREADY low. This is a simplified version of book Figs. 9.26 and 9.27.</p>
+    </div>
+    <div class="bench">
+      <div class="wave" id="ebuWave"></div>
+      <div class="narr" id="ebuNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="cost" aria-labelledby="h-cost">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 4 · Sections 9.5.1 and Lab 6</div>
+      <h2 id="h-cost">What a bus costs in CPI</h2>
+      <p class="principle">Wally's busfsm stalls the whole pipeline for Adr + Data: <b>2 cycles plus wait states</b> per access, even with a zero-wait RAM. Lab 6 measured exactly that (128 accesses, 256 stall cycles). An APB access adds the bridge's Setup and Access cycles.</p>
+    </div>
+    <div class="bench">
+      <div class="two">
+        <div class="sliders">
+          <div class="sl"><label for="cBase">base CPI</label><input type="range" id="cBase" min="1" max="2" step="0.01" value="1.25"><output id="oBase"></output></div>
+          <div class="sl"><label for="cMem">loads+stores</label><input type="range" id="cMem" min="0" max="0.6" step="0.01" value="0.3"><output id="oMem"></output></div>
+          <div class="sl"><label for="cBus">… to the bus</label><input type="range" id="cBus" min="0" max="1" step="0.01" value="0.05"><output id="oBus"></output></div>
+          <div class="sl"><label for="cWait">wait states</label><input type="range" id="cWait" min="0" max="20" step="1" value="1"><output id="oWait"></output></div>
+          <div class="sl"><label for="cApb">via APB</label><input type="range" id="cApb" min="0" max="1" step="0.05" value="0"><output id="oApb"></output></div>
+        </div>
+        <div style="display:grid; gap:12px">
+          <div class="kpis">
+            <div class="kv"><span class="k">Cycles per bus access</span><span class="v" id="kAcc"></span></div>
+            <div class="kv"><span class="k">CPI</span><span class="v" id="kCPI"></span></div>
+            <div class="kv"><span class="k">Slowdown vs no bus</span><span class="v" id="kSlow"></span></div>
+          </div>
+          <div class="bars" id="cBars"></div>
+          <div class="narr" id="cNarr"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 9 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). Experiments 1–3 are cycle models of the protocols, not the RTL; the notes' Lab 6 section has real simulation output.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  // ---------- 1. AHB pipeline model ----------
+  const DEV = ['DEF', 'RAM', 'ROM', 'APB', 'PER'];
+  const SCN = {
+    fig: [{ d: 'PER', w: 1, n: 'A1', ws: 0 }, { d: 'PER', w: 0, n: 'A2', ws: 0 }, { d: 'PER', w: 0, n: 'A3', ws: 1 }],
+    ex92: [{ idle: 1 }, { d: 'ROM', w: 0, n: 'ROM', ws: 2 }, { d: 'RAM', w: 0, n: 'RAM', ws: 1 }],
+    raw: [{ d: 'RAM', w: 1, n: 'W1', ws: 0 }, { d: 'RAM', w: 0, n: 'R2', ws: 0 }, { d: 'RAM', w: 0, n: 'R3', ws: 0 }],
+    apb: [{ d: 'APB', w: 1, n: 'GPIO', ws: 2 }, { d: 'APB', w: 0, n: 'FIFO', ws: 3 }, { d: 'RAM', w: 0, n: 'RAM', ws: 0 }],
+    unm: [{ d: 'DEF', w: 0, n: 'X', ws: 0 }, { d: 'RAM', w: 0, n: 'R1', ws: 0 }]
+  };
+  function simAHB(seq, bugSel, bugRaw, bugDef) {
+    const rows = []; let a = 0, D = null, HSELD = 'DEF', waits = 0, errors = [], done = [];
+    for (let c = 1; c <= 24; c++) {
+      const A = a < seq.length ? seq[a] : null;
+      const live = A && !A.idle ? A : null;
+      const HSEL = live ? live.d : 'DEF';
+      let conflict = false, rdy = true;
+      if (D) {
+        if (D.d === 'DEF') rdy = !bugDef;
+        else {
+          conflict = !bugRaw && D.d === 'RAM' && D.w && !D.wrote && live && live.d === 'RAM' && !live.w && D.rem === 0;
+          rdy = D.rem === 0 && !conflict;
+        }
+      }
+      const out = {}; DEV.forEach(x => out[x] = (D && D.d === x) ? rdy : true);
+      const sel = bugSel ? HSEL : HSELD;
+      const HREADY = out[sel];
+      const row = { c, A, live, HSEL, HSELD, out, HREADY, D: D ? { ...D } : null, conflict, wrong: false, rdata: '' };
+      if (HREADY && D) {
+        if (!D.w) {
+          let ok = sel === D.d;
+          if (bugRaw && D.rawHit) ok = false;
+          row.rdata = ok ? 'RD:' + D.n : 'WRONG';
+          if (!ok) { row.wrong = true; errors.push(`cycle ${c}: read ${D.n} returned ${sel === D.d ? 'the SRAM write address' : sel + "'s data"}`); }
+        } else if (sel !== D.d && !rdy) { row.wrong = true; errors.push(`cycle ${c}: write ${D.n} ended before ${D.d} finished it`); }
+        done.push(D.n);
+      }
+      if (!HREADY && D && rdy) { row.wrong = true; errors.push(`cycle ${c}: ${D.n} is done but HREADY came from ${sel}: extra stall`); }
+      if (!HREADY) waits++;
+      rows.push(row);
+      if (HREADY) {
+        if (bugRaw && D && D.d === 'RAM' && D.w && live && live.d === 'RAM' && !live.w) live.__raw = true;
+        D = live ? { ...live, rem: live.ws, wrote: false, rawHit: !!live.__raw } : null;
+        if (live) delete live.__raw;
+        HSELD = HSEL; a++;
+      } else if (D) {
+        if (conflict) D.wrote = true; else if (D.rem > 0) D.rem--;
+      }
+      if (a >= seq.length && !D) { rows.push({ c: c + 1, A: null, live: null, HSEL: 'DEF', HSELD, out: { DEF: true, RAM: true, ROM: true, APB: true, PER: true }, HREADY: true, D: null, rdata: '' }); break; }
+      if (c === 24 && D) errors.push('bus hung: HREADY never returned');
+    }
+    return { rows, errors, waits, done };
+  }
+  function renderAHB() {
+    const seq = SCN[$('scn').value].map(x => ({ ...x }));
+    const r = simAHB(seq, $('bugSel').checked, $('bugRaw').checked, $('bugDef').checked);
+    const R = r.rows;
+    const head = `<tr><th></th>${R.map(x => `<th>${x.c}</th>`).join('')}</tr>`;
+    const line = (nm, f) => `<tr><td class="nm">${nm}</td>${R.map(f).join('')}</tr>`;
+    const bit = v => `<td class="${v ? 'hi' : 'lo'}">${v ? 1 : 0}</td>`;
+    const xfers = SCN[$('scn').value].filter(x => !x.idle);
+    let html = head;
+    html += line('HTRANS', x => `<td>${x.live ? 'NONSEQ' : 'IDLE'}</td>`);
+    html += line('HADDR / HWRITE', x => `<td>${x.live ? x.live.n + (x.live.w ? ' W' : ' R') : '–'}</td>`);
+    html += line('HSEL', x => `<td>${x.HSEL}</td>`);
+    html += line('HSELD', x => `<td>${x.HSELD}</td>`);
+    ['PER', 'RAM', 'ROM', 'APB', 'DEF'].forEach(d => { if (d === 'DEF' || R.some(x => (x.D && x.D.d === d) || x.HSEL === d)) html += line('HREADYOUT ' + d, x => bit(x.out[d])); });
+    html += line('HREADY', x => bit(x.HREADY));
+    html += line('HWDATA', x => `<td>${x.D && x.D.w ? 'WD:' + x.D.n : '–'}</td>`);
+    html += line('HRDATA sampled', x => `<td class="${x.wrong ? 'err' : ''}">${x.rdata || (x.wrong ? '✗' : '')}</td>`);
+    xfers.forEach(t => {
+      html += line(t.n + ' phases', x => {
+        if (x.live && x.live.n === t.n) return `<td class="${x.HREADY ? 'adr' : 'hold'}">${x.HREADY ? 'Adr' : 'Adr…'}</td>`;
+        if (x.D && x.D.n === t.n) return `<td class="dat">${x.HREADY ? 'Data' : (x.conflict ? 'busy' : 'wait')}</td>`;
+        return '<td></td>';
+      });
+    });
+    $('ahbWave').innerHTML = `<table>${html}</table>`;
+    $('aN').textContent = r.done.length + ' / ' + xfers.length;
+    $('aC').textContent = R.length;
+    $('aW').textContent = r.waits;
+    $('aS').innerHTML = r.errors.length ? `<span class="fail">${r.errors.length} error${r.errors.length > 1 ? 's' : ''}</span>` : '<span class="pass">clean</span>';
+    const s = $('scn').value;
+    const base = {
+      fig: 'All three transfers finish by cycle 5 (the last column is the bus back at idle). A2 is in its Address phase while A1 (a write) is in its Data phase, so HWDATA for A1 appears one cycle after its address. A3 has one wait state, so HREADY drops and A3 stays in its Data phase one cycle longer.',
+      ex92: 'Book Example 9.2. During cycles 3–4 HSEL already points at the RAM (its Address phase is waiting) while HSELD still points at the ROM, whose Data phase is not done. The mux must listen to HSELD. Turn on the HSEL bug to see the ROM read end early with RAM data.',
+      raw: 'W1’s Data phase writes the SRAM on the same edge R2 would read it: one port, two addresses. The SRAM holds HREADYOUT low once (busy), finishes the write, then accepts R2. Turn on the RAW bug and R2 returns data from the write address.',
+      apb: 'The bridge turns each AHB transfer into APB Setup + Access, holding HREADYOUT low meanwhile. The FIFO adds one more wait. The RAM transfer waits in its Address phase behind them.',
+      unm: 'X decodes to no device, so HSEL[0] (the default subordinate) answers in one cycle with HREADY = 1. Turn on the hang bug: HREADY never returns and the whole SoC stops, which is why a liveness assertion belongs in every bus checker.'
+    }[s];
+    $('aNarr').innerHTML = base + (r.errors.length ? `<div class="out" style="margin-top:8px">${r.errors.slice(0, 3).map(e => `<span class="bad">✗ ${e}</span>`).join('')}</div>` : '');
+  }
+  ['scn', 'bugSel', 'bugRaw', 'bugDef'].forEach(id => $(id).addEventListener('change', renderAHB));
+  renderAHB();
+
+  // ---------- 2. AXI handshake ----------
+  const N = 10;
+  let V, Rd, Dt;
+  const PRE = {
+    stream: { v: '0111110000', r: '1111111111', d: 'AABCDEEEEE' },
+    bp: { v: '0111111110', r: '0010011010', d: 'AAABBBCDDD' },
+    drop: { v: '0110011000', r: '0000001000', d: 'AAAAAAAAAA' },
+    chg: { v: '0111110000', r: '0000110000', d: 'AABBBBCCCC' }
+  };
+  function loadAxi(k) { const p = PRE[k]; V = [...p.v].map(Number); Rd = [...p.r].map(Number); Dt = [...p.d]; renderAxi(); }
+  function renderAxi() {
+    const xfer = V.map((v, i) => v && Rd[i]);
+    const errs = [];
+    for (let i = 1; i < N; i++) {
+      if (V[i - 1] && !Rd[i - 1] && !V[i]) errs.push(`cycle ${i + 1}: VALID dropped before the handshake (payload ${Dt[i - 1]} was never accepted)`);
+      if (V[i - 1] && !Rd[i - 1] && V[i] && Dt[i] !== Dt[i - 1]) errs.push(`cycle ${i + 1}: payload changed from ${Dt[i - 1]} to ${Dt[i]} while VALID was waiting for READY`);
+    }
+    const cells = (arr, k) => arr.map((v, i) => `<td class="cl ${k === 'd' ? (V[i] ? (xfer[i] ? 'xfer' : '') : 'wt') : (v ? 'hi' : 'lo')}" data-k="${k}" data-i="${i}">${k === 'd' ? (V[i] ? v : '·') : v}</td>`).join('');
+    $('axiWave').innerHTML = `<table><tr><th></th>${V.map((_, i) => `<th>${i + 1}</th>`).join('')}</tr>
+      <tr><td class="nm">VALID (source)</td>${cells(V, 'v')}</tr>
+      <tr><td class="nm">READY (dest)</td>${cells(Rd, 'r')}</tr>
+      <tr><td class="nm">DATA</td>${cells(Dt, 'd')}</tr>
+      <tr><td class="nm">transfer</td>${xfer.map(x => `<td class="${x ? 'hi' : ''}">${x ? '✓' : ''}</td>`).join('')}</tr></table>`;
+    const got = Dt.filter((_, i) => xfer[i]);
+    $('axiOut').innerHTML = `<span>Beats transferred: <b>${got.length}</b> (${got.join(', ') || 'none'})</span>` +
+      (errs.length ? errs.map(e => `<span class="bad">✗ ${e}</span>`).join('') : '<span class="good">✓ No protocol violations: VALID was held and the payload stayed stable until each handshake.</span>') +
+      '<span class="caption">Not visible in one trace: a source that waits for READY before raising VALID deadlocks against a destination that waits for VALID. The rule forbids it.</span>';
+    document.querySelectorAll('#axiWave td.cl').forEach(td => td.addEventListener('click', () => {
+      const i = +td.dataset.i, k = td.dataset.k;
+      if (k === 'v') V[i] ^= 1; else if (k === 'r') Rd[i] ^= 1; else Dt[i] = String.fromCharCode(((Dt[i].charCodeAt(0) - 64) % 5) + 65);
+      renderAxi();
+    }));
+  }
+  document.querySelectorAll('[data-axi]').forEach(b => b.addEventListener('click', () => loadAxi(b.dataset.axi)));
+  loadAxi('bp');
+
+  // ---------- 3. EBU arbitration ----------
+  const EN = 10; const L = Array(EN).fill(0); L[0] = 1; L[5] = 1;
+  function renderEbu() {
+    let state = 'Idle', saved = null, ia = 1, la = 1;
+    const rows = [];
+    for (let c = 0; c < EN; c++) {
+      let haddr, grant, ifuReady = 1, note = '', save = '';
+      if (state === 'Arb') { haddr = saved; grant = 'IFU (replay)'; ifuReady = 0; state = 'Idle'; note = 'replay'; saved = null; }
+      else if (L[c]) { haddr = 'LA' + la++; grant = 'LSU'; saved = 'IA' + ia++; save = saved; state = 'Arb'; note = 'collision'; }
+      else { haddr = 'IA' + ia++; grant = 'IFU'; }
+      rows.push({ c, lsu: L[c], haddr, grant, ifuReady, save, st: note === 'collision' ? 'Idle→Arb' : note === 'replay' ? 'Arb→Idle' : 'Idle' });
+    }
+    const td = (f, cls) => rows.map(r => `<td class="${cls ? cls(r) : ''}">${f(r)}</td>`).join('');
+    $('ebuWave').innerHTML = `<table><tr><th></th>${rows.map(r => `<th>${r.c}</th>`).join('')}</tr>
+      <tr><td class="nm">LSU request</td>${rows.map(r => `<td class="cl ${r.lsu ? 'hi' : ''}" data-c="${r.c}">${r.lsu ? 'NONSEQ' : '–'}</td>`).join('')}</tr>
+      <tr><td class="nm">IFU request</td>${td(() => 'NONSEQ')}</tr>
+      <tr><td class="nm">ebufsmarb</td>${td(r => r.st)}</tr>
+      <tr><td class="nm">granted</td>${td(r => r.grant, r => r.grant === 'LSU' ? 'dat' : r.grant.startsWith('IFU (') ? 'hold' : '')}</tr>
+      <tr><td class="nm">IFU addr saved</td>${td(r => r.save || '')}</tr>
+      <tr><td class="nm">HADDR on bus</td>${td(r => r.haddr, r => r.haddr.startsWith('L') ? 'dat' : 'adr')}</tr>
+      <tr><td class="nm">IFUHREADY</td>${td(r => r.ifuReady, r => r.ifuReady ? 'hi' : 'lo')}</tr></table>`;
+    $('ebuNarr').textContent = 'Click the LSU row to add or remove load/store requests. Every collision costs the IFU exactly one cycle: its address is saved, the LSU goes first, and the saved address is replayed with IFUHREADY low. The fetch is not lost and not issued twice. (Our Lab 6 core has no IFU on the bus, so it needs no EBU.)';
+    document.querySelectorAll('#ebuWave td.cl').forEach(t => t.addEventListener('click', () => { const c = +t.dataset.c; L[c] ^= 1; if (L[c] && c > 0 && rows[c - 1] && rows[c - 1].st === 'Idle→Arb') L[c] = 0; renderEbu(); }));
+  }
+  renderEbu();
+
+  // ---------- 4. cost of a bus ----------
+  function renderCost() {
+    const b = +$('cBase').value, m = +$('cMem').value, f = +$('cBus').value, w = +$('cWait').value, ap = +$('cApb').value;
+    $('oBase').textContent = b.toFixed(2); $('oMem').textContent = Math.round(m * 100) + '%'; $('oBus').textContent = Math.round(f * 100) + '%';
+    $('oWait').textContent = w; $('oApb').textContent = Math.round(ap * 100) + '%';
+    const acc = 2 + w + ap * 3;           // AHB Adr+Data, waits, and for APB: Setup + Access + one peripheral wait
+    const cpi = b + m * f * acc;
+    $('kAcc').textContent = acc.toFixed(1); $('kCPI').textContent = cpi.toFixed(3); $('kSlow').textContent = ((cpi / b - 1) * 100).toFixed(1) + '%';
+    const mx = Math.max(cpi, b + 0.6 * 1 * 25);
+    const bar = (lbl, v, cls) => `<div class="bar"><span>${lbl}</span><div class="track"><div class="fill ${cls || ''}" style="width:${Math.min(100, v / cpi * 100)}%"></div></div><span class="num">${v.toFixed(3)}</span></div>`;
+    $('cBars').innerHTML = bar('base pipeline', b) + bar('bus stalls', m * f * acc, 'clk');
+    $('cNarr').textContent = f <= 0.1
+      ? `With a TIM or cache catching ${Math.round((1 - f) * 100)}% of accesses, even ${acc.toFixed(0)} cycles per bus access barely moves CPI. This is the Amdahl argument for not overlapping AHB phases in the core.`
+      : `${Math.round(f * 100)}% of loads/stores on the bus at ${acc.toFixed(0)} cycles each: the bus now dominates. This is why Ch 12–13 add caches, and why the Lab 6 sum loop went from CPI 1.44 (DTIM) to 1.87 (bus RAM).`;
+  }
+  ['cBase', 'cMem', 'cBus', 'cWait', 'cApb'].forEach(id => $(id).addEventListener('input', renderCost));
+  renderCost();
+
+  // ---------- 5. quiz ----------
+  const Q = [
+    ['On AHB, when is HWDATA for a write transfer driven?', ['With HADDR, in the Address phase', 'In the Data phase, one cycle (or more) after its address', 'Only when HREADY is low', 'Whenever HSEL is high'], 1, 'Address and control in the Address phase, write data in the Data phase. A subordinate therefore registers HADDR/HWRITE and writes one cycle later (ram_ahb uses HADDRD).'],
+    ['Why must the AHB response mux use HSELD rather than HSEL?', ['HSEL is glitchy', 'HSEL belongs to the transfer in its Address phase; HREADY and HRDATA must come from the device in the Data phase', 'For power', 'HSELD is faster'], 1, 'With pipelining, the two differ whenever consecutive transfers go to different devices. Lab 6: the bug was invisible to the CPU and caught by the random manager in 22 cycles.'],
+    ['A transfer goes to an address no device decodes. What keeps the SoC alive?', ['The arbiter', 'The default subordinate (HSEL[0]): it completes the transfer (OKAY or ERROR) so HREADY returns', 'A watchdog', 'Nothing, it is a software bug'], 1, 'Without it HREADY stays low forever. Pair it with a liveness assertion, and make sure a test actually touches unmapped space.'],
+    ['Why does a single-port SRAM behind AHB insert a wait state for write-then-read?', ['Writes are slow', 'The write happens at the end of its Data phase on the same edge the read wants the port for its address: one port, two addresses', 'APB requires it', 'To save power'], 1, 'Reads use the live HADDR, writes the delayed HADDRD. Only the back-to-back write→read case collides (book Fig. 9.13).'],
+    ['In AXI, may a source wait for READY before asserting VALID?', ['Yes, that is polite', 'No: the destination is allowed to wait for VALID, so both waiting would deadlock', 'Only on the write channel', 'Only for bursts'], 1, 'VALID must not depend on READY. Once VALID rises, it and the payload stay stable until the handshake.'],
+    ['In Wally, both the IFU and LSU request the bus in the same cycle. What happens?', ['Round robin', 'The LSU wins; the EBU saves the IFU Address phase and replays it next cycle with IFUHREADY low', 'The IFU wins because fetch is critical', 'Both are retried'], 1, 'The LSU instruction is older; stalling it for a younger fetch could deadlock. The save/replay exists because the IFU already saw HREADY = 1.'],
+    ['Why does Wally block interrupts once a bus transfer passes its Adr phase (BusCommitted)?', ['To save cycles', 'A device may already have acted (a UART read pops a byte, a store wrote). Flushing then re-executing would repeat or lose that effect', 'AHB forbids interrupts', 'The CLINT needs it'], 1, 'Lab 6 BUG_NO_COMMIT: the RXFIFO popped 0x107, the load was flushed by an interrupt, re-ran after mret and got 0x108. One byte lost.'],
+    ['Your CPU-level tests pass with lock-step and 100% instruction coverage. Is the uncore verified?', ['Yes', 'No: the CPU only generates polite, non-pipelined traffic, so subordinate bugs that need back-to-back or mixed-device transfers stay invisible', 'Only if the ISS models the bus', 'Yes, if HREADY was ever low'], 1, 'Lab 6: two of four uncore bugs were never seen from the CPU. Block-level constrained-random traffic with a scoreboard caught all four.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

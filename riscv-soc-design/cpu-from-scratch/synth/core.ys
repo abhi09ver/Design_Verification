@@ -1,0 +1,7 @@
+read_verilog -sv ../rtl/common/generic.sv ../rtl/common/units.sv ../rtl/pipe/hazard.sv ../rtl/pipe/priv.sv ../rtl/pipe/core_pipe.sv
+synth -top core_pipe -flatten
+abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX
+opt_clean
+tee -o core_stat.txt stat
+tee -o core_ltp.txt ltp -noff
+write_verilog -noattr core_netlist.v

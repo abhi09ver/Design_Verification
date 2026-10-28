@@ -1,0 +1,461 @@
+<title>Cache Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–9 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.legend span b { display: inline-block; width: 14px; height: 12px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
+.chk input { accent-color: var(--copper); }
+.wave { overflow-x: auto; }
+.wave table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.wave th, .wave td { border: 1px solid var(--line); padding: 3px 5px; text-align: center; min-width: 46px; white-space: nowrap; }
+.wave th { color: var(--muted); font-weight: 600; }
+.wave td.nm { text-align: left; color: var(--ink); font-weight: 600; min-width: 112px; background: var(--panel); position: sticky; left: 0; }
+.wave td.hi { background: var(--ok); }
+.wave td.lo { background: var(--bad); color: var(--hot); }
+.wave td.adr { background: color-mix(in srgb, var(--signal) 16%, transparent); }
+.wave td.dat { background: var(--tint); }
+.wave td.hold { background: color-mix(in srgb, var(--signal) 8%, transparent); color: var(--muted); }
+.wave td.wt { color: var(--muted); }
+.wave td.err { background: var(--bad); color: var(--hot); font-weight: 700; }
+.wave td.cl { cursor: pointer; user-select: none; }
+.wave td.cl:hover { outline: 2px solid var(--copper); outline-offset: -2px; }
+.wave td.xfer { box-shadow: inset 0 -3px 0 var(--good); font-weight: 700; }
+.out { font-size: 14px; display: grid; gap: 6px; }
+.out .bad { color: var(--hot); font-weight: 600; }
+.out .good { color: var(--good); font-weight: 600; }
+</style>
+<style>
+.addr { display: flex; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; }
+.addr span { padding: 4px 2px; min-width: 14px; text-align: center; border-top: 3px solid transparent; }
+.addr .t { background: color-mix(in srgb, var(--copper) 16%, transparent); border-top-color: var(--copper); }
+.addr .s { background: color-mix(in srgb, var(--signal) 16%, transparent); border-top-color: var(--signal); }
+.addr .o { background: color-mix(in srgb, var(--good) 16%, transparent); border-top-color: var(--good); }
+.cgrid { overflow-x: auto; }
+.cgrid table { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+.cgrid th, .cgrid td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; white-space: nowrap; min-width: 92px; }
+.cgrid th { color: var(--muted); font-weight: 600; }
+.cgrid td.inv { color: var(--muted); }
+.cgrid td.hit { background: var(--ok); }
+.cgrid td.fill { background: var(--tint); }
+.cgrid td .d { color: var(--hot); font-weight: 700; }
+.alog { font-family: var(--mono); font-size: 12px; display: grid; gap: 2px; max-height: 230px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 8px; }
+.alog .h { color: var(--good); } .alog .m { color: var(--hot); }
+textarea.seq { font: 12.5px var(--mono); width: 100%; min-height: 54px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.waybtns { display: flex; flex-wrap: wrap; gap: 6px; }
+svg.tree { width: 100%; max-width: 640px; height: auto; display: block; }
+svg.tree text { font-family: var(--mono); fill: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 10 companion</div>
+    <h1>Cache Lab</h1>
+    <p class="lede">Split an address into tag, set and offset. Run access patterns through a set-associative write-back cache and see each miss classified as compulsory, capacity or conflict. Click through a pLRU tree, and price a memory hierarchy with AMAT. A self-check closes the page.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#split">1 · Address split</a>
+      <a href="#sim">2 · Cache simulator</a>
+      <a href="#plru">3 · pLRU tree</a>
+      <a href="#amat">4 · AMAT</a>
+      <a href="#quiz">5 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="split" aria-labelledby="h-split">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 10.1.3 and 10.4</div>
+      <h2 id="h-split">Offset bits pick the byte, set bits pick the row, the rest is the tag</h2>
+      <p class="principle">offset = log2(line bytes) · sets = capacity / (line bytes × ways) · set bits = log2(sets) · tag = address bits − set − offset. Tag storage = sets × ways × tag bits: overhead the "capacity" figure leaves out.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">Preset</span>
+        <button class="btn chip" data-sp="ex104">Book Ex. 10.4: 4 KiB direct, 32 B lines, 64-bit, 0x2138</button>
+        <button class="btn chip" data-sp="wally">Wally rv64gc L1: 16 KiB 4-way 64 B, PA 56-bit</button>
+        <button class="btn chip" data-sp="lab7">Lab 7: 256 B 2-way 16 B, 16-bit region</button>
+      </div>
+      <div class="two">
+        <div class="sliders">
+          <div class="sl"><label for="sCap">capacity</label><input type="range" id="sCap" min="6" max="20" step="1" value="12"><output id="oCap"></output></div>
+          <div class="sl"><label for="sLine">line bytes</label><input type="range" id="sLine" min="2" max="7" step="1" value="5"><output id="oLine"></output></div>
+          <div class="sl"><label for="sWays">ways</label><input type="range" id="sWays" min="0" max="4" step="1" value="0"><output id="oWays"></output></div>
+          <div class="sl"><label for="sBits">address bits</label><input type="range" id="sBits" min="16" max="64" step="1" value="64"><output id="oBits"></output></div>
+          <div class="controls"><label class="caption" for="sAdr">address (hex)</label><input class="hex" id="sAdr" value="2138"></div>
+        </div>
+        <div style="display:grid; gap:12px">
+          <div class="addr" id="sBitsView"></div>
+          <div class="kpis">
+            <div class="kv"><span class="k">Sets</span><span class="v" id="kSets"></span></div>
+            <div class="kv"><span class="k">Tag / set / offset bits</span><span class="v" id="kTSO" style="font-size:18px"></span></div>
+            <div class="kv"><span class="k">This address</span><span class="v" id="kMap" style="font-size:16px"></span></div>
+            <div class="kv"><span class="k">Tag storage</span><span class="v" id="kTagSt" style="font-size:18px"></span></div>
+          </div>
+          <div class="narr" id="sNarr"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="sim" aria-labelledby="h-sim">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Sections 10.1.4–10.1.7</div>
+      <h2 id="h-sim">Watch hits, misses, evictions and writebacks, and name every miss</h2>
+      <p class="principle">Write-back, write-allocate, 16-byte lines, 32-bit addresses. A miss is <b>compulsory</b> if the line was never touched before, <b>capacity</b> if a fully associative LRU cache of the same size would also miss, otherwise <b>conflict</b>. The victim is the first invalid way, else the tree-pLRU choice (or way 0 with the stuck-LRU bug).</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">Pattern</span>
+        <select id="pat">
+          <option value="copy">copy b[i]=a[i], b = a + capacity (Code Ex. 10.2)</option>
+          <option value="sum">sum a 2×capacity array twice</option>
+          <option value="rr">3 lines in one set, round-robin ×6</option>
+          <option value="mix">store, evict dirty, reload (cache_basic step 3)</option>
+          <option value="custom">custom (edit below)</option>
+        </select>
+        <span class="caption">Ways</span>
+        <span class="tog" role="group" aria-label="Ways"><button data-w="1" aria-pressed="false">1</button><button data-w="2" aria-pressed="true">2</button><button data-w="4" aria-pressed="false">4</button></span>
+        <span class="caption">Capacity</span>
+        <span class="tog" role="group" aria-label="Capacity"><button data-c="128" aria-pressed="false">128 B</button><button data-c="256" aria-pressed="true">256 B</button><button data-c="512" aria-pressed="false">512 B</button></span>
+        <label class="chk"><input type="checkbox" id="stuck"> BUG: stuck LRU</label>
+      </div>
+      <textarea class="seq" id="seqIn" aria-label="Access sequence: R or W and a hex address per entry"></textarea>
+      <div class="controls">
+        <button class="btn" id="step">step</button>
+        <button class="btn" id="runAll">run all</button>
+        <button class="btn" id="resetSim">reset</button>
+        <span class="caption" id="posLbl"></span>
+      </div>
+      <div class="cgrid" id="cgrid"></div>
+      <div class="kpis">
+        <div class="kv"><span class="k">Accesses</span><span class="v" id="mAcc"></span></div>
+        <div class="kv"><span class="k">Miss rate</span><span class="v" id="mRate"></span></div>
+        <div class="kv"><span class="k">Compulsory / capacity / conflict</span><span class="v" id="m3c" style="font-size:18px"></span></div>
+        <div class="kv"><span class="k">Writebacks</span><span class="v" id="mWb"></span></div>
+      </div>
+      <div class="alog" id="alog" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="plru" aria-labelledby="h-plru">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Sections 10.1.7 and 10.4.4</div>
+      <h2 id="h-plru">Click a way to use it; the path flips to point away</h2>
+      <p class="principle">N−1 bits per set. A bit of 0 means the victim is on the left, 1 means the right. Victim = follow the bits from the root. Update = every node on the path to the accessed way points away from it. LRU[N−2] is the root; the rest go top to bottom, left to right (book Fig. 10.20).</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">Ways</span>
+        <span class="tog" role="group" aria-label="Tree size"><button data-tw="4" aria-pressed="false">4</button><button data-tw="8" aria-pressed="true">8</button></span>
+        <button class="btn chip" id="tBook">book Fig. 10.9(a) start</button>
+        <button class="btn chip" id="tZero">all zeros</button>
+      </div>
+      <div class="waybtns" id="wayBtns"></div>
+      <svg class="tree" id="treeSvg" viewBox="0 0 640 230" role="img" aria-label="pLRU tree"></svg>
+      <div class="kpis">
+        <div class="kv"><span class="k">LRU bits [N−2 … 0]</span><span class="v" id="tBits" style="font-size:18px"></span></div>
+        <div class="kv"><span class="k">Victim way</span><span class="v" id="tVic"></span></div>
+      </div>
+      <div class="narr" id="tNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="amat" aria-labelledby="h-amat">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 4 · Section 10.1.1</div>
+      <h2 id="h-amat">AMAT = A1 + MR1 × (A2 + MR2 × A3)</h2>
+      <p class="principle">The miss penalty of a level is the AMAT of the level above it. Defaults are book Example 10.3: L1 1 cycle, L2 3 cycles at 80% hit, DRAM 30 cycles, 40% loads/stores.</p>
+    </div>
+    <div class="bench">
+      <div class="two">
+        <div class="sliders">
+          <div class="sl"><label for="aI">L1I hit %</label><input type="range" id="aI" min="80" max="100" step="0.5" value="98"><output id="oI"></output></div>
+          <div class="sl"><label for="aD">L1D hit %</label><input type="range" id="aD" min="80" max="100" step="0.5" value="96"><output id="oD"></output></div>
+          <div class="sl"><label for="aL2">L2 hit %</label><input type="range" id="aL2" min="0" max="100" step="1" value="80"><output id="oL2"></output></div>
+          <div class="sl"><label for="aT2">L2 cycles</label><input type="range" id="aT2" min="2" max="20" step="1" value="3"><output id="oT2"></output></div>
+          <div class="sl"><label for="aT3">DRAM cycles</label><input type="range" id="aT3" min="10" max="300" step="5" value="30"><output id="oT3"></output></div>
+          <div class="sl"><label for="aLS">loads+stores</label><input type="range" id="aLS" min="0" max="0.6" step="0.01" value="0.4"><output id="oLS"></output></div>
+        </div>
+        <div style="display:grid; gap:12px">
+          <div class="kpis">
+            <div class="kv"><span class="k">AMAT fetch</span><span class="v" id="rI"></span></div>
+            <div class="kv"><span class="k">AMAT data</span><span class="v" id="rD"></span></div>
+            <div class="kv"><span class="k">CPI</span><span class="v" id="rCPI"></span></div>
+            <div class="kv"><span class="k">CPI with no L2</span><span class="v" id="rNo"></span></div>
+          </div>
+          <div class="narr" id="aNarr"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 10 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). The simulator is a behavioural model; the notes' Lab 7 section has the RTL, its bug hunt and real waveforms.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const big = s => BigInt('0x' + (String(s).replace(/^0x/i, '') || '0'));
+  const lg = n => Math.round(Math.log2(n));
+
+  // ---------- 1. address split ----------
+  const SP = { ex104: [12, 5, 0, 64, '2138'], wally: [14, 6, 2, 56, '80000384'], lab7: [8, 4, 1, 16, '8010'] };
+  function renderSplit() {
+    const cap = 2 ** +$('sCap').value, line = 2 ** +$('sLine').value, ways = 2 ** +$('sWays').value, bits = +$('sBits').value;
+    $('oCap').textContent = cap >= 1024 ? cap / 1024 + ' KiB' : cap + ' B'; $('oLine').textContent = line + ' B'; $('oWays').textContent = ways; $('oBits').textContent = bits;
+    const sets = Math.max(1, cap / (line * ways)), ob = lg(line), sb = lg(sets), tb = bits - sb - ob;
+    let a; try { a = big($('sAdr').value); } catch { a = 0n; }
+    a &= (1n << BigInt(bits)) - 1n;
+    const bin = a.toString(2).padStart(bits, '0');
+    $('sBitsView').innerHTML = [...bin].map((b, i) => { const pos = bits - 1 - i; const c = pos < ob ? 'o' : pos < ob + sb ? 's' : 't'; return `<span class="${c}" title="bit ${pos}">${b}</span>`; }).join('');
+    const set = Number((a >> BigInt(ob)) & BigInt(sets - 1)), tag = a >> BigInt(ob + sb), off = Number(a & BigInt(line - 1));
+    $('kSets').textContent = sets; $('kTSO').textContent = `${tb} / ${sb} / ${ob}`;
+    $('kMap').textContent = `set ${set}, tag 0x${tag.toString(16)}, byte ${off}`;
+    const tagBytes = sets * ways * tb / 8;
+    $('kTagSt').textContent = (tagBytes >= 1024 ? (tagBytes / 1024).toFixed(1) + ' KiB' : tagBytes.toFixed(0) + ' B') + ` (${(100 * tagBytes / cap).toFixed(0)}%)`;
+    const wayK = cap / ways;
+    $('sNarr').textContent = `${ways === 1 ? 'Direct-mapped' : ways + '-way'}: ${sets} sets of ${ways} line${ways > 1 ? 's' : ''}. Each way holds ${wayK >= 1024 ? wayK / 1024 + ' KiB' : wayK + ' B'}${wayK === 4096 ? ', exactly one 4 KiB page, so the set index comes only from untranslated page-offset bits (Ch 11)' : ''}. Copper = tag, blue = set, green = offset. Lines that share a set are ${cap / ways} bytes apart.`;
+  }
+  ['sCap', 'sLine', 'sWays', 'sBits', 'sAdr'].forEach(id => $(id).addEventListener('input', renderSplit));
+  document.querySelectorAll('[data-sp]').forEach(b => b.addEventListener('click', () => { const p = SP[b.dataset.sp]; $('sCap').value = p[0]; $('sLine').value = p[1]; $('sWays').value = p[2]; $('sBits').value = p[3]; $('sAdr').value = p[4]; renderSplit(); }));
+  renderSplit();
+
+  // ---------- 2. cache simulator ----------
+  const LINE = 16;
+  let W = 2, CAP = 256, seq = [], pos = 0, C, fa, seen, stats, logs;
+  const hx = n => n.toString(16).padStart(4, '0');
+  function patterns(p) {
+    const out = [];
+    if (p === 'copy') for (let i = 0; i < 16; i++) { out.push('R ' + hx(i * 4)); out.push('W ' + hx(CAP + i * 4)); }
+    if (p === 'sum') for (let r = 0; r < 2; r++) for (let i = 0; i < 2 * CAP; i += 8) out.push('R ' + hx(i));
+    if (p === 'rr') { const st = CAP / W; for (let r = 0; r < 6; r++) for (let k = 0; k < 3; k++) out.push('R ' + hx(k * st)); }
+    if (p === 'mix') { const st = CAP / W; out.push('W 0000', 'W 0004', 'W ' + hx(st), 'W ' + hx(2 * st), 'R 0000', 'R 0008'); }
+    return out.join(', ');
+  }
+  function parse() { return $('seqIn').value.split(/[,\n]+/).map(s => s.trim()).filter(Boolean).map(s => { const [rw, a] = s.split(/\s+/); return { w: /^w/i.test(rw), a: parseInt(a || rw, 16) || 0 }; }); }
+  function initSim() {
+    const S = CAP / (LINE * W);
+    C = { S, ways: Array.from({ length: S }, () => Array.from({ length: W }, () => ({ v: 0, d: 0, tag: 0, last: '' }))), lru: Array.from({ length: S }, () => Array(Math.max(1, W - 1)).fill(0)) };
+    fa = []; seen = new Set(); stats = { acc: 0, miss: 0, comp: 0, capm: 0, conf: 0, wb: 0 }; logs = []; pos = 0; seq = parse();
+  }
+  function victim(bits) { if (W === 1) return 0; let h = 0, w = 0; for (let l = 0; l < lg(W); l++) { const b = bits[W - 2 - h]; w = (w << 1) | b; h = 2 * h + 1 + b; } return w; }
+  function touch(bits, way) { if (W === 1 || $('stuck').checked) return; let h = 0; for (let l = lg(W) - 1; l >= 0; l--) { const d = (way >> l) & 1; bits[W - 2 - h] = 1 - d; h = 2 * h + 1 + d; } }
+  function step() {
+    if (pos >= seq.length) return false;
+    const { w, a } = seq[pos++]; const ln = Math.floor(a / LINE), set = ln % C.S, tag = Math.floor(ln / C.S);
+    C.ways[set].forEach(x => x.last = '');
+    // fully-associative LRU shadow of the same size: decides capacity vs conflict
+    const faHit = fa.includes(ln); fa = fa.filter(x => x !== ln); fa.unshift(ln); if (fa.length > CAP / LINE) fa.pop();
+    stats.acc++;
+    const ways = C.ways[set]; let hw = ways.findIndex(x => x.v && x.tag === tag);
+    let msg;
+    if (hw >= 0) { if (w) ways[hw].d = 1; ways[hw].last = 'hit'; touch(C.lru[set], hw); msg = `<span class="h">HIT </span> ${w ? 'W' : 'R'} 0x${hx(a)}  set ${set} way ${hw}`; }
+    else {
+      stats.miss++;
+      const kind = !seen.has(ln) ? 'compulsory' : !faHit ? 'capacity' : 'conflict';
+      stats[{ compulsory: 'comp', capacity: 'capm', conflict: 'conf' }[kind]]++;
+      const inv = ways.findIndex(x => !x.v); const v = inv >= 0 ? inv : ($('stuck').checked ? 0 : victim(C.lru[set]));
+      let extra = '';
+      if (ways[v].v) { extra = ` evicts line 0x${hx((ways[v].tag * C.S + set) * LINE)}`; if (ways[v].d) { stats.wb++; extra += ' (dirty → writeback)'; } }
+      ways[v] = { v: 1, d: w ? 1 : 0, tag, last: 'fill' }; touch(C.lru[set], v);
+      msg = `<span class="m">MISS</span> ${w ? 'W' : 'R'} 0x${hx(a)}  set ${set} → way ${v}, ${kind}${extra}`;
+    }
+    seen.add(ln); logs.unshift(msg); return true;
+  }
+  function renderSim() {
+    let h = `<table><tr><th>set</th>${Array.from({ length: W }, (_, i) => `<th>way ${i}</th>`).join('')}${W > 1 ? '<th>LRU bits</th>' : ''}</tr>`;
+    C.ways.forEach((ws, s) => {
+      h += `<tr><th>${s}</th>${ws.map(x => x.v ? `<td class="${x.last}">0x${hx((x.tag * C.S + s) * LINE)}${x.d ? ' <span class="d">D</span>' : ''}</td>` : '<td class="inv">—</td>').join('')}${W > 1 ? `<td>${C.lru[s].slice().reverse().join('')}</td>` : ''}</tr>`;
+    });
+    $('cgrid').innerHTML = h + '</table>';
+    $('mAcc').textContent = stats.acc; $('mRate').textContent = stats.acc ? (100 * stats.miss / stats.acc).toFixed(1) + '%' : '—';
+    $('m3c').textContent = `${stats.comp} / ${stats.capm} / ${stats.conf}`; $('mWb').textContent = stats.wb;
+    $('alog').innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+    $('posLbl').textContent = `${pos} / ${seq.length} accesses · ${C.S} sets × ${W} ways × 16 B`;
+  }
+  function loadPat() { if ($('pat').value !== 'custom') $('seqIn').value = patterns($('pat').value); initSim(); renderSim(); }
+  $('pat').addEventListener('change', loadPat);
+  $('seqIn').addEventListener('input', () => { $('pat').value = 'custom'; initSim(); renderSim(); });
+  $('stuck').addEventListener('change', () => { initSim(); renderSim(); });
+  document.querySelectorAll('[data-w]').forEach(b => b.addEventListener('click', () => { W = +b.dataset.w; document.querySelectorAll('[data-w]').forEach(x => x.setAttribute('aria-pressed', x === b)); loadPat(); }));
+  document.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => { CAP = +b.dataset.c; document.querySelectorAll('[data-c]').forEach(x => x.setAttribute('aria-pressed', x === b)); loadPat(); }));
+  $('step').onclick = () => { step(); renderSim(); };
+  $('runAll').onclick = () => { while (step()); renderSim(); };
+  $('resetSim').onclick = () => { initSim(); renderSim(); };
+  loadPat();
+
+  // ---------- 3. pLRU tree ----------
+  let TN = 8, bits = [0, 0, 1, 0, 0, 0, 1], lastWay = null, lastPath = [];
+  function tVictim() { let h = 0, w = 0; for (let l = 0; l < lg(TN); l++) { const b = bits[TN - 2 - h]; w = (w << 1) | b; h = 2 * h + 1 + b; } return w; }
+  function tTouch(way) { let h = 0; lastPath = []; for (let l = lg(TN) - 1; l >= 0; l--) { const d = (way >> l) & 1; lastPath.push(TN - 2 - h); bits[TN - 2 - h] = 1 - d; h = 2 * h + 1 + d; } }
+  function renderTree() {
+    const L = lg(TN), vw = tVictim(); let s = '';
+    const nodePos = h => { const lvl = Math.floor(Math.log2(h + 1)), idx = h + 1 - 2 ** lvl, n = 2 ** lvl; return [40 + (560 / n) * (idx + 0.5), 30 + lvl * 55]; };
+    const leafPos = w => [40 + (560 / TN) * (w + 0.5), 30 + L * 55];
+    for (let h = 0; h < TN - 1; h++) {
+      const [x, y] = nodePos(h); const b = bits[TN - 2 - h];
+      [0, 1].forEach(side => { const ch = 2 * h + 1 + side; const [cx, cy] = ch < TN - 1 ? nodePos(ch) : leafPos(ch - (TN - 1)); s += `<line x1="${x}" y1="${y + 13}" x2="${cx}" y2="${cy - 13}" stroke="${b === side ? 'var(--copper)' : 'var(--line)'}" stroke-width="${b === side ? 2.5 : 1.2}"/>`; });
+    }
+    for (let h = 0; h < TN - 1; h++) {
+      const [x, y] = nodePos(h); const idx = TN - 2 - h; const ch = lastPath.includes(idx);
+      s += `<circle cx="${x}" cy="${y}" r="13" fill="${ch ? 'var(--ok)' : 'var(--panel)'}" stroke="${ch ? 'var(--good)' : 'var(--muted)'}" stroke-width="${ch ? 2 : 1}"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="12" font-weight="700">${bits[idx]}</text><text x="${x + 16}" y="${y - 8}" font-size="10" fill="var(--muted)">N${idx}</text>`;
+    }
+    for (let w = 0; w < TN; w++) {
+      const [x, y] = leafPos(w);
+      s += `<rect x="${x - 15}" y="${y - 13}" width="30" height="26" rx="4" fill="${w === vw ? 'var(--tint)' : 'none'}" stroke="${w === vw ? 'var(--copper)' : w === lastWay ? 'var(--signal)' : 'var(--line)'}" stroke-width="${w === vw || w === lastWay ? 2 : 1}"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="12">${w}</text>`;
+    }
+    $('treeSvg').setAttribute('viewBox', `0 0 640 ${60 + L * 55}`);
+    $('treeSvg').innerHTML = s;
+    $('tBits').textContent = bits.slice().reverse().join('');
+    $('tVic').textContent = vw;
+    $('tNarr').textContent = lastWay === null ? 'Copper edges show where each bit points (toward the older side). Click a way above to access it.' : `Accessed way ${lastWay}: nodes ${lastPath.map(i => 'N' + i).join(', ')} (green) now point away from it. The new victim is way ${vw}. Only the log2(${TN}) = ${L} bits on that path are written: that is why pLRU is cheap.`;
+    $('wayBtns').innerHTML = Array.from({ length: TN }, (_, w) => `<button class="btn chip" data-acc="${w}">access way ${w}</button>`).join('');
+    document.querySelectorAll('[data-acc]').forEach(b => b.addEventListener('click', () => { lastWay = +b.dataset.acc; tTouch(lastWay); renderTree(); }));
+  }
+  document.querySelectorAll('[data-tw]').forEach(b => b.addEventListener('click', () => { TN = +b.dataset.tw; bits = Array(TN - 1).fill(0); lastWay = null; lastPath = []; document.querySelectorAll('[data-tw]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderTree(); }));
+  $('tBook').onclick = () => { TN = 8; bits = [0, 0, 1, 0, 0, 0, 1]; lastWay = null; lastPath = []; document.querySelectorAll('[data-tw]').forEach(x => x.setAttribute('aria-pressed', x.dataset.tw === '8')); renderTree(); };
+  $('tZero').onclick = () => { bits = Array(TN - 1).fill(0); lastWay = null; lastPath = []; renderTree(); };
+  renderTree();
+
+  // ---------- 4. AMAT ----------
+  function renderAmat() {
+    const hi = +$('aI').value / 100, hd = +$('aD').value / 100, h2 = +$('aL2').value / 100, t2 = +$('aT2').value, t3 = +$('aT3').value, ls = +$('aLS').value;
+    $('oI').textContent = (hi * 100).toFixed(1) + '%'; $('oD').textContent = (hd * 100).toFixed(1) + '%'; $('oL2').textContent = Math.round(h2 * 100) + '%';
+    $('oT2').textContent = t2; $('oT3').textContent = t3; $('oLS').textContent = Math.round(ls * 100) + '%';
+    const pen = t2 + (1 - h2) * t3;
+    const ai = hi * 1 + (1 - hi) * pen, ad = hd * 1 + (1 - hd) * pen;
+    const cpi = (1 - ls) * ai + ls * (ai + ad - 1);
+    const ai0 = hi + (1 - hi) * t3, ad0 = hd + (1 - hd) * t3, cpi0 = (1 - ls) * ai0 + ls * (ai0 + ad0 - 1);
+    $('rI').textContent = ai.toFixed(2); $('rD').textContent = ad.toFixed(2); $('rCPI').textContent = cpi.toFixed(2); $('rNo').textContent = cpi0.toFixed(2);
+    $('aNarr').textContent = `L1 miss penalty = L2 time + L2 miss rate × DRAM time = ${t2} + ${(1 - h2).toFixed(2)} × ${t3} = ${pen.toFixed(2)} cycles. A load/store pays both its fetch and its data access, minus the one cycle that overlaps. Removing the L2 makes every L1 miss pay ${t3} cycles: CPI ${cpi0.toFixed(2)} instead of ${cpi.toFixed(2)}.`;
+  }
+  ['aI', 'aD', 'aL2', 'aT2', 'aT3', 'aLS'].forEach(id => $(id).addEventListener('input', renderAmat));
+  renderAmat();
+
+  // ---------- 5. quiz ----------
+  const Q = [
+    ['A 32 KiB, 8-way cache with 64-byte lines and 40-bit physical addresses. How many tag bits?', ['27', '28: offset 6, sets 64 so 6 set bits, 40 − 12 = 28', '31', '34'], 1, 'Sets = 32 KiB / (64 × 8) = 64. Each way is 4 KiB, page-sized, so set + offset are exactly the 12 page-offset bits.'],
+    ['Two arrays exactly one cache size apart are read alternately on a direct-mapped cache. What happens, and the fix?', ['Capacity misses; a bigger cache', 'Conflict thrashing: both map to the same set. 2-way associativity (or padding) fixes it', 'Compulsory misses; prefetching', 'Nothing, it hits'], 1, 'Book Code Example 10.2. Lab 7: 100% misses direct-mapped, 25% with 2 ways (spatial locality only).'],
+    ['Why do practical L1 D-caches use write-back rather than write-through?', ['Simpler', 'Write-through sends every store to the next level: bandwidth and power. Write-back writes only dirty lines on eviction', 'Coherence is automatic', 'It reduces miss rate'], 1, 'The price is the dirty bit and the classic bug: a dirty line evicted or flushed without its writeback.'],
+    ['An 8-way pLRU set has LRU = 1100010 and way 6 is accessed. What is NextLRU?', ['1100010', '0100011', '0000111', '1110000'], 1, 'Path N6, N4, N0 points away from way 6: N6=0, N4 stays 0, N0=1 (book Example 10.8).'],
+    ['A store hits a line that was loaded clean, but the RTL forgets to set dirty. Which check fails first?', ['Nothing ever fails', 'A transaction-level cache model, at the eviction (missing writeback). Lock-step only fails later, if the line is read again', 'The ISS immediately', 'Synthesis'], 1, 'Lab 7: the model reported "model WB 90000300, dut FILL 90000400" at the eviction itself.'],
+    ['The pLRU update logic is stuck. Lock-step passes and benchmarks even speed up on some loops. Bug or not?', ['Not a bug', 'A bug: the cache is functionally correct but does not implement its replacement policy. Only a reference-model check of victim ways (or miss counts) catches it', 'Only if it slows everything', 'Only a software issue'], 1, 'Lab 7: stuck LRU was faster on 2 of 3 kernels (LRU thrashes on cyclic patterns larger than the ways).'],
+    ['A store goes through the D-cache; the same address is then read uncached (or by DMA) with no flush. The values differ. RTL bug?', ['Yes, always', 'Not necessarily: same memory with different cacheability attributes, or DMA without cache maintenance, is a software/PMA issue. Check for a missing fence.i/CMO first', 'Yes, the ISS is wrong', 'The bus is broken'], 1, 'Lab 7 demo: DUT 0 vs ISS 0x1234 until a fence.i flush was added.'],
+    ['Why does Wally hold off interrupts while the cache FSM is busy (CacheCommitted)?', ['To save power', 'A burst writeback or line fill on the bus cannot be abandoned midway without corrupting memory or the bus protocol; take the interrupt after it finishes', 'Interrupts are rare', 'The LRU must update first'], 1, 'Same reason as BusCommitted in Ch 9: once a bus transaction starts, it must complete.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>

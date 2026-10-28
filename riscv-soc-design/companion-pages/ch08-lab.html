@@ -1,0 +1,418 @@
+<title>Trap and CSR Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same lab-notebook system as the Ch 1–7 companions. */
+:root {
+  --bg: #f2f4f6; --panel: #ffffff; --ink: #15202b; --muted: #5a6876; --line: #d4dbe2;
+  --copper: #b05a24; --signal: #2c6aae; --hot: #c0392b; --good: #2e7d4f; --tint: #fbf1ea; --bad: #fbe3e0; --ok: #e3f2e8;
+  --wave: #8a97a4; --xfill: #dfe4ea;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141a; --panel: #151d25; --ink: #e5ebf0; --muted: #94a3b0; --line: #2a3642;
+  --copper: #e08a4f; --signal: #6ea7e6; --hot: #ef6b55; --good: #5cc28a; --tint: #2a1f18; --bad: #3a1f1c; --ok: #173226;
+  --wave: #7d8b98; --xfill: #26313c; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.jump a { font-family: var(--mono); font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; background: var(--panel); }
+nav.jump a:hover, nav.jump a:focus-visible { border-color: var(--copper); outline: none; }
+section.exp { display: grid; gap: 16px; }
+.exp-head { display: grid; gap: 6px; }
+.exp-head .eyebrow { color: var(--muted); }
+.principle { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 92ch; }
+.principle b { color: var(--ink); font-weight: 600; }
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.bench > * { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.btn { font: 600 13px var(--body); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.btn.chip { font-family: var(--mono); font-weight: 400; font-size: 12px; padding: 5px 9px; }
+.btn.chip[aria-pressed="true"] { border-color: var(--copper); background: var(--tint); }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+select { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); max-width: 100%; }
+.caption { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+.sliders { display: grid; gap: 10px; }
+.sl { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.sl label { font-family: var(--mono); font-size: 13px; }
+.sl output { font-family: var(--mono); font-size: 13px; text-align: right; }
+.sl input[type=range] { width: 100%; accent-color: var(--copper); }
+.grp { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kv { display: grid; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+.kv .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kv .v { font-family: var(--display); font-weight: 700; font-size: 24px; }
+.pass { color: var(--good); } .fail { color: var(--hot); }
+.narr { font-size: 14px; padding: 10px 12px; border-left: 3px solid var(--copper); background: var(--bg); }
+svg.diag { width: 100%; height: auto; display: block; }
+svg.diag text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg.diag .q { fill: var(--muted); font-size: 11px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.t th, table.t td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+table.t th { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+table.t td.m { font-family: var(--mono); }
+table.t input[type=range] { width: 100%; accent-color: var(--copper); }
+.scroll { overflow-x: auto; }
+.cutcell { display: flex; gap: 8px; align-items: center; }
+.cutcell span { min-width: 34px; text-align: right; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 82px; gap: 10px; align-items: center; font-size: 13px; }
+.bar .track { height: 18px; background: var(--bg); border-radius: 3px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); border-radius: 3px; }
+.bar .fill.clk { background: var(--copper); }
+.bar .num { font-family: var(--mono); text-align: right; }
+.stage { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: flex; gap: 6px; align-items: center; background: var(--bg); font-family: var(--mono); font-size: 12.5px; }
+.unit button { border: 0; background: transparent; color: var(--hot); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.quiz { display: grid; gap: 14px; }
+.q { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.q .opts { display: grid; gap: 6px; }
+.q button.opt { text-align: left; font: 14px var(--body); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.q button.opt.right { border-color: var(--good); background: var(--ok); }
+.q button.opt.wrong { border-color: var(--hot); background: var(--bad); }
+.q .why { font-size: 13.5px; color: var(--muted); }
+footer { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } .bar { grid-template-columns: 110px minmax(0, 1fr) 70px; } }
+</style>
+<style>
+.tog { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tog button { font: 12px var(--mono); padding: 5px 9px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.tog button[aria-pressed="true"] { background: var(--copper); color: var(--panel); }
+input.hex { font: 14px var(--mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); width: 12ch; }
+.fields { display: flex; flex-wrap: wrap; gap: 0; font-family: var(--mono); font-size: 12px; }
+.fields div { border: 1px solid var(--line); padding: 4px 6px; text-align: center; background: var(--bg); }
+.fields div b { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.bits { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+.bits .k { color: var(--signal); font-weight: 600; }
+.regs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.reg { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; background: var(--bg); display: grid; gap: 2px; transition: background .4s, border-color .4s; }
+.reg .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.reg .v { font-family: var(--mono); font-size: 15px; font-weight: 600; word-break: break-all; }
+.reg.chg { border-color: var(--copper); background: var(--tint); }
+.mst { display: flex; flex-wrap: wrap; gap: 0; font-family: var(--mono); font-size: 12px; }
+.mst div { border: 1px solid var(--line); padding: 4px 8px; text-align: center; background: var(--bg); min-width: 54px; }
+.mst div b { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.mst div.chg { background: var(--tint); border-color: var(--copper); }
+.log { font-family: var(--mono); font-size: 12.5px; display: grid; gap: 4px; max-height: 220px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 8px; }
+.log div { overflow-wrap: anywhere; }
+.log .t { color: var(--hot); } .log .r { color: var(--good); } .log .n { color: var(--muted); }
+.btn.ev { font-family: var(--mono); font-weight: 400; font-size: 12.5px; }
+.btn.ev.trap { border-color: var(--hot); }
+.btn.ev.ret { border-color: var(--good); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.cell { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; background: var(--bg); font-family: var(--mono); font-size: 12px; display: grid; gap: 4px; }
+.cell b { font-size: 12.5px; }
+.cell label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.cell input { accent-color: var(--copper); }
+.cell.win { border-color: var(--good); background: var(--ok); }
+.cell.blk { border-color: var(--line); }
+.ok-t { color: var(--good); font-weight: 600; } .no-t { color: var(--hot); font-weight: 600; }
+.bytes { display: flex; flex-wrap: wrap; gap: 0; font-family: var(--mono); font-size: 13px; }
+.bytes div { border: 1px solid var(--line); padding: 6px 10px; text-align: center; background: var(--bg); }
+.bytes div b { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.bytes div.lsb { background: var(--tint); border-color: var(--copper); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">RISC-V System-on-Chip Design · Chapter 8 companion</div>
+    <h1>Trap and CSR Lab</h1>
+    <p class="lede">Raise exceptions and interrupts on a model hart and watch mepc, mcause, mtval and mstatus move exactly as the privileged spec says. Then decode CSR permissions from the address alone, work out which interrupt wins, and finish with the self-check.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#trap">1 · Trap entry and mret</a>
+      <a href="#csr">2 · CSR address decoder</a>
+      <a href="#int">3 · Which interrupt is taken?</a>
+      <a href="#endian">4 · Endianness</a>
+      <a href="#quiz">5 · Self-check</a>
+    </nav>
+  </header>
+
+  <section class="exp" id="trap" aria-labelledby="h-trap">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 1 · Sections 8.1, 8.2 and 8.4</div>
+      <h2 id="h-trap">Trap entry saves state in one step; mret puts it back</h2>
+      <p class="principle">Model rules (M-mode traps only, no delegation). Entry: <b>mepc ← PC of the instruction that did not complete</b>: the one that faulted (exceptions) or the one about to run (interrupts). The pc box below is the instruction about to execute; mcause, mtval ← reason; MPIE ← MIE; MIE ← 0; MPP ← current mode; mode ← M; PC ← mtvec base, plus 4 × cause for interrupts in vectored mode. mret: PC ← mepc; MIE ← MPIE; MPIE ← 1; mode ← MPP; MPP ← U (the lowest supported mode).</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">mtvec mode</span>
+        <span class="tog" role="group" aria-label="mtvec mode"><button data-vec="0" aria-pressed="true">direct</button><button data-vec="1" aria-pressed="false">vectored</button></span>
+        <button class="btn chip" id="tReset">reset to U-mode program</button>
+      </div>
+      <div class="controls" aria-label="Events">
+        <button class="btn ev" id="eStep">step (retire one instr)</button>
+        <button class="btn ev trap" id="eEcall">ecall</button>
+        <button class="btn ev trap" id="eIll">illegal instr</button>
+        <button class="btn ev trap" id="eMis">lw from 0x1002</button>
+        <button class="btn ev trap" id="eTimer">timer interrupt (MTIP)</button>
+        <button class="btn ev" id="eFix">handler: mepc += 4</button>
+        <button class="btn ev" id="eMie">csrsi mstatus, 8 (MIE = 1)</button>
+        <button class="btn ev ret" id="eMret">mret</button>
+      </div>
+      <div class="regs" id="regs"></div>
+      <div class="mst" id="mst"></div>
+      <div class="narr" id="tNarr"></div>
+      <div class="log" id="tLog" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="csr" aria-labelledby="h-csr">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 2 · Section 8.2</div>
+      <h2 id="h-csr">The address tells you who may touch a CSR</h2>
+      <p class="principle">The 12-bit CSR address carries its own permissions. <b>Bits [11:10] = 11</b> means read-only: any write traps as illegal. <b>Bits [9:8]</b> give the lowest privilege that may access it: 00 = U, 01 = S, 10 = H (hypervisor), 11 = M. Note that csrr is <code>csrrs rd, csr, x0</code>, which does not write, so it never trips the read-only check.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="cIn">CSR address (hex)</label><input class="hex" id="cIn" value="300" style="width:7ch">
+        <span class="caption">Try:</span>
+        <span id="cChips" class="controls"></span>
+      </div>
+      <div class="fields" id="cFields"></div>
+      <div class="scroll"><table class="t" id="cTbl"></table></div>
+      <div class="narr" id="cNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="int" aria-labelledby="h-int">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 3 · Section 8.2</div>
+      <h2 id="h-int">Pending, enabled, globally enabled, then priority</h2>
+      <p class="principle">An interrupt is taken when <b>mip &amp; mie</b> has the bit set and its target mode is globally enabled. Target is S if the bit is set in <b>mideleg</b>, else M. A target is globally enabled when the hart runs at a <b>lower</b> mode (always), or at the <b>same</b> mode with that mode's IE bit set; never when the hart runs <b>above</b> it. Priority: MEI &gt; MSI &gt; MTI &gt; SEI &gt; SSI &gt; STI.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <span class="caption">Hart is in</span>
+        <span class="tog" role="group" aria-label="Current mode"><button data-md="3" aria-pressed="true">M</button><button data-md="1" aria-pressed="false">S</button><button data-md="0" aria-pressed="false">U</button></span>
+        <label class="caption"><input type="checkbox" id="iMIE"> mstatus.MIE</label>
+        <label class="caption"><input type="checkbox" id="iSIE"> mstatus.SIE</label>
+        <button class="btn chip" id="iEx1">scenario: M-mode with MIE = 0</button>
+        <button class="btn chip" id="iEx2">scenario: delegated timer in U</button>
+      </div>
+      <div class="cells" id="iCells"></div>
+      <div class="kpis">
+        <div class="kv"><span class="k">Taken</span><span class="v" id="iWin"></span></div>
+        <div class="kv"><span class="k">Into mode</span><span class="v" id="iTo"></span></div>
+        <div class="kv"><span class="k">xcause</span><span class="v" id="iCause" style="font-size:18px"></span></div>
+        <div class="kv"><span class="k">Vectored PC (base 0x80000100)</span><span class="v" id="iPC" style="font-size:18px"></span></div>
+      </div>
+      <div class="narr" id="iNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="endian" aria-labelledby="h-endian">
+    <div class="exp-head">
+      <div class="eyebrow">Experiment 4 · mstatus MBE, SBE, UBE</div>
+      <h2 id="h-endian">Same word, two byte orders</h2>
+      <p class="principle">RISC-V is little-endian by default: the <b>least significant byte sits at the lowest address</b>. mstatus.MBE/SBE/UBE can make data accesses big-endian per mode; instruction fetch is always little-endian.</p>
+    </div>
+    <div class="bench">
+      <div class="controls">
+        <label class="caption" for="eW">sw value (hex)</label><input class="hex" id="eW" value="deadbeef">
+        <label class="caption" for="eA">to address (hex)</label><input class="hex" id="eA" value="80001000">
+        <span class="tog" role="group" aria-label="Byte order"><button data-be="0" aria-pressed="true">little</button><button data-be="1" aria-pressed="false">big</button></span>
+      </div>
+      <div class="bytes" id="eBytes"></div>
+      <div class="narr" id="eNarr"></div>
+    </div>
+  </section>
+
+  <section class="exp" id="quiz" aria-labelledby="h-quiz">
+    <div class="exp-head">
+      <div class="eyebrow">Self-check · whole chapter</div>
+      <h2 id="h-quiz">Eight questions interviewers actually ask</h2>
+      <p class="caption" id="score">0 right of 0 answered (8 total)</p>
+    </div>
+    <div class="bench quiz" id="quizBox"></div>
+  </section>
+
+  <footer>Companion to the Chapter 8 notes (Harris, Stine, Thompson &amp; Harris, RISC-V System-on-Chip Design). The models follow the RISC-V privileged spec; the notes' Lab 5 section has real RTL and lock-step output.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const h8 = v => (v >>> 0).toString(16).padStart(8, '0');
+  const hex = s => parseInt(String(s).replace(/^0x/i, ''), 16) >>> 0;
+  const MODE = { 3: 'M', 1: 'S', 0: 'U' };
+
+  // ---------- 1. trap simulator ----------
+  const BASE = 0x80000100;
+  let vec = 0, S, prev, changed = new Set();
+  const init = () => ({ mode: 0, pc: 0x80002000, mepc: 0, mcause: 0, mtval: 0, MIE: 0, MPIE: 0, MPP: 0, inTrap: false });
+  const log = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; $('tLog').prepend(d); };
+  function snap() { prev = JSON.parse(JSON.stringify(S)); }
+  function diff() { changed = new Set(Object.keys(S).filter(k => S[k] !== prev[k])); }
+  function trap(isInt, code, tval, why) {
+    snap();
+    if (isInt && S.mode === 3 && !S.MIE) { $('tNarr').textContent = `MTIP is pending, but the hart is in M-mode with MIE = 0, so the interrupt waits. (Had the hart been in U or S it would be taken regardless of MIE: lower modes cannot mask M interrupts.)`; log('n', 'interrupt pending, masked (M-mode, MIE = 0)'); render(); return; }
+    const from = S.mode;
+    S.mepc = S.pc;
+    S.mcause = ((isInt ? 0x80000000 : 0) | code) >>> 0;
+    S.mtval = tval >>> 0;
+    S.MPIE = S.MIE; S.MIE = 0; S.MPP = from; S.mode = 3;
+    S.pc = (BASE + (vec && isInt ? 4 * code : 0)) >>> 0;
+    S.inTrap = true;
+    diff();
+    log('t', `TRAP ${why}: mepc=${h8(S.mepc)} mcause=${h8(S.mcause)} mtval=${h8(S.mtval)} ${MODE[from]}→M pc=${h8(S.pc)}`);
+    let n = `Entered M from ${MODE[from]}. `;
+    n += isInt ? `Interrupt: it was taken between instructions, so the instruction at ${h8(S.mepc)} never started; mret resumes there and software must not touch mepc. ` : `Exception: mepc points at the instruction that caused it; it did not complete. `;
+    if (code === 8 && !isInt) n += 'For ecall the handler must add 4 to mepc, or mret will run the ecall again forever. ';
+    if (code === 2) n += 'Here the word was 0x00000000, which the spec defines as illegal. mtval may hold the faulting instruction bits or zero. ';
+    if (code === 4) n += 'mtval holds the faulting address. ';
+    n += vec && isInt ? `Vectored mode: PC = base + 4 × ${code}.` : 'PC = mtvec base' + (vec ? ' (vectored mode applies only to interrupts).' : '.');
+    $('tNarr').textContent = n;
+    render();
+  }
+  function render() {
+    const R = [['mode', MODE[S.mode]], ['pc', h8(S.pc)], ['mepc', h8(S.mepc)], ['mcause', h8(S.mcause)], ['mtval', h8(S.mtval)], ['mtvec', h8(BASE | vec)]];
+    $('regs').innerHTML = R.map(([k, v]) => `<div class="reg${changed.has(k) ? ' chg' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+    const M = [['MIE', S.MIE], ['MPIE', S.MPIE], ['MPP', S.MPP.toString(2).padStart(2, '0') + ' (' + MODE[S.MPP] + ')']];
+    $('mst').innerHTML = '<div><b>mstatus</b>bits</div>' + M.map(([k, v]) => `<div class="${changed.has(k) ? 'chg' : ''}"><b>${k}</b>${v}</div>`).join('');
+    const inM = S.mode === 3;
+    $('eEcall').textContent = inM ? 'ecall (from M, cause 11)' : `ecall (from ${MODE[S.mode]}, cause 8)`;
+    $('eMret').disabled = !inM; $('eFix').disabled = !inM; $('eMie').disabled = !inM;
+  }
+  function reset() { S = init(); changed = new Set(); $('tLog').innerHTML = ''; log('n', 'reset: U-mode program at 80002000, mtvec = ' + h8(BASE | vec)); $('tNarr').textContent = 'A U-mode program is running. Raise an event. Changed registers turn copper.'; render(); }
+  $('eStep').onclick = () => { snap(); S.pc = (S.pc + 4) >>> 0; diff(); log('n', `retire @${h8(prev.pc)} → pc=${h8(S.pc)}`); $('tNarr').textContent = 'One instruction retired; only the PC moved (minstret would count it).'; render(); };
+  $('eEcall').onclick = () => trap(false, S.mode === 3 ? 11 : S.mode === 1 ? 9 : 8, 0, 'ecall');
+  $('eIll').onclick = () => trap(false, 2, 0, 'illegal instruction');
+  $('eMis').onclick = () => trap(false, 4, 0x1002, 'load address misaligned');
+  $('eTimer').onclick = () => trap(true, 7, 0, 'machine timer interrupt');
+  $('eFix').onclick = () => { snap(); S.mepc = (S.mepc + 4) >>> 0; diff(); log('n', `csrw mepc, ${h8(S.mepc)}`); $('tNarr').textContent = 'Software skipped the trapping instruction. Right for ecall; for an interrupt this would skip a real instruction (the classic mepc-off-by-4 bug from Lab 5).'; render(); };
+  $('eMie').onclick = () => { snap(); S.MIE = 1; diff(); log('n', 'csrsi mstatus, 8'); $('tNarr').textContent = 'MIE = 1 in M-mode. A real handler does this only if it wants nested interrupts, after saving mepc and mcause.'; render(); };
+  $('eMret').onclick = () => {
+    snap(); const to = S.MPP; S.pc = S.mepc; S.MIE = S.MPIE; S.MPIE = 1; S.mode = to; S.MPP = 0; diff();
+    log('r', `MRET → pc=${h8(S.pc)} mode=${MODE[to]} MIE=${S.MIE}`);
+    $('tNarr').textContent = `Back to ${MODE[to]} at ${h8(S.pc)}. MIE restored from MPIE, MPIE set to 1, MPP dropped to U. If this was an ecall and you did not add 4, the PC is the ecall again.`;
+    render();
+  };
+  $('tReset').onclick = reset;
+  document.querySelectorAll('[data-vec]').forEach(b => b.addEventListener('click', () => { vec = +b.dataset.vec; document.querySelectorAll('[data-vec]').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); }));
+  reset();
+
+  // ---------- 2. CSR decoder ----------
+  const NAMES = { 0x000: 'ustatus (removed)', 0x001: 'fflags', 0x003: 'fcsr', 0xC00: 'cycle', 0xC01: 'time', 0xC02: 'instret', 0xC80: 'cycleh', 0x100: 'sstatus', 0x104: 'sie', 0x105: 'stvec', 0x140: 'sscratch', 0x141: 'sepc', 0x142: 'scause', 0x143: 'stval', 0x144: 'sip', 0x180: 'satp', 0x300: 'mstatus', 0x301: 'misa', 0x302: 'medeleg', 0x303: 'mideleg', 0x304: 'mie', 0x305: 'mtvec', 0x340: 'mscratch', 0x341: 'mepc', 0x342: 'mcause', 0x343: 'mtval', 0x344: 'mip', 0x3A0: 'pmpcfg0', 0x3B0: 'pmpaddr0', 0xB00: 'mcycle', 0xB02: 'minstret', 0xF11: 'mvendorid', 0xF12: 'marchid', 0xF13: 'mimpid', 0xF14: 'mhartid', 0x7C0: 'custom (M, R/W)' };
+  const CH = [0x300, 0x341, 0xF14, 0xC00, 0x180, 0x7C0];
+  $('cChips').innerHTML = CH.map(a => `<button class="btn chip" data-c="${a.toString(16)}">${NAMES[a].split(' ')[0]}</button>`).join('');
+  function renderCSR() {
+    const a = hex($('cIn').value) & 0xFFF, ro = (a >> 10) === 3, lvl = (a >> 8) & 3, lname = ['U', 'S', 'H', 'M'][lvl];
+    $('cFields').innerHTML = `<div><b>[11:10]</b>${(a >> 10).toString(2).padStart(2, '0')}</div><div><b>[9:8]</b>${lvl.toString(2).padStart(2, '0')}</div><div><b>[7:0]</b>${(a & 255).toString(16).padStart(2, '0')}</div><div><b>access</b>${ro ? 'read-only' : 'read/write'}</div><div><b>min mode</b>${lname}</div><div><b>name</b>${NAMES[a] || 'unassigned'}</div>`;
+    const rows = [[0, 'U'], [1, 'S'], [3, 'M']].map(([m, n]) => {
+      const can = m >= lvl; const rd = can, wr = can && !ro;
+      return `<tr><td>${n}-mode</td><td class="${rd ? 'ok-t' : 'no-t'}">${rd ? 'csrr OK' : 'illegal instr (cause 2)'}</td><td class="${wr ? 'ok-t' : 'no-t'}">${wr ? 'csrw OK' : 'illegal instr (cause 2)'}</td></tr>`;
+    }).join('');
+    $('cTbl').innerHTML = `<thead><tr><th>Executing in</th><th>Read (csrrs rd, csr, x0)</th><th>Write (csrw / csrrs with rs1 ≠ x0)</th></tr></thead><tbody>${rows}</tbody>`;
+    let n = ro ? 'Read-only space. In Lab 5, csrw mvendorid (0xF11) trapped as illegal; that is the test the book suggests and a classic hole.' : 'Writable space. Individual fields may still be WARL (write any, read legal) or WPRI (reserved, read zero).';
+    if (a === 0xC00 || a === 0xC01) n += ' U-level counters are additionally gated by mcounteren/scounteren: the address says U may read, the enable bit can still forbid it.';
+    if (lvl === 2) n += ' 10 = hypervisor level: illegal unless the H extension is implemented.';
+    if (!NAMES[a]) n += ' Unassigned address: an implementation must raise illegal instruction on any access.';
+    $('cNarr').textContent = n;
+  }
+  $('cIn').addEventListener('input', renderCSR);
+  document.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => { $('cIn').value = b.dataset.c; renderCSR(); }));
+  renderCSR();
+
+  // ---------- 3. interrupt calculator ----------
+  const INTS = [['MEI', 11], ['MSI', 3], ['MTI', 7], ['SEI', 9], ['SSI', 1], ['STI', 5]];
+  const st = { mode: 3, MIE: false, SIE: false, ip: {}, ie: {}, dl: {} };
+  INTS.forEach(([n]) => { st.ip[n] = false; st.ie[n] = false; st.dl[n] = false; });
+  st.ip.MTI = true; st.ie.MTI = true; st.MIE = true;
+  function cellsHTML() {
+    return INTS.map(([n, c]) => `<div class="cell" data-i="${n}"><b>${n} · code ${c}</b><label><input type="checkbox" data-k="ip" data-n="${n}" ${st.ip[n] ? 'checked' : ''}> mip</label><label><input type="checkbox" data-k="ie" data-n="${n}" ${st.ie[n] ? 'checked' : ''}> mie</label><label><input type="checkbox" data-k="dl" data-n="${n}" ${st.dl[n] ? 'checked' : ''} ${n[0] === 'M' ? 'disabled' : ''}> mideleg</label><span class="st"></span></div>`).join('');
+  }
+  function renderInt() {
+    $('iMIE').checked = st.MIE; $('iSIE').checked = st.SIE;
+    document.querySelectorAll('[data-md]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.md === st.mode));
+    let win = null, notes = [];
+    INTS.forEach(([n, c]) => {
+      const tgt = st.dl[n] ? 1 : 3;
+      let en, why;
+      if (!st.ip[n]) { en = false; why = 'not pending'; }
+      else if (!st.ie[n]) { en = false; why = 'masked by mie'; }
+      else if (st.mode < tgt) { en = true; why = `→ ${MODE[tgt]} (hart below target: always)`; }
+      else if (st.mode === tgt) { en = tgt === 3 ? st.MIE : st.SIE; why = en ? `→ ${MODE[tgt]} (${MODE[tgt]}IE = 1)` : `blocked: ${MODE[tgt]}IE = 0`; }
+      else { en = false; why = `blocked: hart is in M, above target S`; }
+      const cell = document.querySelector(`.cell[data-i="${n}"]`);
+      cell.querySelector('.st').innerHTML = `<span class="${en ? 'ok-t' : 'caption'}">${why}</span>`;
+      cell.classList.remove('win');
+      if (en && !win) win = { n, c, tgt, cell };
+    });
+    if (win) {
+      win.cell.classList.add('win');
+      $('iWin').textContent = win.n; $('iTo').textContent = MODE[win.tgt];
+      $('iCause').textContent = '0x' + h8(0x80000000 | win.c);
+      $('iPC').textContent = '0x' + h8(0x80000100 + 4 * win.c);
+      $('iNarr').textContent = `${win.n} wins on fixed priority. The ${win.tgt === 3 ? 'M' : 'S'}-mode trap writes ${win.tgt === 3 ? 'mepc/mcause' : 'sepc/scause'}, clears ${win.tgt === 3 ? 'MIE' : 'SIE'} and jumps to the ${win.tgt === 3 ? 'mtvec' : 'stvec'} vector. Pending bits stay set until the source (CLINT/PLIC) is cleared, so the handler must clear it or the interrupt fires again on mret.`;
+    } else {
+      ['iWin', 'iTo', 'iCause', 'iPC'].forEach(id => $(id).textContent = '—');
+      $('iNarr').textContent = 'No interrupt is taken this cycle. Check each card: pending, enabled in mie, then the global enable for its target mode.';
+    }
+  }
+  $('iCells').innerHTML = cellsHTML();
+  $('iCells').addEventListener('change', e => { const t = e.target; if (!t.dataset.k) return; st[t.dataset.k][t.dataset.n] = t.checked; renderInt(); });
+  $('iMIE').onchange = e => { st.MIE = e.target.checked; renderInt(); };
+  $('iSIE').onchange = e => { st.SIE = e.target.checked; renderInt(); };
+  document.querySelectorAll('[data-md]').forEach(b => b.addEventListener('click', () => { st.mode = +b.dataset.md; renderInt(); }));
+  const scen = (o) => { Object.assign(st, o.top); INTS.forEach(([n]) => { st.ip[n] = !!o.ip[n]; st.ie[n] = !!o.ie[n]; st.dl[n] = !!o.dl[n]; }); $('iCells').innerHTML = cellsHTML(); renderInt(); };
+  $('iEx1').onclick = () => scen({ top: { mode: 3, MIE: false, SIE: true }, ip: { MTI: 1, SSI: 1 }, ie: { MTI: 1, SSI: 1 }, dl: { SSI: 1 } });
+  $('iEx2').onclick = () => scen({ top: { mode: 0, MIE: false, SIE: false }, ip: { STI: 1 }, ie: { STI: 1 }, dl: { STI: 1 } });
+  renderInt();
+
+  // ---------- 4. endianness ----------
+  let be = 0;
+  function renderE() {
+    const w = hex($('eW').value), a = hex($('eA').value);
+    const b = [0, 1, 2, 3].map(i => (w >>> (8 * (be ? 3 - i : i))) & 255);
+    $('eBytes').innerHTML = b.map((x, i) => `<div class="${(be ? i === 3 : i === 0) ? 'lsb' : ''}"><b>${h8(a + i)}</b>${x.toString(16).padStart(2, '0')}</div>`).join('');
+    const lb = b[0];
+    $('eNarr').textContent = `lbu from ${h8(a)} returns 0x${lb.toString(16).padStart(2, '0')}. ${be ? 'Big-endian: the most significant byte is at the lowest address.' : 'Little-endian: the least significant byte (copper) is at the lowest address, so a byte load from the word address returns the low byte.'} A testbench that dumps memory as words but checks bytes must agree with the hart on this.`;
+  }
+  $('eW').addEventListener('input', renderE); $('eA').addEventListener('input', renderE);
+  document.querySelectorAll('[data-be]').forEach(x => x.addEventListener('click', () => { be = +x.dataset.be; document.querySelectorAll('[data-be]').forEach(y => y.setAttribute('aria-pressed', y === x)); renderE(); }));
+  renderE();
+
+  // ---------- 5. quiz ----------
+  const Q = [
+    ['A timer interrupt arrives while add is in Memory. What goes into mepc in a design like Wally, which takes traps in M?', ['PC of add + 4', 'PC of add: it has not committed, so it will be re-executed after mret', 'mtvec', 'PC of the instruction in Fetch'], 1, 'The trapping slot is flushed along with everything younger. mepc must point at the oldest instruction that did not complete. Lab 5 BUG_MEPC_PLUS4 broke exactly this.'],
+    ['After ecall, mret returns to the ecall itself. Bug in hardware?', ['Yes, mepc should be PC+4', 'No: for exceptions mepc = PC of the faulting instruction; the handler adds 4 for ecall', 'Yes, mret should add 4', 'Only in U-mode'], 1, 'Hardware does the same for every exception. Software decides whether to retry (page fault) or skip (ecall).'],
+    ['Code in U-mode, mstatus.MIE = 0, MTIP pending and enabled in mie. Is the interrupt taken?', ['No, MIE = 0', 'Yes: M interrupts are always globally enabled when the hart runs below M', 'Only if delegated', 'Only in vectored mode'], 1, 'xIE only gates interrupts targeting the mode the hart is currently in. Lower-privilege code cannot mask higher-privilege interrupts.'],
+    ['csrw 0xF14, t0 (mhartid) in M-mode. What happens?', ['Write is ignored', 'Illegal instruction exception: bits [11:10] = 11 mark the CSR read-only', 'mhartid changes', 'Store access fault'], 1, 'Even M-mode cannot write read-only space. A test for this is cheap and is often missing.'],
+    ['Why does Wally flush and refetch after a CSR write?', ['To save power', 'A CSR write can change how younger, already fetched instructions should behave (mode, enables, translation)', 'The register file needs it', 'Only for timing closure'], 1, 'E.g. writing satp or mstatus.MPRV. In my Lab 5 core BUG_CSR_NOFLUSH was invisible because every CSR effect is consumed in M; in a core with MMU it is a real bug.'],
+    ['Two exceptions in one instruction: misaligned load address and a page fault on the same access. Which is reported?', ['Page fault', 'The one with higher fixed priority in the spec table', 'Both, in mcause bits', 'Random'], 1, 'Synchronous exceptions follow a fixed priority (instruction-side first, then illegal/ecall/ebreak, then load/store). Check the table; misaligned vs access/page fault priority is a known corner.'],
+    ['Lock-step compare against an ISS fails at the first instruction after an interrupt. Most likely root cause in the testbench?', ['ISS bug', 'The ISS took the interrupt at a different instruction: async events must be fed to the reference model at the DUT\'s retire point', 'Clock skew', 'Memory model'], 1, 'Reference models cannot predict interrupt timing. RVVI-style flows pass "interrupt taken here" from DUT to ISS, then check it was legal.'],
+    ['mret with MPIE = 1 executes. What are MIE and MPIE afterwards?', ['MIE = 0, MPIE = 1', 'MIE = 1, MPIE = 1', 'MIE = 1, MPIE = 0', 'Unchanged'], 1, 'MIE ← MPIE, then MPIE ← 1. BUG_MRET_NOMIE (forgetting MIE ← MPIE) hung my interrupt test: no further timer interrupts.']
+  ];
+  Q.forEach((q, i) => { const r = (i * 3 + 1) % 4; const opts = q[1].slice(r).concat(q[1].slice(0, r)); q[2] = (q[2] - r + 4) % 4; q[1] = opts; });
+  let answered = 0, right = 0;
+  const box = $('quizBox');
+  box.innerHTML = Q.map((q, i) => `<div class="q" data-q="${i}"><b>${i + 1}. ${q[0]}</b><div class="opts">${q[1].map((o, j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('');
+  box.querySelectorAll('.q').forEach(qe => {
+    const i = +qe.dataset.q;
+    qe.querySelectorAll('button.opt').forEach(b => b.addEventListener('click', () => {
+      if (qe.dataset.done) return; qe.dataset.done = 1; answered++;
+      const j = +b.dataset.j, ok = j === Q[i][2]; if (ok) right++;
+      b.classList.add(ok ? 'right' : 'wrong'); qe.querySelectorAll('button.opt')[Q[i][2]].classList.add('right');
+      const w = qe.querySelector('.why'); w.hidden = false; w.textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i][3];
+      $('score').textContent = `${right} right of ${answered} answered (8 total)`;
+    }));
+  });
+})();
+</script>
