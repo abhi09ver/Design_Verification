@@ -54,6 +54,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | **PCIe** | [22 – LTSSM](22-pcie-ltssm-link-recovery.md) | [21 – AXI↔PCIe bridge](21-protocol-bridge-verification-axi-to-pcie.md) | — |
 | **UART** | [UART cheat sheet](uart-dv-pack/UART_CHEATSHEET.md) | [cards PDF](uart-dv-pack/uart-dv-cards.pdf) | `uart-dv-pack/code` |
 | **Ready/valid (generic)** | [10](10-ready-valid-handshake-assertions.md) | atlas plate 8 | YARP `rtl_vr` + interface SVA |
+| **GPIO / pinmux** (your own project area) | [GPIO field guide (HTML)](41-gpio-core-pinmux/gpio-dv-field-guide.html) | [41 – GPIO core & pinmux](41-gpio-core-and-pinmux-verification.md), [pinmux STAR story](41-gpio-core-pinmux/interview-story-pinmux.md) | `41-gpio-core-pinmux/tb`, `rtl` (`make smoke`, `make bugs`) |
 
 ## Career framing
 
@@ -69,3 +70,4 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | pq5 5-stage | 10/10 directed + 500/500 random; cycles = 4 + N + stalls + 2×flushes; no-prediction CPI 1.02 → 1.66 |
 | YARP core | 4 RTL bugs (SLT, branch signedness, JALR phantom load, first-cycle double execute) |
 | YARP course TB | 17 TB bugs fixed; mutation 4/9 → 9/9 caught, false failures 40% → 0 |
+| GPIO kit (41) | 37/37 directed checks; 4/4 injected bugs caught; the W1C-vs-event race passed every directed check and only a white-box assertion caught it |
