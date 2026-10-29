@@ -11,7 +11,8 @@ Everything from studying Cristian Slav's course *Design Verification with System
 | Practice drills | [INTERVIEW-QA.md](INTERVIEW-QA.md) | All 244 questions from both pages, with collapsible model answers. Answer first, then open. |
 | Deep revision | [notes/](notes/) | Chapter notes as Markdown: readable on GitHub and on your phone |
 | Visual / interactive | [pages/](pages/) | The two HTML study pages (diagrams, 7 toys). Download and open in a browser. |
-| Code questions | [project/](project/) | The full RTL and UVM environment (46 files) to point at while answering |
+| Code questions | [project/](project/) | The full RTL and UVM environment (46 files) to point at while answering, plus a passing run log in `project/run-results/` |
+| Source material | [transcripts/](transcripts/README.md) | 92 lecture transcripts, one file per video, grouped by chapter |
 
 ## What's inside
 
@@ -37,6 +38,8 @@ aligner-uvm-course/
 │   ├── uvm-from-zero.html      beginner course + companion (interactive)
 │   └── aligner-uvm-lab.html    senior lab (architecture, hidden concepts, bug hunting)
 ├── project/                    complete EDA Playground project (RTL + UVM env) + README
+│   └── run-results/            xrun.log + run.sh of a passing run
+├── transcripts/                92 lecture transcripts by chapter (source material)
 ├── exercises/rx_err/           illegal RX traffic test (the exercise solution)
 └── docs/aligner_datasheet_v_1_0_2.pdf
 ```
