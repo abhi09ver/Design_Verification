@@ -9,6 +9,8 @@ Built from **Arm IHI 0069H.b** (GICv3.3 / GICv4.2, April 2024).
 |---|---|
 | [`35-gic/pages/gic-from-zero.html`](35-gic/pages/gic-from-zero.html) | Beginner page: 14 levels with everyday stories, diagrams, quiz checks and a clickable "be the CPU" simulator |
 | [`35-gic/pages/gic-field-guide.html`](35-gic/pages/gic-field-guide.html) | Senior page: architecture diagrams, ITS/v4 detail, bug-hunt list, 16 interview Q&As, 60-second pitch |
+| [`35-gic/printables/`](35-gic/printables/) | PDF versions of both pages, readable on GitHub and phones |
+| [`35-gic/docs/`](35-gic/docs/README.md) | The Arm spec PDF, a searchable text copy, and a chapter/register page map |
 | [`35-gic/code/python/gic_ref_model.py`](35-gic/code/python/gic_ref_model.py) | Small readable GICv3 reference model (state machine, priority, routing, sleep, mini ITS) |
 | [`35-gic/code/python/test_gic_ref_model.py`](35-gic/code/python/test_gic_ref_model.py) | 21 unit tests, one per interview corner case |
 | [`35-gic/code/sv/gic_cpu_if_sva.sv`](35-gic/code/sv/gic_cpu_if_sva.sv) | SVA checker: masking, liveness, spurious IAR, WAKER handshake, ITS queue + covers |

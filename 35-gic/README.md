@@ -4,9 +4,16 @@ Everything for GICv3 / GICv4 interview prep in one place. Start with the cheat s
 
 ```
 35-gic/
+├── docs/
+│   ├── README.md                                     # chapter + register page map for the spec
+│   ├── IHI0069H_b_gic_architecture_specification.pdf # the Arm spec (GICv3.3 / GICv4.2)
+│   └── IHI0069H_b_gic_architecture_specification.txt # searchable text copy
 ├── pages/
 │   ├── gic-from-zero.html      # beginner: stories, diagrams, quizzes, "be the CPU" simulator
 │   └── gic-field-guide.html    # senior: architecture, ITS, v4, DV strategy, bug list, Q&A
+├── printables/
+│   ├── gic-from-zero.pdf       # 16-page PDF of the beginner page (opens on GitHub and phones)
+│   └── gic-field-guide.pdf     # 24-page PDF of the senior page, all Q&A answers expanded
 └── code/
     ├── python/
     │   ├── gic_ref_model.py         # readable GICv3 reference model
@@ -23,6 +30,9 @@ Everything for GICv3 / GICv4 interview prep in one place. Start with the cheat s
 3. `pages/gic-field-guide.html` for depth and the Q&A (≈1–2 h).
 4. Read `code/python/test_gic_ref_model.py`: each test is a corner case you can talk through.
 5. Skim `code/sv/` so you can describe concrete assertions and a scoreboard strategy.
+6. When an answer needs the exact rule, jump to the page listed in [`docs/README.md`](docs/README.md).
+
+On a phone or on GitHub, open the PDFs in `printables/` instead of the HTML pages (GitHub shows `.html` as source). The simulator and quiz buttons only work in the HTML versions.
 
 ## Running the code
 
