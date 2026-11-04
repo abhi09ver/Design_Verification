@@ -2,7 +2,7 @@
 
 Everything in this repo, arranged by **what the interviewer will ask** rather than by when it was written. Each row points to the fastest file first and the deep one second.
 
-> **Everything in one download:** the [latest release](../../releases/latest) has `DV-interview-prep-all.zip` (the whole repo) and `DV-interview-prep-docs-only.zip` (only notes, PDFs and HTML pages, for a phone or tablet).
+> **Everything in one download:** on the repo's main page, use **Code → Download ZIP** (all notes, PDFs, HTML pages and code, about 57 MB).
 > **Full list of all 232 documents:** [LIBRARY.md](LIBRARY.md).
 >
 > **GitHub shows `.html` as source.** Download a zip and open the pages locally; they work offline except for web fonts.

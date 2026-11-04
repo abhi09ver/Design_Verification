@@ -1,6 +1,6 @@
 # Design_Verification
 
-> **One-stop entry points:** [START-HERE.md](START-HERE.md) (what to read, in order) · [LIBRARY.md](LIBRARY.md) (all 232 documents) · [latest release](../../releases/latest) (everything as one zip).
+> **One-stop entry points:** [START-HERE.md](START-HERE.md) (what to read, in order) · [LIBRARY.md](LIBRARY.md) (all 232 documents) · **Code → Download ZIP** (everything as one download).
 
 Interview preparation notes for Senior Design Verification (DV) Engineer roles.
 
