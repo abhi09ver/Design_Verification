@@ -1,0 +1,2 @@
+#e1(15Oct2026:00:33:18): source ./xcelium.d/env.d/env.history.15Oct2026_00_33_18
+s1(15Oct2026:00:33:18):  xrun -Q -unbuffered -timescale 1ns/1ns -sysv -coverage functional -svseed random -access +rw +UVM_TESTNAME=cfs_algn_test_random +UVM_MAX_QUIT_COUNT=1 -f messages.f -uvmnocdnsextra -uvmhome /xcelium25.03/tools//methodology/UVM/CDNS-1.2/sv /xcelium25.03/tools//methodology/UVM/CDNS-1.2/sv/src/uvm_macros.svh design.sv testbench.sv 
