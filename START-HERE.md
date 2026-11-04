@@ -2,7 +2,10 @@
 
 Everything in this repo, arranged by **what the interviewer will ask** rather than by when it was written. Each row points to the fastest file first and the deep one second.
 
-> **GitHub shows `.html` as source.** Download the repo (Code → Download ZIP) and open the pages locally; they work offline except for web fonts.
+> **Everything in one download:** the [latest release](../../releases/latest) has `DV-interview-prep-all.zip` (the whole repo) and `DV-interview-prep-docs-only.zip` (only notes, PDFs and HTML pages, for a phone or tablet).
+> **Full list of all 232 documents:** [LIBRARY.md](LIBRARY.md).
+>
+> **GitHub shows `.html` as source.** Download a zip and open the pages locally; they work offline except for web fonts.
 
 ## The night before (90 minutes)
 
@@ -22,6 +25,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | **SystemVerilog language & OOP** | [SV cheat sheet](sv-course-sessions/CHEATSHEET.md) | [23 – SV OOP](23-systemverilog-oop.md), [sessions 1–5](sv-course-sessions/README.md) | `sv-course-sessions/code/` |
 | **Constrained random** | [02](02-constrained-random-verification-storytelling.md) | [Session 4: 12 constraint puzzles](sv-course-sessions/04-session4-constraints.md), atlas plate 20 | YARP `yarp_tr_cmp` (`cpu-lab/yarp/qs/course_fixed/yarp_tests.sv`) |
 | **UVM** | [07 – Pillars](07-uvm-pillars-phasing-factory-config-db.md) | [01](01-uvm-config-db-phasing-trap.md), [05](05-virtual-sequences.md), [15 RAL](15-uvm-register-model-ral.md), [16 TLM](16-uvm-tlm-ports-exports-fifos.md), [19 TB from scratch](19-building-uvm-testbench-from-scratch.md) | [`aligner-uvm-course/project/`](aligner-uvm-course/README.md) |
+| **UVM from zero (Aligner course)** | [Last 30 minutes](aligner-uvm-course/cheatsheets/LAST-30-MINUTES.md), [beginner levels](aligner-uvm-course/notes/uvm-from-zero/00-levels-beginner.md) | [244 Q&A](aligner-uvm-course/INTERVIEW-QA.md), [real findings in your code](aligner-uvm-course/notes/senior-lab/12-real-findings-in-your-code.md), pages: [`uvm-from-zero.html`](aligner-uvm-course/pages/uvm-from-zero.html), [`aligner-uvm-lab.html`](aligner-uvm-course/pages/aligner-uvm-lab.html), [Aligner datasheet (PDF)](aligner-uvm-course/docs/aligner_datasheet_v_1_0_2.pdf) | `aligner-uvm-course/project/` |
 | **Class-based TB (non-UVM)** | atlas plate 19 | [38 – YARP TB review](38-yarp-class-based-testbench-review.md), [course notes](cpu-lab/yarp/qs/course_notes/README.md) | `cpu-lab/yarp/qs/course_fixed/` |
 | **Assertions / formal** | [08 – SVA](08-sva-assertions.md) | [10 ready/valid](10-ready-valid-handshake-assertions.md), [13 beyond happy path](13-sva-beyond-happy-path.md), [14 formal](14-formal-verification.md) | `cpu-lab/tb/core_sva.sv`, YARP interface SVA |
 | **Coverage & closure** | [11](11-functional-vs-code-coverage.md) | [09 plateau](09-coverage-plateau-closure.md), [18 architecture](18-coverage-architecture.md), atlas plate 23 | YARP compare-corner coverage (38 §1) |
@@ -39,6 +43,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 | **RV32I ISA, single-cycle** | atlas plates 1–9 | [37 – YARP core review](37-yarp-single-cycle-core-review.md) | `cpu-lab/yarp/` |
 | **5-stage pipeline & hazards** | [40 – Six questions](40-five-stage-pipeline-interview-answers.md) | [29 – Pipelined CPU](29-pipelined-in-order-cpu-hazards.md), [`pequeno_study_guide.html`](cpu-lab/pages/pequeno_study_guide.html) | `cpu-lab/pq5/` |
 | **Out-of-order / Tomasulo** | atlas plates 14–15 | [26 – Tomasulo core](26-ooo-cpu-tomasulo-core.md), [27 – Bug hunt](27-ooo-core-bug-hunt.md), [`tomasulo_core_lab.html`](cpu-lab/pages/tomasulo_core_lab.html) | `cpu-lab/rtl`, `solutions`, `tb` |
+| **RISC-V SoC Design (Harris et al.) book** | [book map](riscv-soc-design/notes/00-book-map.md), [interview playbook](riscv-soc-design/notes/00-interview-playbook.md) | [chapter notes Ch 1–13, 20](riscv-soc-design/README.md), [Ch 5 Design Verification](riscv-soc-design/notes/ch05-design-verification.md) | `riscv-soc-design/cpu-from-scratch` |
 | **Whole HPCA course** | [HPCA flash sheets (127)](hpca/sheets/INDEX.md) | [`hpca/html/flash-sheets/index.html`](hpca/html/flash-sheets/index.html), [my lecture notes](hpca/notes/README.md) | — |
 | **Caches, coherence, consistency** | [cache cheat sheet](cache-coherence/CHEATSHEET.md) | [32](32-cache-coherence-and-memory-consistency.md) | `cache-coherence/sv`, `python` |
 | **MMU / SMMUv3** | [cheat sheet](33-mmu-smmu/05-cheat-sheet.md) | [33 kit](33-mmu-smmu/README.md) | `33-mmu-smmu/code` |
@@ -52,9 +57,9 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 |---|---|---|---|
 | **AXI / AHB / APB** | [AXI PDF](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf) | [17 – Bus protocols](17-bus-protocols-axi-ahb-pcie.md), [sessions 2–3, 5](sv-course-sessions/README.md) | `axi-interview-prep/code` |
 | **PCIe** | [22 – LTSSM](22-pcie-ltssm-link-recovery.md) | [21 – AXI↔PCIe bridge](21-protocol-bridge-verification-axi-to-pcie.md) | — |
-| **UART** | [UART cheat sheet](uart-dv-pack/UART_CHEATSHEET.md) | [cards PDF](uart-dv-pack/uart-dv-cards.pdf) | `uart-dv-pack/code` |
+| **UART** | [UART cheat sheet](uart-dv-pack/UART_CHEATSHEET.md) | [cards PDF](uart-dv-pack/uart-dv-cards.pdf); single cards: [1 fundamentals](uart-dv-pack/cards/01-uart-fundamentals.html), [2 checker](uart-dv-pack/cards/02-checker-architecture.html), [3 baud](uart-dv-pack/cards/03-baud-rate-check.html), [4 framing](uart-dv-pack/cards/04-framing-error.html), [5 parity](uart-dv-pack/cards/05-parity-error.html), [6 break](uart-dv-pack/cards/06-break-condition.html), [7 overrun](uart-dv-pack/cards/07-overrun-error.html), [8 idle line](uart-dv-pack/cards/08-data-validity-idle-line.html), [9 error reporting](uart-dv-pack/cards/09-error-reporting-integration.html), [10 Chipmunk UART map](uart-dv-pack/cards/10-chipmunk-uart-ip-map.html) | `uart-dv-pack/code` |
 | **Ready/valid (generic)** | [10](10-ready-valid-handshake-assertions.md) | atlas plate 8 | YARP `rtl_vr` + interface SVA |
-| **GPIO / pinmux** (your own project area) | [GPIO field guide (HTML)](41-gpio-core-pinmux/gpio-dv-field-guide.html) | [41 – GPIO core & pinmux](41-gpio-core-and-pinmux-verification.md), [pinmux STAR story](41-gpio-core-pinmux/interview-story-pinmux.md) | `41-gpio-core-pinmux/tb`, `rtl` (`make smoke`, `make bugs`) |
+| **GPIO / pinmux** (your own project area) | [GPIO field guide (HTML)](41-gpio-core-pinmux/gpio-dv-field-guide.html) | [41 – GPIO core & pinmux](41-gpio-core-and-pinmux-verification.md), [pinmux STAR story](41-gpio-core-pinmux/interview-story-pinmux.md), [kit README](41-gpio-core-pinmux/README.md), [IP package notes](41-gpio-core-pinmux/ip/README.md) | `41-gpio-core-pinmux/tb`, `rtl` (`make smoke`, `make bugs`) |
 
 ## Career framing
 
