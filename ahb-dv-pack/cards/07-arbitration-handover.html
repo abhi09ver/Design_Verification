@@ -1,0 +1,147 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Arbitration and Handover</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+pre{margin:0;font:12px/1.5 'IBM Plex Mono',monospace;background:#12161C;color:#E6EDF3;padding:12px 14px;border-radius:8px;white-space:pre-wrap}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.bad{background:#F8D4D4;color:#7F1D1D;font-weight:600}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+.step{display:flex;gap:10px;align-items:flex-start}
+.n{flex:none;width:26px;height:26px;border-radius:13px;background:#0E5A8A;color:#FFFFFF;font:600 13px/26px 'IBM Plex Mono',monospace;text-align:center}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 07 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">Arbitration &amp; bus handover</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">Multi-master AHB2: request, grant, ownership, HMASTER, default master and locked transfers — and why the data bus changes owner one cycle after the address bus.</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">07</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Flow</div>
+<h2 class="h">Request → grant → own</h2>
+<div style="display: flex; flex-direction: column; gap: 9px">
+<div class="step"><div class="n">1</div><p>Master asserts <code>HBUSREQx</code> (and <code>HLOCKx</code> for an atomic sequence).</p></div>
+<div class="step"><div class="n">2</div><p>Arbiter samples requests every rising edge and asserts one <code>HGRANTx</code> using its scheme.</p></div>
+<div class="step"><div class="n">3</div><p>Master <b>owns the address bus</b> on the edge where <code>HGRANTx = 1 &amp; HREADY = 1</code>, and drives NONSEQ next cycle.</p></div>
+<div class="step"><div class="n">4</div><p>Arbiter drives <code>HMASTER</code> with the owner's ID (M→S mux select; slaves record it for SPLIT) and <code>HMASTLOCK</code> if locked.</p></div>
+<div class="step"><div class="n">5</div><p>Data bus (HWDATA) follows one cycle later using a <b>registered HMASTER</b>.</p></div>
+</div>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Key facts</div>
+<ul>
+<li>Up to <b>16 masters</b> (HMASTER[3:0]).</li>
+<li>Arbitration <b>algorithm is not defined</b> by the spec: fixed priority, round-robin, weighted, TDMA are all legal.</li>
+<li><b>Default master</b>: granted when nobody requests; must drive IDLE (keeps the bus defined).</li>
+<li><b>Dummy master</b>: granted when every requester is SPLIT; only drives IDLE.</li>
+<li>Arbiter may change grant during an <b>INCR</b> burst anytime; for fixed-length bursts it usually waits, but the spec allows early termination — the master re-requests and finishes with NONSEQ + INCR.</li>
+<li>A master granted but with nothing to do must drive <b>IDLE</b>.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Timing — handover from M1 (ending a burst) to M2</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th></tr>
+<tr><td>HBUSREQ_M2</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>HGRANT_M1 / M2</td><td>1 / 0</td><td class="hl">0 / 1</td><td>0 / 1</td><td>0 / 1</td></tr>
+<tr><td>HREADY</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>HMASTER</td><td>M1</td><td>M1</td><td class="hl">M2</td><td>M2</td></tr>
+<tr><td>HTRANS · HADDR</td><td>SEQ · A+8 (M1)</td><td>SEQ · A+C (M1, last)</td><td class="lo">NONSEQ · B (M2)</td><td class="lo">SEQ · B+4 (M2)</td></tr>
+<tr><td>HWDATA from</td><td>M1 · D(A+4)</td><td>M1 · D(A+8)</td><td>M1 · D(A+C)</td><td class="lo">M2 · D(B)</td></tr>
+</table>
+<p>Grant moves to M2 in T2; M2 samples <code>HGRANT &amp; HREADY</code> high at the end of T2 and takes the <b>address</b> bus in T3. M1 still owns the <b>data</b> bus in T3 to finish its last beat — ownership of data lags address by exactly one transfer.</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Locked transfers</div>
+<ul>
+<li>Master asserts <code>HLOCKx</code> together with HBUSREQx, at least one cycle before the first locked address.</li>
+<li>Arbiter drives <code>HMASTLOCK</code> during the locked address phases and <b>won't grant anyone else</b> until the sequence ends.</li>
+<li>Use: atomic read-modify-write (SWP), semaphores, mutexes.</li>
+<li>Recommended: an <b>IDLE</b> after the last locked transfer before re-arbitrating.</li>
+<li>Slaves must treat a locked sequence atomically (e.g. a multi-port memory blocks other ports).</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Schemes compared</div>
+<table class="t">
+<tr><th>Scheme</th><th>Pro</th><th>Con</th></tr>
+<tr><td>Fixed priority</td><td>Tiny, predictable for CPU</td><td>Starves low priority</td></tr>
+<tr><td>Round-robin</td><td>Fair, bounded latency</td><td>No urgency</td></tr>
+<tr><td>Weighted RR</td><td>Bandwidth shares</td><td>More logic</td></tr>
+<tr><td>TDMA</td><td>Guaranteed slots</td><td>Wastes idle slots</td></tr>
+</table>
+</section>
+
+<section class="w" style="grid-column: span 5">
+<div class="k">Traps</div>
+<ul>
+<li><b>Grant ≠ ownership</b>: HGRANT can change any cycle; it only counts on an edge with HREADY high.</li>
+<li>Using HMASTER (not its registered copy) for the HWDATA mux sends the wrong master's data.</li>
+<li>Master losing grant mid-burst must restart with <b>NONSEQ</b>, never resume with SEQ.</li>
+<li>Grant during a wait state: new owner waits for HREADY before driving.</li>
+<li>No handover while HMASTLOCK is high.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">Arbiter checks &amp; coverage</div>
+<pre>a_onehot : assert property (@(posedge HCLK) $onehot(HGRANT));
+
+a_lock_hold : assert property (@(posedge HCLK) disable iff (!HRESETn)
+  (HMASTLOCK &amp;&amp; HREADY) |=&gt; $stable(HMASTER));
+
+// round-robin fairness: a request is granted within N cycles
+a_no_starve : assert property (@(posedge HCLK) disable iff (!HRESETn)
+  HBUSREQ[i] |-&gt; ##[1:MAX_WAIT] HGRANT[i]);
+
+covergroup cg_handover @(posedge HCLK iff (HREADY &amp;&amp; owner_change));
+  cp_from : coverpoint prev_master;  cp_to : coverpoint HMASTER;
+  x_pair  : cross cp_from, cp_to;           // every master-pair handover
+  cp_when : coverpoint ctx;  // enum {MID_INCR, AFTER_FIXED, DURING_WAIT, AFTER_LOCK}
+endgroup</pre>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Interview rapid-fire</div>
+<div class="qa">
+<div><p>Why does the data bus switch one cycle after the address bus?</p><p>Pipelining: the old master's last data phase overlaps the new master's first address phase.</p></div>
+<div><p>Default master vs dummy master?</p><p>Default: owns the bus when no one asks. Dummy: owns it when all requesters are SPLIT. Both drive IDLE.</p></div>
+<div><p>How long can a master hold the bus?</p><p>Until the arbiter removes grant; a burst or a locked sequence normally completes first.</p></div>
+<div><p>How do you verify arbiter fairness?</p><p>Saturate all requests, track grant counts and max wait per master, assert a bound, cover every handover pair.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: own the bus = HGRANT &amp; HREADY. Address switches first, data one beat later.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 08 SPLIT &amp; RETRY</p>
+</footer>
+</div>
+</body></html>

@@ -1,0 +1,138 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>AHB Signals</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+.blk{border:1.5px solid #12161C;border-radius:6px;padding:7px 8px;font:600 12px/1.2 'IBM Plex Mono',monospace;text-align:center;background:#FFFFFF;color:#12161C}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 02 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">AHB signal map</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">Every signal, who drives it, which phase it belongs to, and the encodings (HSIZE, HPROT, byte lanes) that interviewers ask you to recite.</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">02</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Master table — orange = AHB2 multi-master only (gone in AHB-Lite)</div>
+<table class="t">
+<tr><th style="width: 13%">Signal</th><th style="width: 9%">Width</th><th style="width: 12%">Driver</th><th style="width: 8%">Phase</th><th>Meaning</th><th style="width: 30%">Interview note</th></tr>
+<tr><td>HCLK</td><td>1</td><td>Clock src</td><td>—</td><td>Bus clock</td><td>All timing on rising edge</td></tr>
+<tr><td>HRESETn</td><td>1</td><td>Reset ctrl</td><td>—</td><td>Active-low reset</td><td>Only active-low signal; masters drive IDLE</td></tr>
+<tr><td>HADDR</td><td>32</td><td>Master</td><td>Addr</td><td>Byte address</td><td>Must be aligned to HSIZE</td></tr>
+<tr><td>HTRANS</td><td>2</td><td>Master</td><td>Addr</td><td>IDLE / BUSY / NONSEQ / SEQ</td><td>Only NONSEQ/SEQ are real transfers</td></tr>
+<tr><td>HWRITE</td><td>1</td><td>Master</td><td>Addr</td><td>1 = write, 0 = read</td><td>Constant across a burst</td></tr>
+<tr><td>HSIZE</td><td>3</td><td>Master</td><td>Addr</td><td>Bytes per beat = 2^HSIZE</td><td>≤ data bus width, constant in burst</td></tr>
+<tr><td>HBURST</td><td>3</td><td>Master</td><td>Addr</td><td>Burst type and length</td><td>SINGLE, INCR, WRAP4/8/16, INCR4/8/16</td></tr>
+<tr><td>HPROT</td><td>4</td><td>Master</td><td>Addr</td><td>Protection / cache attributes</td><td>Unknown → drive 4'b0011</td></tr>
+<tr><td>HWDATA</td><td>8–1024</td><td>Master</td><td>Data</td><td>Write data</td><td>One cycle after HADDR; held while HREADY low</td></tr>
+<tr><td>HSELx</td><td>1</td><td>Decoder</td><td>Addr</td><td>Slave select</td><td>Combinational from HADDR</td></tr>
+<tr><td>HRDATA</td><td>8–1024</td><td>Slave→mux</td><td>Data</td><td>Read data</td><td>Valid only when HREADY high</td></tr>
+<tr><td>HREADYOUT</td><td>1</td><td>Slave</td><td>Data</td><td>This slave's ready</td><td>Goes into the S→M mux</td></tr>
+<tr><td>HREADY</td><td>1</td><td>S→M mux</td><td>Data</td><td>Bus-wide "transfer done"</td><td>Input to every master AND slave</td></tr>
+<tr><td>HRESP</td><td>2 (AHB2)</td><td>Slave</td><td>Data</td><td>OKAY/ERROR/RETRY/SPLIT</td><td>1 bit in AHB-Lite/AHB5</td></tr>
+<tr class="hl"><td>HBUSREQx</td><td>1</td><td>Master</td><td>—</td><td>Request the bus</td><td>One per master</td></tr>
+<tr class="hl"><td>HLOCKx</td><td>1</td><td>Master</td><td>Addr</td><td>Request a locked sequence</td><td>Asserted with HBUSREQ, before address</td></tr>
+<tr class="hl"><td>HGRANTx</td><td>1</td><td>Arbiter</td><td>—</td><td>Master owns next addr phase</td><td>Ownership = HGRANT &amp; HREADY high</td></tr>
+<tr class="hl"><td>HMASTER</td><td>4</td><td>Arbiter</td><td>Addr</td><td>ID of owning master</td><td>Mux select; slaves record it for SPLIT</td></tr>
+<tr class="hl"><td>HMASTLOCK</td><td>1</td><td>Arbiter</td><td>Addr</td><td>Current transfer is locked</td><td>Kept in AHB-Lite (driven by master)</td></tr>
+<tr class="hl"><td>HSPLITx</td><td>16</td><td>Slave</td><td>—</td><td>Which split masters may retry</td><td>One bit per master, to arbiter</td></tr>
+</table>
+</section>
+
+<section class="c" style="grid-column: span 5">
+<div class="k">HSIZE encoding</div>
+<table class="t">
+<tr><th>HSIZE</th><th>Bytes</th><th>Bits</th><th>Name</th></tr>
+<tr><td>000</td><td>1</td><td>8</td><td>Byte</td></tr>
+<tr><td>001</td><td>2</td><td>16</td><td>Halfword</td></tr>
+<tr class="hl"><td>010</td><td>4</td><td>32</td><td>Word</td></tr>
+<tr><td>011</td><td>8</td><td>64</td><td>Doubleword</td></tr>
+<tr><td>100</td><td>16</td><td>128</td><td>4-word line</td></tr>
+<tr><td>101</td><td>32</td><td>256</td><td>8-word line</td></tr>
+<tr><td>110</td><td>64</td><td>512</td><td>—</td></tr>
+<tr><td>111</td><td>128</td><td>1024</td><td>—</td></tr>
+</table>
+<p>Alignment rule: <code>HADDR % 2^HSIZE == 0</code>.</p>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">HPROT[3:0] bits</div>
+<table class="t">
+<tr><th>Bit</th><th>0 means</th><th>1 means</th></tr>
+<tr><td>[0]</td><td>Opcode fetch</td><td>Data access</td></tr>
+<tr><td>[1]</td><td>User access</td><td>Privileged access</td></tr>
+<tr><td>[2]</td><td>Non-bufferable</td><td>Bufferable</td></tr>
+<tr><td>[3]</td><td>Non-cacheable</td><td>Cacheable</td></tr>
+</table>
+<p>Masters with no protection info drive <code>4'b0011</code> (data, privileged, non-bufferable, non-cacheable). Most slaves ignore HPROT; MPUs and memory controllers use it. AHB5 widens it to 7 bits.</p>
+<div class="k" style="margin-top: 6px">Byte lanes, 32-bit little-endian</div>
+<table class="t">
+<tr><th>Access</th><th>HADDR[1:0]</th><th>Active lanes</th></tr>
+<tr><td>Byte</td><td>00 / 01 / 10 / 11</td><td>[7:0] / [15:8] / [23:16] / [31:24]</td></tr>
+<tr><td>Halfword</td><td>00 / 10</td><td>[15:0] / [31:16]</td></tr>
+<tr><td>Word</td><td>00</td><td>[31:0]</td></tr>
+</table>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Group by phase</div>
+<h2 class="h">What is sampled when</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div class="blk" style="background: #DCE8F2; text-align: left; line-height: 1.6">ADDRESS PHASE<br>HADDR · HTRANS<br>HWRITE · HSIZE<br>HBURST · HPROT<br>HSELx · HMASTER<br>HMASTLOCK</div>
+<div class="blk" style="background: #FCE3CF; text-align: left; line-height: 1.6">DATA PHASE<br>HWDATA (master)<br>HRDATA (slave)<br>HREADY / HREADYOUT<br>HRESP</div>
+</div>
+<p>A slave samples address/control on the rising edge where <code>HSELx &amp; HREADY &amp; HTRANS[1]</code> are all high. Data-phase signals belong to the <b>previous</b> address.</p>
+</section>
+
+<section class="w" style="grid-column: span 6">
+<div class="k">Traps</div>
+<ul>
+<li><b>HREADY ≠ HREADYOUT.</b> HREADYOUT is a slave's output; HREADY is the muxed bus value every slave must watch.</li>
+<li>HSELx alone is not enough — a slave must qualify with <b>HREADY</b>, or it may latch an address while another slave's transfer is still waiting.</li>
+<li>Write data lags address by one cycle: <code>HWDATA</code> at cycle N+1 belongs to <code>HADDR</code> at cycle N.</li>
+<li>Narrow transfers: master drives only active lanes meaningfully; slave returns valid data only on active lanes.</li>
+<li>HMASTER changes with the address phase; the HWDATA mux needs a <b>registered</b> copy of it.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Interview rapid-fire</div>
+<div class="qa">
+<div><p>Why is HREADY an input to slaves?</p><p>So a selected slave knows when the previous transfer (maybe to another slave) finished and its own address phase is real.</p></div>
+<div><p>Can a 32-bit bus do a 64-bit HSIZE transfer?</p><p>No. HSIZE must be ≤ bus width; a 64-bit value needs two word transfers or a burst.</p></div>
+<div><p>Which signals must stay constant through a burst?</p><p>HWRITE, HSIZE, HBURST, HPROT. Only HADDR (and HTRANS) advance.</p></div>
+<div><p>What's HPROT used for in practice?</p><p>MPU checks (privileged vs user), cache/buffer policy at memory controllers, trace.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: H-signals with "x" are per-slave or per-master; HREADY is the bus heartbeat.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 03 TRANSFERS</p>
+</footer>
+</div>
+</body></html>

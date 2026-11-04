@@ -1,0 +1,152 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Transfers and HTRANS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+pre{margin:0;font:12px/1.5 'IBM Plex Mono',monospace;background:#12161C;color:#E6EDF3;padding:12px 14px;border-radius:8px;white-space:pre-wrap}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 03 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">Transfers, pipelining &amp; HTRANS</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">How a read and a write move through address and data phases, how they overlap, and the four transfer types that tell a slave whether a cycle is real.</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">03</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Timing 1 — three single transfers, zero wait states (write A, read B, write C)</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>T5</th></tr>
+<tr><td>HTRANS</td><td>NONSEQ</td><td>NONSEQ</td><td>NONSEQ</td><td>IDLE</td><td>IDLE</td></tr>
+<tr><td>HADDR</td><td class="lo">A</td><td class="lo">B</td><td class="lo">C</td><td>–</td><td>–</td></tr>
+<tr><td>HWRITE</td><td>1</td><td>0</td><td>1</td><td>–</td><td>–</td></tr>
+<tr><td>HWDATA</td><td>–</td><td class="hl">D(A)</td><td>–</td><td class="hl">D(C)</td><td>–</td></tr>
+<tr><td>HRDATA</td><td>–</td><td>–</td><td class="hl">D(B)</td><td>–</td><td>–</td></tr>
+<tr><td>HREADY</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>Bus doing</td><td>A addr</td><td>A data · B addr</td><td>B data · C addr</td><td>C data</td><td>idle</td></tr>
+</table>
+<p>Values show what is on the bus during each cycle; they are sampled on the rising edge that ends the cycle. Blue = address phase, orange = data phase. Three transfers complete in four cycles — the pipeline gives ~1 transfer/clock.</p>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">HTRANS[1:0]</div>
+<table class="t">
+<tr><th>Code</th><th>Type</th><th>Meaning</th><th>Slave must</th></tr>
+<tr><td>00</td><td>IDLE</td><td>No transfer wanted</td><td>Ignore; OKAY, zero wait</td></tr>
+<tr><td>01</td><td>BUSY</td><td>Mid-burst pause; address/control already shows next beat</td><td>Ignore; OKAY, zero wait</td></tr>
+<tr class="hl"><td>10</td><td>NONSEQ</td><td>Single transfer or first beat of a burst; address unrelated to previous</td><td>Perform transfer</td></tr>
+<tr class="hl"><td>11</td><td>SEQ</td><td>Next beat; addr = prev + 2^HSIZE (or wrapped), control identical</td><td>Perform transfer</td></tr>
+</table>
+<p><code>HTRANS[1]</code> = "this is a real transfer" — slaves often decode just that bit.</p>
+</section>
+
+<section class="c" style="grid-column: span 5">
+<div class="k">Legal sequences</div>
+<ul>
+<li><b>IDLE → NONSEQ</b> starts any transfer.</li>
+<li><b>NONSEQ → SEQ / BUSY</b> only if HBURST ≠ SINGLE.</li>
+<li><b>BUSY → SEQ / BUSY</b> inside a burst.</li>
+<li><b>BUSY → IDLE / NONSEQ</b> only to end an undefined-length INCR burst.</li>
+<li><b>Illegal:</b> IDLE → SEQ, IDLE → BUSY, SINGLE NONSEQ → SEQ, fixed burst ending on BUSY.</li>
+<li>During a wait state, a master may change <b>IDLE → NONSEQ</b>; after that the transfer is held until HREADY goes high.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Timing 2 — INCR4 word write burst with a BUSY beat</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th></tr>
+<tr><td>HTRANS</td><td>NONSEQ</td><td>SEQ</td><td class="hl">BUSY</td><td>SEQ</td><td>SEQ</td><td>IDLE</td></tr>
+<tr><td>HADDR</td><td>0x20</td><td>0x24</td><td class="hl">0x28</td><td>0x28</td><td>0x2C</td><td>–</td></tr>
+<tr><td>HBURST</td><td>INCR4</td><td>INCR4</td><td>INCR4</td><td>INCR4</td><td>INCR4</td><td>–</td></tr>
+<tr><td>HWDATA</td><td>–</td><td>D(0x20)</td><td>D(0x24)</td><td class="hl">ignored</td><td>D(0x28)</td><td>D(0x2C)</td></tr>
+<tr><td>HREADY</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+</table>
+<p>During BUSY the master already shows the <b>next</b> beat's address (0x28). The slave ignores the BUSY cycle and its data phase, then takes the SEQ at 0x28 in T4.</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Read vs write mechanics</div>
+<ul>
+<li><b>Write:</b> master drives HWDATA in the data phase and <b>holds it</b> until HREADY is sampled high.</li>
+<li><b>Read:</b> slave drives HRDATA; master captures it on the edge where HREADY is high. Minimum read latency = 2 cycles (address + data).</li>
+<li><b>Write → read back-to-back:</b> no turnaround cycle, because HWDATA and HRDATA are separate buses.</li>
+<li>While HREADY is low, the next transfer's address and control are <b>frozen</b> (address phase is extended).</li>
+<li>After reset, masters drive <b>IDLE</b> until they need the bus.</li>
+</ul>
+</section>
+
+<section class="w" style="grid-column: span 6">
+<div class="k">Traps</div>
+<ul>
+<li>"BUSY is a wait state from the master" — only <b>inside bursts</b>; it is not a general stall.</li>
+<li>Data shown during IDLE/BUSY cycles is <b>don't-care</b> — scoreboards must not compare it.</li>
+<li>Pairing bug: a monitor that samples HWDATA in the same cycle as HADDR is off by one beat.</li>
+<li>HTRANS sampled when HREADY is low is not yet "accepted" — only the edge with HREADY high counts.</li>
+<li>Slave responding with wait states to IDLE/BUSY is a <b>protocol violation</b>.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">SVA you should be able to write</div>
+<pre>// address/control held while the bus is waited
+property p_ctrl_stable;
+  @(posedge HCLK) disable iff (!HRESETn)
+  (HTRANS[1] &amp;&amp; !HREADY) |=&gt;
+    $stable({HADDR, HWRITE, HSIZE, HBURST, HTRANS});
+endproperty
+
+// no SEQ/BUSY right after an accepted IDLE
+property p_no_seq_after_idle;
+  @(posedge HCLK) disable iff (!HRESETn)
+  (HREADY &amp;&amp; HTRANS == 2'b00) |=&gt;
+    !(HTRANS inside {2'b01, 2'b11});
+endproperty
+
+// write data stable while waited (wr_dphase = registered write)
+property p_wdata_stable;
+  @(posedge HCLK) disable iff (!HRESETn)
+  (wr_dphase &amp;&amp; !HREADY) |=&gt; $stable(HWDATA);
+endproperty</pre>
+</section>
+
+<section class="c" style="grid-column: span 5">
+<div class="k">Interview rapid-fire</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div><p style="font-weight: 700; color: #12161C">Why does BUSY exist?</p><p>A master (e.g. DMA) can't supply the next beat yet but wants to keep the burst — the slave can still prefetch.</p></div>
+<div><p style="font-weight: 700; color: #12161C">How many transfers can be in flight?</p><p>Two: one in address phase, one in data phase.</p></div>
+<div><p style="font-weight: 700; color: #12161C">Can the address phase take more than one cycle?</p><p>Yes — it is stretched whenever the previous data phase is waited.</p></div>
+<div><p style="font-weight: 700; color: #12161C">What does a slave do with IDLE while selected?</p><p>Nothing; zero-wait OKAY.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: HTRANS[1] = real. NONSEQ opens, SEQ continues, BUSY pauses, IDLE rests.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 04 BURSTS</p>
+</footer>
+</div>
+</body></html>

@@ -1,0 +1,144 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Wait States and HREADY</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+pre{margin:0;font:12px/1.5 'IBM Plex Mono',monospace;background:#12161C;color:#E6EDF3;padding:12px 14px;border-radius:8px;white-space:pre-wrap}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.bad{background:#F8D4D4;color:#7F1D1D;font-weight:600}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 05 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">Wait states &amp; HREADY</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">How a slow slave stretches the data phase, why every slave watches the muxed HREADY, and what freezes on the bus while it is low.</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">05</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Timing 1 — write A with 2 wait states, then read B</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>T5</th></tr>
+<tr><td>HTRANS</td><td>NONSEQ</td><td>NONSEQ</td><td>NONSEQ</td><td>NONSEQ</td><td>IDLE</td></tr>
+<tr><td>HADDR</td><td>A</td><td class="lo">B</td><td class="lo">B (held)</td><td class="lo">B (held)</td><td>–</td></tr>
+<tr><td>HWRITE</td><td>1</td><td>0</td><td>0</td><td>0</td><td>–</td></tr>
+<tr><td>HWDATA</td><td>–</td><td class="hl">D(A)</td><td class="hl">D(A) held</td><td class="hl">D(A) held</td><td>–</td></tr>
+<tr><td>HREADY</td><td>1</td><td class="bad">0</td><td class="bad">0</td><td>1</td><td>1</td></tr>
+<tr><td>HRDATA</td><td>–</td><td>–</td><td>–</td><td>–</td><td>D(B)</td></tr>
+<tr><td>Event</td><td>A addr</td><td>wait 1</td><td>wait 2</td><td>A done · B accepted</td><td>B done</td></tr>
+</table>
+<p>A's data phase lasts 3 cycles (1 + 2 waits). B's address phase is stretched from T2 to T4 — the pipeline stalls as a whole.</p>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Timing 2 — why HREADY is an input to slaves (A → slave S1 waits, B → slave S2)</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th></tr>
+<tr><td>HADDR</td><td>A (S1)</td><td>B (S2)</td><td>B (S2)</td><td>C</td></tr>
+<tr><td>HSEL_S1 / HSEL_S2</td><td>1 / 0</td><td>0 / 1</td><td>0 / 1</td><td>0 / 0</td></tr>
+<tr><td>HREADYOUT_S1</td><td>1</td><td class="bad">0</td><td>1</td><td>1</td></tr>
+<tr><td>HREADYOUT_S2</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>S→M mux selects</td><td>prev</td><td>S1</td><td>S1</td><td>S2</td></tr>
+<tr><td>HREADY (bus)</td><td>1</td><td class="bad">0</td><td>1</td><td>1</td></tr>
+<tr><td>S2 action</td><td>–</td><td class="bad">must NOT sample B</td><td class="hl">samples B</td><td>B data phase</td></tr>
+</table>
+<p>S2 is selected in T2, but S1 is still busy. If S2 looked only at its own HSEL it would start B a cycle early. Rule: <b>sample address when HSELx &amp; HREADY &amp; HTRANS[1]</b>.</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Rules</div>
+<ul>
+<li>A slave inserts waits by driving <b>HREADYOUT low</b> during its data phase; the transfer completes on the edge where HREADY is high.</li>
+<li>While HREADY is low, the master <b>holds</b> HWDATA and the pending address/control; HRDATA is valid only in the final cycle.</li>
+<li>Spec <b>recommends ≤ 16 wait states</b> per transfer so one slave can't hog the bus; longer latency → SPLIT/RETRY (AHB2).</li>
+<li>Slave must answer IDLE/BUSY with <b>zero-wait OKAY</b> and keep HREADYOUT high when not in a data phase (and out of reset).</li>
+<li>A master <b>cannot abort</b> a waited transfer; only an ERROR/RETRY/SPLIT response ends it differently.</li>
+<li>Unmapped addresses go to a <b>default slave</b> so HREADY never hangs.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">How HREADY is built</div>
+<ul>
+<li>Decoder selects a slave in the <b>address phase</b>; that select is <b>registered</b> (when HREADY high) to drive the S→M mux in the <b>data phase</b>.</li>
+<li><code>HREADY = HREADYOUT[sel_q]</code>, also feeding HRDATA and HRESP from the same slave.</li>
+<li>When no slave is in a data phase (after IDLE), the mux selects a source that returns HREADY = 1.</li>
+<li>Each slave sees <b>both</b> its own HREADYOUT and the global HREADY: one says "I'm done", the other says "the bus moved".</li>
+</ul>
+<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font: 600 12px/1.2 'IBM Plex Mono', monospace">
+<span style="border: 1.5px solid #12161C; border-radius: 6px; padding: 6px 8px; background: #DCE8F2; color: #12161C">HADDR → decoder</span>
+<span style="color: #555D68">→</span>
+<span style="border: 1.5px solid #12161C; border-radius: 6px; padding: 6px 8px; background: #FFFFFF; color: #12161C">HSEL flop (en = HREADY)</span>
+<span style="color: #555D68">→</span>
+<span style="border: 1.5px solid #12161C; border-radius: 6px; padding: 6px 8px; background: #FCE3CF; color: #12161C">S→M mux → HREADY</span>
+</div>
+</section>
+
+<section class="w" style="grid-column: span 5">
+<div class="k">Traps</div>
+<ul>
+<li>HREADY low does <b>not</b> mean "the slave isn't selected" — it means "previous transfer not finished".</li>
+<li>Read data sampled during a wait cycle is garbage — monitors must sample only when HREADY = 1.</li>
+<li>A slave that holds HREADYOUT low while unselected will hang the bus after the next transfer to it.</li>
+<li>Combinational HREADYOUT → HREADY → master → HTRANS loops are a classic timing/STA issue in interconnects.</li>
+<li>Waits on a BUSY beat are illegal (BUSY = zero-wait OKAY).</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">Checks &amp; coverage</div>
+<pre>// bus must not stay waited forever (bound per your slaves)
+a_no_hang: assert property (@(posedge HCLK) disable iff (!HRESETn)
+  not (!HREADY [*17]));
+
+// IDLE/BUSY in data phase get zero-wait OKAY
+a_idle_okay: assert property (@(posedge HCLK) disable iff (!HRESETn)
+  (HREADY &amp;&amp; HSEL &amp;&amp; !HTRANS[1]) |=&gt; (HREADYOUT &amp;&amp; HRESP == OKAY));
+
+covergroup cg_wait @(posedge HCLK iff xfer_done);
+  cp_waits : coverpoint wait_cnt { bins zero = {0}; bins one = {1};
+             bins few = {[2:4]}; bins many = {[5:16]}; }
+  cp_beat  : coverpoint beat_pos;   // enum {FIRST, MID, LAST}
+  x_rw     : cross cp_waits, hwrite, cp_beat;
+endgroup</pre>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Interview rapid-fire</div>
+<div class="qa">
+<div><p>Who can insert wait states — master or slave?</p><p>Only the slave (via HREADYOUT). A master's only "delay" tool is BUSY inside a burst or IDLE between transfers.</p></div>
+<div><p>Effect of one wait state on throughput?</p><p>The whole pipeline stalls one cycle — address phase of the next transfer is extended too.</p></div>
+<div><p>What does the default slave return?</p><p>Zero-wait OKAY for IDLE/BUSY; two-cycle ERROR for NONSEQ/SEQ.</p></div>
+<div><p>How do you test a slave's wait-state handling?</p><p>Randomise back-to-back transfers across two slaves with random waits; check address isn't taken while HREADY = 0.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: HREADYOUT = "I'm done"; HREADY = "the bus moved". Sample only on HREADY = 1.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 06 RESPONSES</p>
+</footer>
+</div>
+</body></html>

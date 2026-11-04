@@ -1,0 +1,174 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Verifying AHB in UVM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+pre{margin:0;font:12px/1.5 'IBM Plex Mono',monospace;background:#12161C;color:#E6EDF3;padding:12px 14px;border-radius:8px;white-space:pre-wrap}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+.blk{border:1.5px solid #12161C;border-radius:6px;padding:7px 8px;font:600 12px/1.25 'IBM Plex Mono',monospace;text-align:center;background:#FFFFFF;color:#12161C}
+</style>
+<style>@page{size:1240px 2200px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 2200px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 12 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">Verifying AHB in UVM</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">Testbench architecture, the pipelined driver, a monitor that pairs phases correctly, coverage, assertions and the test list — the answer to "walk me through your AHB VIP".</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">12</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Testbench architecture</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div class="blk" style="background: #12161C; color: #FFFFFF">ahb_test → virtual sequence (+ config_db: active/passive, data width, wait/err knobs)</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<div class="blk" style="background: #DCE8F2; text-align: left; line-height: 1.6">MASTER AGENT (active)<br>sequencer<br>pipelined driver<br>monitor</div>
+<div class="blk" style="background: #DCE8F2; text-align: left; line-height: 1.6">SLAVE AGENT (reactive)<br>monitor → req fifo<br>responder sequence<br>driver: HREADYOUT/HRESP/HRDATA</div>
+<div class="blk" style="background: #FCE3CF; text-align: left; line-height: 1.6">SCOREBOARD<br>memory model by address<br>byte-lane aware<br>drops ERROR'd writes</div>
+<div class="blk" style="background: #FCE3CF; text-align: left; line-height: 1.6">COVERAGE + SVA<br>covergroups on monitor tx<br>protocol checker bound<br>to the interface</div>
+</div>
+<div class="blk">ahb_if (clocking blocks: mst_cb / slv_cb / mon_cb) ⇄ DUT (master, slave, interconnect or bridge)</div>
+</div>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">Pipelined driver — two threads</div>
+<pre>task run_phase(uvm_phase phase);
+  fork addr_phase(); data_phase(); join
+endtask
+
+task addr_phase();                       // owns HADDR/HTRANS/ctrl
+  forever begin
+    seq_item_port.get_next_item(req);
+    foreach (req.beat[i]) begin
+      drive_ctrl(req, i);                // NONSEQ first, SEQ after
+      do @(vif.mst_cb); while (!vif.mst_cb.HREADY);   // accepted
+      dq.put(req.beat[i]);               // hand to data phase
+    end
+    vif.mst_cb.HTRANS &lt;= IDLE;
+    seq_item_port.item_done();
+  end
+endtask
+
+task data_phase();                       // owns HWDATA / samples HRDATA
+  forever begin
+    dq.get(b);
+    if (b.write) vif.mst_cb.HWDATA &lt;= b.data;
+    do @(vif.mst_cb); while (!vif.mst_cb.HREADY);   // completed
+    b.resp = vif.mst_cb.HRESP;
+    if (!b.write) b.rdata = vif.mst_cb.HRDATA;
+  end
+endtask</pre>
+<p>The mailbox <code>dq</code> guarantees data phase N starts on the same edge address phase N+1 starts — exactly AHB's overlap.</p>
+</section>
+
+<section class="c" style="grid-column: span 5">
+<div class="k">Monitor — pair the phases</div>
+<ul>
+<li>On each edge with <code>HREADY = 1</code>: first <b>complete</b> the pending data-phase item (HRDATA/HWDATA, HRESP), then <b>capture</b> a new address phase if <code>HTRANS</code> is NONSEQ/SEQ.</li>
+<li>Ignore IDLE/BUSY; track burst beats by NONSEQ→SEQ.</li>
+<li>Non-OKAY: record on the 2nd cycle; mark write data invalid on ERROR.</li>
+<li>Publish one item per <b>beat</b> plus one per <b>burst</b> via analysis ports.</li>
+<li>Passive mode reuses the same monitor — essential for interconnect/subsystem envs.</li>
+</ul>
+<div class="k" style="margin-top: 4px">Reactive slave</div>
+<p>Monitor pushes address phases into a FIFO; a forever responder sequence pulls them and returns random waits, OKAY/ERROR and read data from a memory model.</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Coverage plan</div>
+<table class="t">
+<tr><th>Item</th><th>Bins / cross</th></tr>
+<tr><td>HTRANS transitions</td><td>All legal arcs (I→N, N→S, S→B, B→S…)</td></tr>
+<tr><td>HBURST × HSIZE × HWRITE</td><td>Full cross (illegal size&gt;bus excluded)</td></tr>
+<tr><td>Wrap point</td><td>Wrap on each beat position</td></tr>
+<tr><td>1 KB proximity</td><td>Burst ending at 0x3FC / starting 0x400</td></tr>
+<tr><td>Wait states</td><td>0, 1, 2–4, 5–16 × beat position</td></tr>
+<tr><td>HRESP</td><td>OKAY/ERROR × first/mid/last beat</td></tr>
+<tr><td>Back-to-back</td><td>RR, RW, WR, WW, diff. slaves</td></tr>
+<tr><td>Byte lanes</td><td>HSIZE × HADDR[1:0]</td></tr>
+<tr><td>HPROT / HMASTLOCK</td><td>Each value; locked sequences</td></tr>
+</table>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Protocol checker (bind to ahb_if)</div>
+<ul>
+<li>Ctrl and address stable while HREADY low (sheet 03).</li>
+<li>HWDATA stable while write waited.</li>
+<li>No SEQ/BUSY after IDLE; SINGLE never followed by SEQ.</li>
+<li>SEQ address = prev + size (INCR) or wrapped (WRAP).</li>
+<li>HSIZE ≤ bus width; address aligned to HSIZE.</li>
+<li>INCR bursts never cross 1 KB.</li>
+<li>IDLE/BUSY get zero-wait OKAY.</li>
+<li>Non-OKAY is two cycles, same value.</li>
+<li>No X on HTRANS/HREADY/HRESP out of reset.</li>
+<li>Bounded wait (no hang).</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Test list</div>
+<table class="t">
+<tr><th>Test</th><th>Targets</th></tr>
+<tr><td>sanity_rw</td><td>Single word write/read-back</td></tr>
+<tr><td>all_sizes</td><td>Byte/half/word, all lanes</td></tr>
+<tr><td>all_bursts</td><td>8 HBURST types × sizes</td></tr>
+<tr><td>wrap_boundary</td><td>Every wrap start offset</td></tr>
+<tr><td>kb_boundary</td><td>Bursts ending at 1 KB edge</td></tr>
+<tr><td>busy_inject</td><td>BUSY beats in bursts, INCR ending on BUSY</td></tr>
+<tr><td>wait_stress</td><td>Random waits, back-to-back</td></tr>
+<tr><td>err_mid_burst</td><td>ERROR + cancel / continue</td></tr>
+<tr><td>default_slave</td><td>Holes in memory map</td></tr>
+<tr><td>reset_mid_xfer</td><td>Reset during burst</td></tr>
+<tr><td>random_regress</td><td>All knobs, many seeds</td></tr>
+</table>
+</section>
+
+<section class="w" style="grid-column: span 6">
+<div class="k">Bugs that DV interviews love</div>
+<ul>
+<li>Monitor samples HRDATA on a waited cycle → false mismatches only under random waits.</li>
+<li>Driver drives HWDATA with HADDR (same cycle) → passes with a lenient slave, fails real RTL.</li>
+<li>Scoreboard compares write data of an ERROR'd write.</li>
+<li>Slave latches address on HSEL without HREADY → wrong transfer after another slave waits.</li>
+<li>Coverage "100%" but no wait on the <b>last</b> beat of a burst.</li>
+<li>WRAP address math uses beats only, not beats × size.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Interview rapid-fire</div>
+<div class="qa">
+<div><p>How do you model pipelining in the driver?</p><p>Two forked threads joined by a mailbox: address thread hands accepted beats to the data thread.</p></div>
+<div><p>Active vs reactive agent?</p><p>Master is active (initiates); slave is reactive — it waits for the monitor's request and responds.</p></div>
+<div><p>Coverage stuck at 92% on WRAP16 × byte?</p><p>Check constraints (beats × size, 1 KB), sequence weights, and that the DUT supports byte bursts.</p></div>
+<div><p>How do you verify early burst termination?</p><p>Slave returns ERROR mid-burst; master knob to cancel; scoreboard expects only completed beats.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: two threads, one mailbox; sample only on HREADY; drop ERROR'd writes.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">END · REVISE SHEET 04 + 05 TWICE</p>
+</footer>
+</div>
+</body></html>

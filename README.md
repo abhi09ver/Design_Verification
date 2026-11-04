@@ -80,6 +80,7 @@ Each file takes one DV interview topic (often from a LinkedIn post), checks what
 | Pack | Contents |
 |---|---|
 | [UART DV Interview Pack](uart-dv-pack/README.md) | 10 one-page cards (PDF / HTML / PNG), text cheatsheet, UVM reference environment: baud, framing, parity, break, overrun, idle-line checks |
+| [AMBA AHB DV Interview Pack](ahb-dv-pack/README.md) | 12 one-page cards (PDF / HTML / PNG) + text cheatsheet: signals, HTRANS & pipelining, burst/wrap address math & 1 KB rule, HREADY wait states, two-cycle HRESP, arbitration, SPLIT/RETRY, decoder & bus matrix, AHB-Lite & AHB5, AHB-to-APB bridge FSM, UVM driver/monitor/coverage plan |
 
 ## Recurring Myths (seen across many posts — don't repeat these in an interview)
 

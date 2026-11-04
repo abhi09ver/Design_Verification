@@ -50,7 +50,7 @@ Everything in this repo, arranged by **what the interviewer will ask** rather th
 
 | Protocol | Quick | Deep | Hands-on code |
 |---|---|---|---|
-| **AXI / AHB / APB** | [AXI PDF](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf) | [17 – Bus protocols](17-bus-protocols-axi-ahb-pcie.md), [sessions 2–3, 5](sv-course-sessions/README.md) | `axi-interview-prep/code` |
+| **AXI / AHB / APB** | [AXI PDF](axi-interview-prep/AXI_DV_Interview_Cheatsheets_ALL.pdf), [AHB PDF](ahb-dv-pack/ahb-dv-cards.pdf) | [17 – Bus protocols](17-bus-protocols-axi-ahb-pcie.md), [AHB cheat sheet](ahb-dv-pack/AHB_CHEATSHEET.md), [sessions 2–3, 5](sv-course-sessions/README.md) | `axi-interview-prep/code` |
 | **PCIe** | [22 – LTSSM](22-pcie-ltssm-link-recovery.md) | [21 – AXI↔PCIe bridge](21-protocol-bridge-verification-axi-to-pcie.md) | — |
 | **UART** | [UART cheat sheet](uart-dv-pack/UART_CHEATSHEET.md) | [cards PDF](uart-dv-pack/uart-dv-cards.pdf) | `uart-dv-pack/code` |
 | **Ready/valid (generic)** | [10](10-ready-valid-handshake-assertions.md) | atlas plate 8 | YARP `rtl_vr` + interface SVA |

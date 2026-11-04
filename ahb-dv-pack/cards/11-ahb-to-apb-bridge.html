@@ -1,0 +1,143 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>AHB to APB Bridge</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.bad{background:#F8D4D4;color:#7F1D1D;font-weight:600}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+.st{border:1.5px solid #12161C;border-radius:8px;padding:8px 6px;font:600 12px/1.25 'IBM Plex Mono',monospace;text-align:center;color:#12161C;background:#FFFFFF}
+.st span{display:block;font-weight:400;font-size:11px;color:#3B434E;margin-top:3px}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 11 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">AHB-to-APB bridge</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">The classic AHB slave project: turning pipelined AHB transfers into two-phase APB accesses, the reference FSM, posted writes, wait-state insertion and error mapping.</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">11</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Role</div>
+<ul>
+<li>An <b>AHB slave</b> on one side, the <b>only APB master</b> on the other.</li>
+<li>APB is not pipelined: every access = <b>SETUP</b> (PSEL=1, PENABLE=0) + <b>ACCESS</b> (PENABLE=1) — so the bridge inserts AHB wait states.</li>
+<li>Registers HADDR/HWRITE in the address phase; decodes PSELx for each peripheral.</li>
+<li>AHB bursts become a <b>sequence of single</b> APB accesses.</li>
+<li>Writes are <b>posted</b>: AHB sees the write finish before the APB access happens.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">APB signals by version</div>
+<table class="t">
+<tr><th>Signal</th><th>Ver</th><th>Purpose</th></tr>
+<tr><td>PADDR · PWRITE · PWDATA</td><td>2</td><td>Address / dir / write data</td></tr>
+<tr><td>PSELx · PENABLE</td><td>2</td><td>Select · access phase</td></tr>
+<tr><td>PRDATA</td><td>2</td><td>Read data</td></tr>
+<tr><td>PREADY</td><td>3</td><td>Slave wait states</td></tr>
+<tr><td>PSLVERR</td><td>3</td><td>Slave error</td></tr>
+<tr><td>PPROT · PSTRB</td><td>4</td><td>Protection · byte strobes</td></tr>
+</table>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">ARM reference bridge FSM (8 states)</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<div class="st" style="background: #DCE8F2">IDLE<span>valid read → READ · valid write → WWAIT</span></div>
+<div class="st">READ<span>APB setup · HREADYOUT = 0 · → RENABLE</span></div>
+<div class="st">RENABLE<span>APB access · return PRDATA · next valid → READ / WWAIT, else IDLE</span></div>
+<div class="st">WWAIT<span>HWDATA arrives (AHB write completes) · valid → WRITEP else WRITE</span></div>
+<div class="st">WRITE<span>APB setup · valid → WENABLEP else WENABLE</span></div>
+<div class="st">WENABLE<span>APB access · next valid → READ / WWAIT, else IDLE</span></div>
+<div class="st" style="background: #FCE3CF">WRITEP<span>setup with a transfer pending · HREADYOUT = 0 · → WENABLEP</span></div>
+<div class="st" style="background: #FCE3CF">WENABLEP<span>access with pending · pending write → WRITEP / WRITE · pending read → READ</span></div>
+</div>
+<p>"P" = <b>pending</b>: another AHB transfer arrived while the posted write was still on APB. Wait states are inserted in READ, WRITEP, and WENABLEP when the next transfer is a read.</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Timing — read through bridge</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th></tr>
+<tr><td>AHB</td><td>NONSEQ rd A</td><td>data phase</td><td>data phase</td></tr>
+<tr><td>State</td><td>IDLE</td><td>READ</td><td>RENABLE</td></tr>
+<tr><td>PSEL / PENABLE</td><td>0 / 0</td><td class="lo">1 / 0</td><td class="hl">1 / 1</td></tr>
+<tr><td>HREADYOUT</td><td>1</td><td class="bad">0</td><td>1</td></tr>
+<tr><td>HRDATA</td><td>–</td><td>–</td><td class="hl">PRDATA</td></tr>
+</table>
+<p>Read costs <b>≥ 1 AHB wait state</b> (more with PREADY low or slower PCLK).</p>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">Timing — posted write</div>
+<table class="t tg">
+<tr><th>Signal</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th></tr>
+<tr><td>AHB</td><td>NONSEQ wr A</td><td>D(A)</td><td>free</td><td>free</td></tr>
+<tr><td>State</td><td>IDLE</td><td>WWAIT</td><td>WRITE</td><td>WENABLE</td></tr>
+<tr><td>PSEL / PENABLE</td><td>0 / 0</td><td>0 / 0</td><td class="lo">1 / 0</td><td class="hl">1 / 1</td></tr>
+<tr><td>HREADYOUT</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+</table>
+<p>The AHB write is <b>zero-wait</b>; APB happens in the background.</p>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">Design considerations</div>
+<ul>
+<li><b>Clock ratio:</b> PCLK = HCLK / n with a <code>PCLKEN</code> enable; every APB phase then costs n HCLK cycles.</li>
+<li><b>APB3 PREADY low</b> → bridge holds HREADYOUT low (for reads) or delays the next transfer (writes).</li>
+<li><b>PSLVERR</b> → map to a two-cycle AHB ERROR for reads. For a <b>posted write</b> the AHB transfer already completed OKAY — error must go to an interrupt/status register, or posting must be disabled.</li>
+<li>Original ARM bridge: HRESP always OKAY, PRDATA zero outside the access phase (OR-able read mux).</li>
+<li>Ordering: a read after a posted write must wait until the write finishes on APB (read-after-write hazard).</li>
+</ul>
+</section>
+
+<section class="w" style="grid-column: span 5">
+<div class="k">Common bridge bugs</div>
+<ul>
+<li>Capturing PRDATA in SETUP instead of ACCESS.</li>
+<li>Posted write overwritten when a second AHB transfer arrives (missing pending state).</li>
+<li>PADDR/PWRITE changing between SETUP and ACCESS.</li>
+<li>PENABLE asserted without a SETUP cycle, or held high between back-to-back accesses.</li>
+<li>HWDATA sampled in the address phase (one cycle early).</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Verification plan &amp; interview rapid-fire</div>
+<div class="qa">
+<div><p>Key checks?</p><p>APB protocol SVA (setup→access, stable PADDR/PWRITE/PWDATA, PENABLE drop), end-to-end scoreboard AHB→APB per address, ordering of read-after-write.</p></div>
+<div><p>Key coverage?</p><p>Back-to-back RR/RW/WR/WW, bursts into the bridge, PREADY waits 0..N, PSLVERR on read vs write, each PSELx, each clock ratio.</p></div>
+<div><p>Why is a single write faster than a read?</p><p>Writes are posted; reads need the APB data before HREADY can go high.</p></div>
+<div><p>Bridge vs direct AHB peripheral?</p><p>APB cuts power and area for slow register blocks; AHB only where bandwidth matters.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: SETUP then ACCESS; reads wait, writes post; "P" states hold the next transfer.</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 12 UVM VERIFICATION</p>
+</footer>
+</div>
+</body></html>

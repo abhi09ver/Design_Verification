@@ -1,0 +1,136 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>AHB-Lite and AHB5</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A8A}a:hover{color:#0B3F63}
+.c{background:#FFFFFF;border:1px solid #D5D9DE;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.w{background:#FFF6EE;border:1px solid #EFC6A3;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.k{font:600 11.5px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#0E5A8A}
+.w .k{color:#9A3412}
+.h{font:700 19px/1.2 'IBM Plex Sans',sans-serif;margin:0;color:#12161C}
+p,li{font:13.5px/1.45 'IBM Plex Sans',sans-serif;color:#262C34;margin:0}
+ul,ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+b{color:#12161C}
+code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:#EAF0F5;padding:1px 4px;border-radius:4px;color:#0B3F63}
+pre{margin:0;font:12px/1.5 'IBM Plex Mono',monospace;background:#12161C;color:#E6EDF3;padding:12px 14px;border-radius:8px;white-space:pre-wrap}
+.t{border-collapse:collapse;width:100%;font:12.5px/1.35 'IBM Plex Mono',monospace;color:#262C34}
+.t th,.t td{border:1px solid #D5D9DE;padding:5px 7px;text-align:left;vertical-align:top}
+.t th{background:#12161C;color:#FFFFFF;font-weight:600}
+.tg td{text-align:center}
+.tg td:first-child{text-align:left;font-weight:600;background:#F3F5F7}
+.hl{background:#FCE3CF}
+.lo{background:#E3ECF4}
+.bad{background:#F8D4D4;color:#7F1D1D;font-weight:600}
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.qa div{display:flex;flex-direction:column;gap:3px}
+.qa p:first-child{font-weight:700;color:#12161C}
+.step{display:flex;gap:10px;align-items:flex-start}
+.n{flex:none;width:26px;height:26px;border-radius:13px;background:#0E5A8A;color:#FFFFFF;font:600 13px/26px 'IBM Plex Mono',monospace;text-align:center}
+</style>
+<style>@page{size:1240px 1960px;margin:0}</style></head><body>
+<div style="width: 1240px; height: 1960px; box-sizing: border-box; background: #F3F4F1; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column">
+<header style="background: #12161C; padding: 36px 48px 30px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font: 600 13px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #F59E0B">AMBA AHB · BATCH 2 · SHEET 10 / 12</div>
+<h1 style="margin: 0; font: 700 44px/1.05 'IBM Plex Sans', sans-serif; color: #FFFFFF">AHB-Lite &amp; AHB5</h1>
+<p style="margin: 0; font: 16px/1.45 'IBM Plex Sans', sans-serif; color: #C9D1DA; max-width: 820px">What AMBA 3 removed to make AHB-Lite, what AMBA 5 added in AHB5 — TrustZone, exclusive access, extended memory types, user signals — and how to answer "which AHB are you verifying?"</p>
+</div>
+<div aria-hidden="true" style="font: 600 104px/0.8 'IBM Plex Mono', monospace; color: #39424F">10</div>
+</header>
+<main style="flex: 1; padding: 26px 48px 24px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-content: start">
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Side-by-side</div>
+<table class="t">
+<tr><th style="width: 22%">Feature</th><th>AHB2 (full)</th><th>AHB-Lite (AMBA 3)</th><th>AHB5 (AMBA 5)</th></tr>
+<tr><td>Masters</td><td>Up to 16, global arbiter</td><td class="hl">One (multi via bus matrix)</td><td>One per layer; HMASTER as ID</td></tr>
+<tr><td>HBUSREQ / HGRANT</td><td>Yes</td><td class="hl">Removed</td><td>Removed</td></tr>
+<tr><td>HRESP</td><td>2 bits: OKAY/ERROR/RETRY/SPLIT</td><td class="hl">1 bit: OKAY/ERROR</td><td>1 bit + HEXOKAY</td></tr>
+<tr><td>SPLIT / RETRY</td><td>Yes (HSPLITx)</td><td class="hl">Removed</td><td>Removed</td></tr>
+<tr><td>Lock</td><td>HLOCKx → arbiter → HMASTLOCK</td><td>HMASTLOCK from master</td><td>HMASTLOCK + exclusives</td></tr>
+<tr><td>HPROT</td><td>4 bits</td><td>4 bits</td><td class="lo">7 bits (extended memory types)</td></tr>
+<tr><td>Security</td><td>—</td><td>—</td><td class="lo">HNONSEC (TrustZone)</td></tr>
+<tr><td>Exclusive access</td><td>—</td><td>—</td><td class="lo">HEXCL / HEXOKAY</td></tr>
+<tr><td>User signals</td><td>—</td><td>—</td><td class="lo">HAUSER, HWUSER, HRUSER</td></tr>
+<tr><td>Typical CPU</td><td>ARM7/ARM9 era</td><td>Cortex-M0/M3/M4</td><td>Cortex-M23/M33/M55</td></tr>
+</table>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">AHB-Lite in one breath</div>
+<ul>
+<li>Single master → <b>no arbitration</b>; the master owns the bus all the time and drives IDLE when it has nothing.</li>
+<li>Keeps pipelining, bursts, wait states, ERROR, HPROT, HMASTLOCK.</li>
+<li>Formalises <b>HREADYOUT</b> (slave output) vs <b>HREADY</b> (muxed input).</li>
+<li>Full AHB slaves that never use SPLIT/RETRY work unchanged on AHB-Lite.</li>
+<li>Multi-master = several AHB-Lite layers into a <b>multi-layer matrix</b> (sheet 09).</li>
+<li>Fixed bursts end early only after ERROR.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 6">
+<div class="k">AHB5 additions</div>
+<ul>
+<li><code>HNONSEC</code>: 1 = non-secure transfer; secure slaves reject NS access to secure regions (ERROR).</li>
+<li><code>HEXCL</code> / <code>HEXOKAY</code>: exclusive (LDREX/STREX-style) access with a monitor.</li>
+<li><code>HPROT[6:0]</code>: bufferable, modifiable, lookup, allocate, shareable — richer cache attributes.</li>
+<li><code>HMASTER</code>: master ID so the exclusive monitor can tell masters apart.</li>
+<li>Optional properties: endianness (BE8), multi-copy atomicity, signals stable between clocks; later issues add interface parity.</li>
+<li>Terminology moves to <b>Manager / Subordinate</b>.</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 7">
+<div class="k">Exclusive access — flow</div>
+<div style="display: flex; flex-direction: column; gap: 9px">
+<div class="step"><div class="n">1</div><p><b>Exclusive read</b> (HEXCL = 1): monitor records address + HMASTER.</p></div>
+<div class="step"><div class="n">2</div><p>CPU computes the new value (e.g. semaphore increment).</p></div>
+<div class="step"><div class="n">3</div><p><b>Exclusive write</b> (HEXCL = 1) to the same address.</p></div>
+<div class="step"><div class="n">4</div><p>No other write hit the address → write performed, <code>HEXOKAY = 1</code>.</p></div>
+<div class="step"><div class="n">5</div><p>Another master wrote in between → write <b>not</b> performed, HEXOKAY = 0 (HRESP still OKAY); software retries.</p></div>
+</div>
+<p><b>Exclusive vs locked:</b> locked blocks the bus for everyone; exclusive is optimistic — the bus stays free and only a failed STREX costs a retry.</p>
+</section>
+
+<section class="w" style="grid-column: span 5">
+<div class="k">Traps</div>
+<ul>
+<li>A failed exclusive is <b>not an ERROR</b> — HRESP is OKAY, HEXOKAY is 0.</li>
+<li>HEXOKAY is meaningful only in the data phase of an exclusive transfer.</li>
+<li>HNONSEC polarity: <b>1 = non-secure</b> (easy to invert).</li>
+<li>"AHB-Lite has no locked transfers" — it does: HMASTLOCK.</li>
+<li>HPROT[3] means <b>modifiable</b> in AHB5 (was "cacheable").</li>
+</ul>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Verification deltas when the DUT is AHB5</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<ul>
+<li><b>Security:</b> cross HNONSEC × region × read/write; expect ERROR for NS→secure, OKAY otherwise.</li>
+<li><b>Exclusive:</b> model the monitor in the scoreboard; cover pass, fail-by-other-master, fail-by-different-address, exclusive to non-exclusive-capable slave.</li>
+</ul>
+<ul>
+<li><b>HPROT:</b> cover each attribute bit; check memory controller policy follows it.</li>
+<li><b>User signals:</b> pass-through checks across bridges and matrices (widths are configurable).</li>
+</ul>
+</div>
+</section>
+
+<section class="c" style="grid-column: span 12">
+<div class="k">Interview rapid-fire</div>
+<div class="qa">
+<div><p>Why did ARM create AHB-Lite?</p><p>Most MCU systems had one CPU master; dropping arbitration and SPLIT cut area and verification effort.</p></div>
+<div><p>How does an AHB-Lite system support DMA + CPU?</p><p>Multi-layer bus matrix with per-slave arbitration.</p></div>
+<div><p>What does HEXOKAY = 0 on an exclusive write mean?</p><p>The exclusive failed; memory not updated; software retries the sequence.</p></div>
+<div><p>Can an AHB-Lite master talk to a full AHB system?</p><p>Yes, through a wrapper that adds HBUSREQ/HGRANT and handles RETRY/SPLIT.</p></div>
+</div>
+</section>
+
+</main>
+<footer style="background: #0E5A8A; padding: 18px 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px">
+<p style="margin: 0; font: 600 16px/1.3 'IBM Plex Sans', sans-serif; color: #FFFFFF">Remember: Lite subtracts (arbiter, SPLIT, RETRY); AHB5 adds (secure, exclusive, attributes, user).</p>
+<p style="margin: 0; font: 600 12px/1 'IBM Plex Mono', monospace; color: #DCE8F2; letter-spacing: 0.08em">NEXT → 11 AHB-APB BRIDGE</p>
+</footer>
+</div>
+</body></html>
